@@ -1,57 +1,104 @@
 const { PrismaClient } = require("@prisma/client");
 const { Configuration, OpenAIApi } = require("openai");
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
-
+const openai = new OpenAIApi(
+  new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
+);
 const prisma = new PrismaClient();
 
-exports.handler = async (event, context) => {
-  const { itemA, itemB } = event.queryStringParameters;
-  let element = await prisma.alchemy_table.findFirst({
-    where: { item_a: itemA, item_b: itemB },
+const ALCHEMY_SYSTEM_PROMPT = `
+You are a powerful alchemist, I will give you two items and you will do your best to describe the outcome of combining them.
+
+Respond only with a single word which is the result item or thing. The results should be items or things.
+
+Examples:
+air + water = mist
+water + earth = mud
+`;
+
+async function getRecipe(recipeName) {
+  return await prisma.AlchemyRecipe.findFirst({
+    where: {
+      name: recipeName,
+    },
+    include: {
+      elements: {
+        select: {
+          element: true,
+        },
+      },
+    },
   });
-  if (!element) {
-    element = await prisma.alchemy_table.findFirst({
-      where: { item_a: itemB, item_b: itemA },
-    });
-  }
-  if (!element) {
-    let result = await openai.createChatCompletion({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a powerful alchemist, I will give you two items and you will do your best to describe the outcome of combining them. Respond only with a single word which is the result item or thing. The results should be items or things.",
-        },
-        {
-          role: "user",
-          content: `${itemA} + ${itemB}`,
-        },
-      ],
-    });
-    let newItem = result.data.choices[0].message.content;
-    let imgResult = await openai.createImage({
-      prompt: `a cartoon image of a ${newItem}, web icon`,
-      n: 1,
-      size: "1024x1024",
-      response_format: "url",
-    });
-    element = await prisma.alchemy_table.create({
+}
+
+async function buildRecipe(recipeName, elementIds) {
+  const elementResult = await prisma.AlchemyElement.findMany({
+    where: {
+      id: {
+        in: elementIds,
+      },
+    },
+  });
+  const elements = elementIds.map((id) =>
+    elementResult.find((elr) => elr.id === id)
+  );
+  const llmResult = await openai.createChatCompletion({
+    model: "gpt-4",
+    messages: [
+      {
+        role: "system",
+        content: ALCHEMY_SYSTEM_PROMPT,
+      },
+      {
+        role: "user",
+        content: elements.map((e) => e.name).join(" + "),
+      },
+    ],
+  });
+  const elementName = llmResult.data.choices[0].message.content;
+  let resultElement = await prisma.AlchemyElement.findFirst({
+    where: { name: elementName },
+  });
+  if (!resultElement) {
+    resultElement = await prisma.AlchemyElement.create({
       data: {
-        item_a: itemA,
-        item_b: itemB,
-        result: newItem,
-        result_img_url: imgResult.data.data[0].url,
+        name: elementName,
+        imgUrl: "",
       },
     });
   }
+  await prisma.AlchemyRecipe.create({
+    data: {
+      name: recipeName,
+      resultElementId: resultElement.id,
+      elements: {
+        create: [...new Set(elementIds)].map((id) => ({ elementId: id })),
+      },
+    },
+  });
+  return resultElement;
+}
+
+exports.handler = async (event, context) => {
+  const { elementIdsCsv } = event.queryStringParameters;
+  const elementIds = elementIdsCsv.split(",").map(BigInt).sort();
+  const recipeName = "recipe:" + elementIds.join(",");
+  // await prisma.AlchemyRecipesForElements.deleteMany();
+  // await prisma.AlchemyRecipe.deleteMany();
+  const recipe = await getRecipe(recipeName);
+  let resultElement;
+  if (recipe) {
+    resultElement = await prisma.AlchemyElement.findFirst({
+      where: { id: recipe.resultElementId },
+    });
+  } else {
+    resultElement = await buildRecipe(recipeName, elementIds);
+  }
   return {
     statusCode: 200,
-    body: JSON.stringify(element, (_key, value) =>
+    body: JSON.stringify(resultElement, (_key, value) =>
       typeof value === "bigint" ? value.toString() : value
     ),
   };

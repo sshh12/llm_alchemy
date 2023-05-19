@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Element from "./Element";
 import { isTouchCapable } from "../lib/touch";
 
@@ -21,23 +21,57 @@ function findIntersections(elements, targetId) {
     .map((el) => el.id);
 }
 
-function ElementBox() {
-  let [elements, setElements] = useState([
-    { id: "0", x: 100, y: 100, w: 100, h: 100 },
-    { id: "1", x: 300, y: 300, w: 100, h: 100 },
-    { id: "2", x: 100, y: 600, w: 100, h: 100 },
+function ElementBox({ starterElements }) {
+  const idCnt = useRef(3);
+  const dragId = useRef(null);
+  const [elements, setElements] = useState([
+    {
+      id: "0",
+      x: 100,
+      y: 100,
+      w: 100,
+      h: 100,
+      hoverEffect: false,
+      element: starterElements[0],
+    },
+    {
+      id: "1",
+      x: 300,
+      y: 300,
+      w: 100,
+      h: 100,
+      hoverEffect: false,
+      element: starterElements[0],
+    },
+    {
+      id: "2",
+      x: 100,
+      y: 600,
+      w: 100,
+      h: 100,
+      hoverEffect: false,
+      element: starterElements[0],
+    },
   ]);
-  let [dragId, setDragId] = useState(null);
 
   useEffect(() => {
     const onMove = ({ x, y }) => {
+      if (dragId.current === null) return;
       setElements((state) => {
-        if (dragId === null) return state;
-        const dragElement = elements.find((el) => el.id === dragId);
+        if (dragId.current === null) return state;
+        const dragElement = state.find((el) => el.id === dragId.current);
         state = state
-          .filter((element) => element.id !== dragId)
+          .filter((element) => element.id !== dragId.current)
           .concat(Object.assign(dragElement, { x, y }));
-        console.log(findIntersections(state, dragId));
+        const intersections = findIntersections(state, dragId.current);
+        state = state.map((element) => {
+          if (intersections.includes(element.id)) {
+            element.hoverEffect = true;
+          } else {
+            element.hoverEffect = false;
+          }
+          return element;
+        });
         return state;
       });
     };
@@ -66,6 +100,36 @@ function ElementBox() {
     };
   }, [dragId]);
 
+  const onDragStart = (element) => {
+    dragId.current = element.id;
+  };
+
+  const onDragStop = () => {
+    if (dragId.current === null) return;
+    const otherIds = findIntersections(elements, dragId.current).slice(0, 1);
+    const stopDragId = dragId.current;
+    dragId.current = null;
+    setElements(
+      ((state) => {
+        const targetElement = state.find((e) => e.id === stopDragId);
+        if (!targetElement) {
+          return state;
+        }
+        console.log(otherIds);
+        state = state.filter(
+          (e) => e.id !== stopDragId && !otherIds.includes(e.id)
+        );
+        const newElement = Object.assign(targetElement, {
+          id: (idCnt.current++).toString(),
+        });
+        state = state.concat([newElement]);
+        console.log("new state", state);
+        return state;
+      })(elements)
+    );
+  };
+  console.log(elements, dragId.current);
+
   return (
     <div>
       {elements.map((element) => (
@@ -73,8 +137,11 @@ function ElementBox() {
           key={element.id}
           position={{ x: element.x, y: element.y }}
           size={{ w: element.w, h: element.h }}
-          onDragStart={() => setDragId(element.id)}
-          onDragStop={() => setDragId(null)}
+          onDragStart={() => onDragStart(element)}
+          onDragStop={() => onDragStop()}
+          hoverEffect={element.hoverEffect}
+          element={element.element}
+          name={element.id}
         />
       ))}
     </div>

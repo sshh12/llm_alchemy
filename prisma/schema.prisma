@@ -11,10 +11,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model alchemy_table {
-  id             BigInt @id @default(autoincrement())
-  item_a         String
-  item_b         String
-  result         String
-  result_img_url String
+model AlchemyElement {
+  id              BigInt @id @default(autoincrement())
+  name            String @unique
+  imgUrl          String
+  recipes         AlchemyRecipesForElements[]
+  starterElement  Boolean @default(false)
+  createdAt       DateTime @default(now())
+}
+
+model AlchemyRecipe {
+  id               BigInt @id @default(autoincrement())
+  name             String @unique
+  elements         AlchemyRecipesForElements[]
+  resultElementId  BigInt @default(0)
+  createdAt        DateTime @default(now())
+}
+
+model AlchemyRecipesForElements {
+  element       AlchemyElement @relation(fields: [elementId], references: [id])
+  elementId     BigInt
+  recipe        AlchemyRecipe @relation(fields: [recipeId], references: [id])
+  recipeId      BigInt
+  @@id([elementId, recipeId])
 }

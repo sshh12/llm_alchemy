@@ -3,16 +3,19 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 exports.handler = async (event, context) => {
-  // const test = await prisma.alchemy_table.create({
+  // await prisma.AlchemyElement.create({
   //   data: {
-  //     item_a: "",
-  //     item_b: "",
-  //     result: "Stone",
-  //     result_img_url: "https://i.imgur.com/PtElSx4.jpeg",
+  //     name: "fire",
+  //     imgUrl: "https://i.imgur.com/3R5BxVh.jpeg",
+  //     starterElement: true,
   //   },
   // });
-  // await prisma.alchemy_table.deleteMany();
-  const allElements = await prisma.alchemy_table.findMany();
+  const { starterElements } = event.queryStringParameters;
+  let options = {};
+  if (starterElements) {
+    options.where = { starterElement: true };
+  }
+  const allElements = await prisma.AlchemyElement.findMany(options);
   return {
     statusCode: 200,
     body: JSON.stringify(allElements, (_key, value) =>
