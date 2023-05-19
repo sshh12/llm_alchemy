@@ -11,6 +11,7 @@ exports.handler = async (event, context) => {
   //     result_img_url: "https://i.imgur.com/PtElSx4.jpeg",
   //   },
   // });
+  // await prisma.alchemy_table.deleteMany();
   const allElements = await prisma.alchemy_table.findMany();
   return {
     statusCode: 200,
