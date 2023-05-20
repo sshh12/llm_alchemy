@@ -202,6 +202,28 @@ function ElementBox({
     });
   };
 
+  // hack way to refresh icons that timeout
+  const oneTimeIconRefresh = useRef(false);
+  useEffect(() => {
+    if (starterElements && !oneTimeIconRefresh.current) {
+      oneTimeIconRefresh.current = true;
+      starterElements.forEach((element) => {
+        if (!element.imgUrl) {
+          fetchAPI(`/get-element?id=${element.id}`).then((updatedValue) => {
+            if (updatedValue.imgUrl) {
+              updateStarterElements((state) => {
+                state = state.filter((e) => e.id !== updatedValue.id);
+                state = state.concat([updatedValue]);
+                state = state.sort((a, b) => a.name.localeCompare(b.name));
+                return state;
+              });
+            }
+          });
+        }
+      });
+    }
+  }, [fetchAPI, updateStarterElements, starterElements]);
+
   const clear = () => {
     setElements([]);
   };
