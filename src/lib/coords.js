@@ -16,3 +16,11 @@ export function findIntersections(elements, targetId) {
     .filter((el) => el.id !== targetId && boxesIntersect(el, target))
     .map((el) => el.id);
 }
+
+export function averagePosition(elements) {
+  const averageX =
+    elements.reduce((acc, el) => acc + el.x, 0) / elements.length;
+  const averageY =
+    elements.reduce((acc, el) => acc + el.y, 0) / elements.length;
+  return { x: averageX, y: averageY };
+}

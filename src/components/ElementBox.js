@@ -2,17 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import Element from "./Element";
 import { isTouchCapable, enableScroll, disableScroll } from "../lib/touch";
 import { useGetFetch } from "../lib/api";
-import { findIntersections } from "../lib/coords";
+import { findIntersections, averagePosition } from "../lib/coords";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import {
   Stat,
   StatLabel,
   StatNumber,
-  StatHelpText,
-  StatArrow,
-  StatGroup,
-  Container,
   HStack,
   InputGroup,
   InputRightElement,
@@ -98,7 +94,7 @@ function ElementBox({
     if (dragId.current === null) return;
     e.preventDefault();
     enableScroll();
-    const otherIds = findIntersections(elements, dragId.current).slice(0, 1);
+    const otherIds = findIntersections(elements, dragId.current);
     const stopDragId = dragId.current;
     dragId.current = null;
     if (otherIds.length === 0) return;
@@ -114,12 +110,13 @@ function ElementBox({
         const otherElements = otherIds.map((id) =>
           elements.find((e) => e.id === id)
         );
+        const newPos = averagePosition(otherElements.concat([targetElement]));
         const newElement = Object.assign({}, targetElement, {
           id: (idCnt.current++).toString(),
           element: null,
           imgUrl: null,
-          x: (targetElement.x + otherElements[0].x) / 2,
-          y: (targetElement.y + otherElements[0].y) / 2,
+          x: newPos.x,
+          y: newPos.y,
           name: "unknown",
         });
         fetchAPI(
