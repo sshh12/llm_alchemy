@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Element from "./Element";
 import { isTouchCapable } from "../lib/touch";
+import { useGetFetch } from "../lib/api";
 
 function boxesIntersect(a, b) {
   const halfWidthA = a.w / 2;
@@ -21,42 +22,16 @@ function findIntersections(elements, targetId) {
     .map((el) => el.id);
 }
 
-function ElementBox({ starterElements }) {
-  const idCnt = useRef(3);
+function ElementBox({ starterElements, elementW, elementH }) {
+  const idCnt = useRef(0);
   const dragId = useRef(null);
-  const [elements, setElements] = useState([
-    {
-      id: "0",
-      x: 100,
-      y: 100,
-      w: 100,
-      h: 100,
-      hoverEffect: false,
-      element: starterElements[0],
-    },
-    {
-      id: "1",
-      x: 300,
-      y: 300,
-      w: 100,
-      h: 100,
-      hoverEffect: false,
-      element: starterElements[0],
-    },
-    {
-      id: "2",
-      x: 100,
-      y: 600,
-      w: 100,
-      h: 100,
-      hoverEffect: false,
-      element: starterElements[0],
-    },
-  ]);
+  const [elements, setElements] = useState([]);
+  const [exampleElements, setExampleElements] = useState(starterElements);
+
+  const [fetchAPI] = useGetFetch();
 
   useEffect(() => {
     const onMove = ({ x, y }) => {
-      if (dragId.current === null) return;
       setElements((state) => {
         if (dragId.current === null) return state;
         const dragElement = state.find((el) => el.id === dragId.current);
@@ -77,12 +52,16 @@ function ElementBox({ starterElements }) {
     };
 
     const onTouch = (e) => {
+      if (dragId.current === null) return;
+      e.preventDefault();
       const touch = e.targetTouches[0];
-      onMove({ x: touch.clientX, y: touch.clientY });
+      onMove({ x: touch.pageX, y: touch.pageY });
     };
 
     const onMouse = (e) => {
-      onMove({ x: e.clientX, y: e.clientY });
+      if (dragId.current === null) return;
+      e.preventDefault();
+      onMove({ x: e.pageX, y: e.pageY });
     };
 
     if (isTouchCapable) {
@@ -100,50 +79,154 @@ function ElementBox({ starterElements }) {
     };
   }, [dragId]);
 
-  const onDragStart = (element) => {
+  const onDragStart = (element, e) => {
+    e.preventDefault();
+    document.getElementsByTagName("html")[0].style.overflow = "hidden";
     dragId.current = element.id;
   };
 
-  const onDragStop = () => {
+  const onDragStop = (e) => {
     if (dragId.current === null) return;
+    e.preventDefault();
+    document.getElementsByTagName("html")[0].style.overflow = null;
     const otherIds = findIntersections(elements, dragId.current).slice(0, 1);
     const stopDragId = dragId.current;
     dragId.current = null;
+    if (otherIds.length === 0) return;
     setElements(
       ((state) => {
         const targetElement = state.find((e) => e.id === stopDragId);
         if (!targetElement) {
           return state;
         }
-        console.log(otherIds);
         state = state.filter(
           (e) => e.id !== stopDragId && !otherIds.includes(e.id)
         );
-        const newElement = Object.assign(targetElement, {
+        const otherElements = otherIds.map((id) =>
+          elements.find((e) => e.id === id)
+        );
+        const newElement = Object.assign({}, targetElement, {
           id: (idCnt.current++).toString(),
+          element: null,
+          imgUrl: null,
+          name: "...",
+        });
+        fetchAPI(
+          `/combine-elements?elementIdsCsv=${[targetElement.element.id]
+            .concat(otherElements.map((e) => e.element.id))
+            .join(",")}`
+        ).then((v) => {
+          setElement(newElement.id, v);
+          setExampleElements((state) => {
+            state = state.filter((e) => e.id !== v.id);
+            state = state.concat([v]);
+            state = state.sort((a, b) => a.name.localeCompare(b.name));
+            return state;
+          });
+          if (!v.imgUrl) {
+            fetchAPI(`/get-element?id=${v.id}`).then((updatedValue) => {
+              if (updatedValue.imgUrl) {
+                setElement(newElement.id, updatedValue);
+                setExampleElements((state) => {
+                  state = state.filter((e) => e.id !== updatedValue.id);
+                  state = state.concat([updatedValue]);
+                  state = state.sort((a, b) => a.name.localeCompare(b.name));
+                  return state;
+                });
+              }
+            });
+          }
         });
         state = state.concat([newElement]);
-        console.log("new state", state);
         return state;
       })(elements)
     );
   };
-  console.log(elements, dragId.current);
+
+  const onFactoryDragStart = (baseElement, e) => {
+    e.preventDefault();
+    document.getElementsByTagName("html")[0].style.overflow = "hidden";
+    setElements(
+      ((state) => {
+        const newId = (idCnt.current++).toString();
+        const newElement = Object.assign(
+          {
+            x: 0,
+            y: 0,
+            w: elementW,
+            h: elementH,
+            hoverEffect: false,
+            element: baseElement,
+            imgUrl: baseElement.imgUrl,
+            name: baseElement.name,
+          },
+          {
+            id: newId,
+          }
+        );
+        dragId.current = newId;
+        state = state.concat([newElement]);
+        return state;
+      })(elements)
+    );
+  };
+
+  const setElement = (id, element) => {
+    setElements((state) => {
+      const targetElement = state.find((e) => e.id === id);
+      state = state.filter((e) => e.id !== id);
+      state = state.concat([
+        Object.assign({}, targetElement, {
+          element,
+          imgUrl: element.imgUrl,
+          name: element.name,
+          w: elementW,
+          h: elementH,
+        }),
+      ]);
+      return state;
+    });
+  };
 
   return (
     <div>
-      {elements.map((element) => (
-        <Element
-          key={element.id}
-          position={{ x: element.x, y: element.y }}
-          size={{ w: element.w, h: element.h }}
-          onDragStart={() => onDragStart(element)}
-          onDragStop={() => onDragStop()}
-          hoverEffect={element.hoverEffect}
-          element={element.element}
-          name={element.id}
-        />
-      ))}
+      <div style={{ height: "100%", padding: "10px", overflow: "scroll" }}>
+        {exampleElements.map((se) => (
+          <div style={{ paddingBottom: "10px" }}>
+            <Element
+              key={se.id}
+              size={{ w: elementW, h: elementH }}
+              onDragStart={(e) => onFactoryDragStart(se, e)}
+              onDragStop={(e) => onDragStop(e)}
+              hoverEffect={false}
+              element={se}
+              imgUrl={se.imgUrl}
+              name={se.name}
+            />
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          zIndex: 10,
+          position: "absolute",
+          top: 0,
+          left: 0,
+        }}
+      >
+        {elements.map((element) => (
+          <Element
+            key={element.id}
+            position={{ x: element.x, y: element.y }}
+            size={{ w: element.w, h: element.h }}
+            onDragStart={(e) => onDragStart(element, e)}
+            onDragStop={(e) => onDragStop(e)}
+            hoverEffect={element.hoverEffect}
+            imgUrl={element.imgUrl}
+            name={element.name}
+          />
+        ))}
+      </div>
     </div>
   );
 }

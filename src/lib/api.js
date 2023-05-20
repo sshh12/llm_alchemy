@@ -11,3 +11,14 @@ export function useGet(path) {
   }, [path]);
   return [values];
 }
+
+export function useGetFetch() {
+  const fetchValues = (path) => {
+    return fetch("/.netlify/functions" + path)
+      .then((resp) => resp.json())
+      .then((values) => {
+        return values;
+      });
+  };
+  return [fetchValues];
+}

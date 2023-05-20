@@ -17,9 +17,9 @@ exports.handler = async (event, context) => {
   });
   if (!element.imgUrl) {
     const imgResult = await openai.createImage({
-      prompt: `a realistic picture of a ${element.name}, icon, solid white #ffffff background, no text`,
+      prompt: `image of ${element.name}, white background`,
       n: 1,
-      size: "512x512",
+      size: "256x256",
       response_format: "url",
     });
     const imgURL = imgResult.data.data[0].url;

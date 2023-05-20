@@ -11,11 +11,13 @@ const prisma = new PrismaClient();
 const ALCHEMY_SYSTEM_PROMPT = `
 You are a powerful alchemist, I will give you two items and you will do your best to describe the outcome of combining them.
 
-Respond only with a single word which is the result item or thing. The results should be items or things.
+Respond only with a single word which is the result item or thing. The results should be items or things. Use lower case unless it's a proper noun.
 
-Examples:
-air + water = mist
-water + earth = mud
+## Examples
+* air + water = mist
+* water + earth = mud
+* fire + fire = energy
+* earth + earth = land
 `;
 
 async function getRecipe(recipeName) {
@@ -85,8 +87,6 @@ exports.handler = async (event, context) => {
   const { elementIdsCsv } = event.queryStringParameters;
   const elementIds = elementIdsCsv.split(",").map(BigInt).sort();
   const recipeName = "recipe:" + elementIds.join(",");
-  // await prisma.AlchemyRecipesForElements.deleteMany();
-  // await prisma.AlchemyRecipe.deleteMany();
   const recipe = await getRecipe(recipeName);
   let resultElement;
   if (recipe) {

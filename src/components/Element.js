@@ -7,30 +7,44 @@ function Element({
   position,
   size,
   hoverEffect,
-  element,
+  imgUrl,
   name,
 }) {
   const onProps = isTouchCapable
-    ? { onTouchStart: (e) => onDragStart(), onTouchEnd: (e) => onDragStop() }
-    : { onMouseDown: (e) => onDragStart(), onMouseUp: (e) => onDragStop() };
+    ? { onTouchStart: (e) => onDragStart(e), onTouchEnd: (e) => onDragStop(e) }
+    : { onMouseDown: (e) => onDragStart(e), onMouseUp: (e) => onDragStop(e) };
+  const positionProps = position
+    ? {
+        left: position.x - 50 + "px",
+        top: position.y - 50 + "px",
+        position: "absolute",
+      }
+    : {};
   return (
     <div
       {...onProps}
       style={{
-        backgroundColor: hoverEffect ? "#0000ff" : "#ff00ff",
+        backgroundColor: hoverEffect ? "#555" : "#eee",
         width: size.w + "px",
         height: size.h + "px",
-        left: position.x - 50 + "px",
-        top: position.y - 50 + "px",
-        position: "absolute",
+        padding: "5px",
+        borderRadius: "5px",
+        ...positionProps,
       }}
     >
-      {element.name} {name}
+      <span
+        style={{
+          whiteSpace: "nowrap",
+          maxWidth: size.w + "px",
+        }}
+      >
+        <b>{name}</b>
+      </span>
       <img
-        alt={element?.name}
-        src={element?.imgUrl}
-        width={size.w - 10 + "px"}
-        height={size.h - 10 + "px"}
+        alt={""}
+        src={imgUrl}
+        width={size.w - 18 + "px"}
+        height={size.h - 18 + "px"}
       />
     </div>
   );
