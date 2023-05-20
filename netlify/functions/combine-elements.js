@@ -18,6 +18,7 @@ Respond only with a single word which is the result item or thing. The results s
 * water + earth = mud
 * fire + fire = energy
 * earth + earth = land
+* planet + planet = solar system
 `;
 
 async function getRecipe(recipeName) {

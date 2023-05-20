@@ -1,18 +1,22 @@
 import React from "react";
 import ElementBox from "./components/ElementBox";
-import { useGet } from "./lib/api";
+import { useDefaultPersistentGet } from "./lib/api";
 import "./App.css";
 
 function App() {
-  const [elements] = useGet("/get-elements");
+  const [starterElements, updateStarterElements] = useDefaultPersistentGet(
+    "elements",
+    "/get-elements?starterElements=true"
+  );
   const size = Math.floor(
     Math.max(Math.min(window.innerHeight, window.innerWidth) * 0.2, 100)
   );
   return (
     <div style={{ height: "100%" }}>
-      {elements && (
+      {starterElements && (
         <ElementBox
-          starterElements={elements}
+          starterElements={starterElements}
+          updateStarterElements={updateStarterElements}
           elementW={size}
           elementH={size}
         />

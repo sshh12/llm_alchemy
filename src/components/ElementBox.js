@@ -22,13 +22,34 @@ function findIntersections(elements, targetId) {
     .map((el) => el.id);
 }
 
-function ElementBox({ starterElements, elementW, elementH }) {
+function ElementBox({
+  starterElements,
+  updateStarterElements,
+  elementW,
+  elementH,
+}) {
   const idCnt = useRef(0);
   const dragId = useRef(null);
   const [elements, setElements] = useState([]);
-  const [exampleElements, setExampleElements] = useState(starterElements);
 
   const [fetchAPI] = useGetFetch();
+
+  useEffect(() => {
+    starterElements.forEach((v) => {
+      if (!v.imgUrl) {
+        fetchAPI(`/get-element?id=${v.id}`).then((updatedValue) => {
+          if (updatedValue.imgUrl) {
+            updateStarterElements((state) => {
+              state = state.filter((e) => e.id !== updatedValue.id);
+              state = state.concat([updatedValue]);
+              state = state.sort((a, b) => a.name.localeCompare(b.name));
+              return state;
+            });
+          }
+        });
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const onMove = ({ x, y }) => {
@@ -117,7 +138,7 @@ function ElementBox({ starterElements, elementW, elementH }) {
             .join(",")}`
         ).then((v) => {
           setElement(newElement.id, v);
-          setExampleElements((state) => {
+          updateStarterElements((state) => {
             state = state.filter((e) => e.id !== v.id);
             state = state.concat([v]);
             state = state.sort((a, b) => a.name.localeCompare(b.name));
@@ -127,7 +148,7 @@ function ElementBox({ starterElements, elementW, elementH }) {
             fetchAPI(`/get-element?id=${v.id}`).then((updatedValue) => {
               if (updatedValue.imgUrl) {
                 setElement(newElement.id, updatedValue);
-                setExampleElements((state) => {
+                updateStarterElements((state) => {
                   state = state.filter((e) => e.id !== updatedValue.id);
                   state = state.concat([updatedValue]);
                   state = state.sort((a, b) => a.name.localeCompare(b.name));
@@ -191,7 +212,7 @@ function ElementBox({ starterElements, elementW, elementH }) {
   return (
     <div>
       <div style={{ height: "100%", padding: "10px", overflow: "scroll" }}>
-        {exampleElements.map((se) => (
+        {starterElements.map((se) => (
           <div style={{ paddingBottom: "10px" }}>
             <Element
               key={se.id}

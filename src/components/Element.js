@@ -42,7 +42,7 @@ function Element({
       </span>
       <img
         alt={""}
-        src={imgUrl}
+        src={imgUrl || "https://i.imgur.com/HJaAOuF.png"}
         width={size.w - 18 + "px"}
         height={size.h - 18 + "px"}
       />
