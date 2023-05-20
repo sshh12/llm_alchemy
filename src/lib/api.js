@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 
+const BASE_URL = "https://alchemy.sshh.io";
+
 export function useDefaultPersistentGet(key, path) {
   const [values, setValues] = useState(null);
   useEffect(() => {
     const store = localStorage.getItem(key);
     if (!store) {
-      fetch("/.netlify/functions" + path)
+      fetch(`${BASE_URL}/.netlify/functions${path}`)
         .then((resp) => resp.json())
         .then((values) => {
           setValues(values);
@@ -23,7 +25,7 @@ export function useDefaultPersistentGet(key, path) {
     });
   };
   const reset = () => {
-    fetch("/.netlify/functions" + path)
+    fetch(`${BASE_URL}/.netlify/functions${path}`)
       .then((resp) => resp.json())
       .then((values) => {
         setValues(values);
@@ -33,9 +35,28 @@ export function useDefaultPersistentGet(key, path) {
   return [values, setVals, reset];
 }
 
+export function usePollingGet(path) {
+  const [values, setValues] = useState(null);
+  useEffect(() => {
+    fetch(`${BASE_URL}/.netlify/functions${path}`)
+      .then((resp) => resp.json())
+      .then((values) => {
+        setValues(values);
+      });
+  }, [path]);
+  const poll = () => {
+    fetch(`${BASE_URL}/.netlify/functions${path}`)
+      .then((resp) => resp.json())
+      .then((values) => {
+        setValues(values);
+      });
+  };
+  return [values, poll];
+}
+
 export function useGetFetch() {
   const fetchValues = (path) => {
-    return fetch("/.netlify/functions" + path)
+    return fetch(`${BASE_URL}/.netlify/functions${path}`)
       .then((resp) => resp.json())
       .then((values) => {
         return values;

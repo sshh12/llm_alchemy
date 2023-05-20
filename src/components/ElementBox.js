@@ -2,34 +2,36 @@ import React, { useState, useEffect, useRef } from "react";
 import Element from "./Element";
 import { isTouchCapable, enableScroll, disableScroll } from "../lib/touch";
 import { useGetFetch } from "../lib/api";
+import { findIntersections } from "../lib/coords";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import {
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  StatArrow,
+  StatGroup,
+  Container,
+  HStack,
+  InputGroup,
+  InputRightElement,
+  Input,
+  Box,
+  Button,
+  Flex,
+  Spacer,
+} from "@chakra-ui/react";
+import { SearchIcon } from "@chakra-ui/icons";
 
 const swal = withReactContent(Swal);
-
-function boxesIntersect(a, b) {
-  const halfWidthA = a.w / 2;
-  const halfHeightA = a.h / 2;
-  const halfWidthB = b.w / 2;
-  const halfHeightB = b.h / 2;
-
-  return (
-    Math.abs(a.x - b.x) < halfWidthA + halfWidthB &&
-    Math.abs(a.y - b.y) < halfHeightA + halfHeightB
-  );
-}
-
-function findIntersections(elements, targetId) {
-  const target = elements.find((el) => el.id === targetId);
-  return elements
-    .filter((el) => el.id !== targetId && boxesIntersect(el, target))
-    .map((el) => el.id);
-}
 
 function ElementBox({
   starterElements,
   updateStarterElements,
   resetStarterElements,
+  stats,
+  pollStats,
   elementW,
   elementH,
 }) {
@@ -37,6 +39,7 @@ function ElementBox({
   const dragId = useRef(null);
   const [elements, setElements] = useState([]);
   const [fetchAPI] = useGetFetch();
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const onMove = ({ x, y }) => {
@@ -130,6 +133,7 @@ function ElementBox({
               text: `Congrats! You are the first person to discover ${v.name}.`,
               html: null,
             });
+            pollStats();
           }
           setElement(newElement.id, v);
           if (!v.imgUrl) {
@@ -235,27 +239,69 @@ function ElementBox({
 
   return (
     <div>
-      <div style={{ textAlign: "center" }}>
-        <h4>Discovered Elements: {starterElements.length}</h4>
-        <button onClick={() => restart()}>Restart</button>
-        <hr />
-        <button onClick={() => clear()}>Clear</button>
-      </div>
+      <HStack padding={"20px"}>
+        <Stat>
+          <StatLabel>Your Elements</StatLabel>
+          <StatNumber>{starterElements.length}</StatNumber>
+        </Stat>
+        <Stat>
+          <StatLabel>Total Known Elements</StatLabel>
+          <StatNumber>{stats?.totalElements}</StatNumber>
+        </Stat>
+      </HStack>
+      <hr />
+
+      <Flex
+        direction="row"
+        spacing={4}
+        align="center"
+        padding={"10px"}
+        textAlign={"center"}
+      >
+        <Button colorScheme="red" variant="outline" onClick={() => restart()}>
+          Restart
+        </Button>
+        <Spacer />
+        <Button colorScheme="blue" variant="outline" onClick={() => clear()}>
+          Clear
+        </Button>
+      </Flex>
+      <hr />
+
+      <Box padding={"10px"}>
+        <InputGroup maxWidth={"30rem"}>
+          <InputRightElement pointerEvents="none">
+            <SearchIcon color="gray.300" />
+          </InputRightElement>
+          <Input
+            type="input"
+            placeholder="Elements"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </InputGroup>
+      </Box>
 
       <div style={{ height: "100%", padding: "10px", overflow: "scroll" }}>
-        {starterElements.map((se) => (
-          <div key={se.id} style={{ paddingBottom: "10px" }}>
-            <Element
-              size={{ w: elementW, h: elementH }}
-              onDragStart={(e) => onFactoryDragStart(se, e)}
-              onDragStop={(e) => onDragStop(e)}
-              hoverEffect={false}
-              element={se}
-              imgUrl={se.imgUrl}
-              name={se.name}
-            />
-          </div>
-        ))}
+        {starterElements
+          .filter(
+            (se) =>
+              search === "" ||
+              se.name.toLowerCase().includes(search.toLowerCase())
+          )
+          .map((se) => (
+            <div key={se.id} style={{ paddingBottom: "10px" }}>
+              <Element
+                size={{ w: elementW, h: elementH }}
+                onDragStart={(e) => onFactoryDragStart(se, e)}
+                onDragStop={(e) => onDragStop(e)}
+                hoverEffect={false}
+                element={se}
+                imgUrl={se.imgUrl}
+                name={se.name}
+              />
+            </div>
+          ))}
       </div>
       <div
         style={{

@@ -49,10 +49,10 @@ function Element({
       </span>
       <img
         alt={""}
-        style={{ marginLeft: "8px" }}
+        style={{ marginTop: "-8px", marginLeft: "8px" }}
         src={imgUrl || "https://i.imgur.com/HJaAOuF.png"}
-        width={size.w - 18 + "px"}
-        height={size.h - 18 + "px"}
+        width={size.w - 25 + "px"}
+        height={size.h - 25 + "px"}
       />
     </div>
   );

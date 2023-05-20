@@ -57,6 +57,7 @@ async function buildRecipe(recipeName, elementIds) {
   let resultElement = await prisma.AlchemyElement.findFirst({
     where: { name: elementName },
   });
+  let isNewElement = false;
   if (!resultElement) {
     resultElement = await prisma.AlchemyElement.create({
       data: {
@@ -64,6 +65,7 @@ async function buildRecipe(recipeName, elementIds) {
         imgUrl: "",
       },
     });
+    isNewElement = true;
   }
   await prisma.AlchemyRecipe.create({
     data: {
@@ -74,7 +76,7 @@ async function buildRecipe(recipeName, elementIds) {
       },
     },
   });
-  return resultElement;
+  return [resultElement, isNewElement];
 }
 
 exports.handler = async (event, context) => {
@@ -89,8 +91,7 @@ exports.handler = async (event, context) => {
       where: { id: recipe.resultElementId },
     });
   } else {
-    resultElement = await buildRecipe(recipeName, elementIds);
-    isNewElement = true;
+    [resultElement, isNewElement] = await buildRecipe(recipeName, elementIds);
   }
   return {
     statusCode: 200,
