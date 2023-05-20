@@ -60,6 +60,7 @@ function ElementBox({
 
     const onTouch = (e) => {
       if (dragId.current === null) return;
+      e.preventDefault();
       const touch = e.targetTouches[0];
       onMove({ x: touch.pageX, y: touch.pageY });
     };
@@ -71,7 +72,7 @@ function ElementBox({
     };
 
     if (isTouchCapable) {
-      window.addEventListener("touchmove", onTouch);
+      window.addEventListener("touchmove", onTouch, { passive: false });
     } else {
       window.addEventListener("mousemove", onMouse);
     }
@@ -86,6 +87,7 @@ function ElementBox({
   }, [dragId]);
 
   const onDragStart = (element, e) => {
+    e.preventDefault();
     disableScroll();
     dragId.current = element.id;
   };
@@ -154,6 +156,7 @@ function ElementBox({
   };
 
   const onFactoryDragStart = (baseElement, e) => {
+    e.preventDefault();
     disableScroll();
     setElements(
       ((state) => {
