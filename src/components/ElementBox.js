@@ -18,7 +18,7 @@ import {
   Flex,
   Spacer,
 } from "@chakra-ui/react";
-import { SearchIcon } from "@chakra-ui/icons";
+import { SearchIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 
 const swal = withReactContent(Swal);
 
@@ -230,6 +230,7 @@ function ElementBox({
 
   const clear = () => {
     setElements([]);
+    setSearch("");
   };
 
   const restart = () => {
@@ -239,6 +240,17 @@ function ElementBox({
 
   return (
     <div>
+      <HStack bgColor={"#2D3748"} color={"#fff"} p={2}>
+        <span>Infinite Alchemy</span>
+        <Spacer />
+        <Box fontSize={"0.8rem"}>
+          <a href="https://github.com/sshh12/llm_alchemy">
+            GitHub <ExternalLinkIcon />
+          </a>
+        </Box>
+      </HStack>
+
+      <hr />
       <HStack padding={"20px"}>
         <Stat>
           <StatLabel>Your Elements</StatLabel>
