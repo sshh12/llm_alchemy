@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import ElementBox from "./components/ElementBox";
 import InfoModal from "./components/InfoModal";
 import { useDefaultPersistentGet } from "./lib/api";
