@@ -1,6 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const { Configuration, OpenAIApi } = require("openai");
-const { ImgurClient } = require("imgur");
+const request = require("request");
 
 const prisma = new PrismaClient();
 const openai = new OpenAIApi(
@@ -8,7 +8,27 @@ const openai = new OpenAIApi(
     apiKey: process.env.OPENAI_API_KEY,
   })
 );
-const imgur = new ImgurClient({ clientId: process.env.IMGUR_CLIENT_ID });
+
+function uploadImage(imageURL) {
+  const options = {
+    url: "https://api.imgur.com/3/upload",
+    headers: {
+      Authorization: "Client-ID " + process.env.IMGUR_CLIENT_ID,
+    },
+  };
+  return new Promise((resolve, reject) => {
+    const post = request.post(options, function (err, req, body) {
+      try {
+        resolve(JSON.parse(body));
+      } catch (e) {
+        reject(e);
+      }
+    });
+    const upload = post.form();
+    upload.append("image", imageURL);
+    upload.append("type", "url");
+  });
+}
 
 exports.handler = async (event, context) => {
   const { id, skipRender } = event.queryStringParameters;
@@ -23,10 +43,7 @@ exports.handler = async (event, context) => {
       response_format: "url",
     });
     const imgURL = imgResult.data.data[0].url;
-    const imgurResult = await imgur.upload({
-      image: imgURL,
-      title: element.name,
-    });
+    const imgurResult = await uploadImage(imgURL);
     element = await prisma.AlchemyElement.update({
       where: {
         id: element.id,
