@@ -24,9 +24,12 @@ Respond only with a single word which is the result item or thing.
 * fire + fire = energy
 * earth + earth = land
 * planet + planet = solar system
+* earth + life = human
 * electricity + primordial soup = life
 * life + land = animal
 * life + death = organic matter
+* bird + metal = airplane
+* fire + stone = metal
 `;
 
 async function getRecipe(recipeName) {
