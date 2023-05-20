@@ -22,7 +22,15 @@ export function useDefaultPersistentGet(key, path) {
       return val;
     });
   };
-  return [values, setVals];
+  const reset = () => {
+    fetch("/.netlify/functions" + path)
+      .then((resp) => resp.json())
+      .then((values) => {
+        setValues(values);
+        localStorage.setItem(key, JSON.stringify(values));
+      });
+  };
+  return [values, setVals, reset];
 }
 
 export function useGetFetch() {

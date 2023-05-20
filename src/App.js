@@ -4,10 +4,8 @@ import { useDefaultPersistentGet } from "./lib/api";
 import "./App.css";
 
 function App() {
-  const [starterElements, updateStarterElements] = useDefaultPersistentGet(
-    "elements",
-    "/get-elements?starterElements=true"
-  );
+  const [starterElements, updateStarterElements, resetStarterElements] =
+    useDefaultPersistentGet("elements", "/get-elements?starterElements=true");
   const size = Math.floor(
     Math.max(Math.min(window.innerHeight, window.innerWidth) * 0.2, 100)
   );
@@ -17,6 +15,7 @@ function App() {
         <ElementBox
           starterElements={starterElements}
           updateStarterElements={updateStarterElements}
+          resetStarterElements={resetStarterElements}
           elementW={size}
           elementH={size}
         />

@@ -25,6 +25,7 @@ function findIntersections(elements, targetId) {
 function ElementBox({
   starterElements,
   updateStarterElements,
+  resetStarterElements,
   elementW,
   elementH,
 }) {
@@ -33,23 +34,6 @@ function ElementBox({
   const [elements, setElements] = useState([]);
 
   const [fetchAPI] = useGetFetch();
-
-  useEffect(() => {
-    starterElements.forEach((v) => {
-      if (!v.imgUrl) {
-        fetchAPI(`/get-element?id=${v.id}`).then((updatedValue) => {
-          if (updatedValue.imgUrl) {
-            updateStarterElements((state) => {
-              state = state.filter((e) => e.id !== updatedValue.id);
-              state = state.concat([updatedValue]);
-              state = state.sort((a, b) => a.name.localeCompare(b.name));
-              return state;
-            });
-          }
-        });
-      }
-    });
-  }, []);
 
   useEffect(() => {
     const onMove = ({ x, y }) => {
@@ -130,7 +114,7 @@ function ElementBox({
           id: (idCnt.current++).toString(),
           element: null,
           imgUrl: null,
-          name: "...",
+          name: "unknown",
         });
         fetchAPI(
           `/combine-elements?elementIdsCsv=${[targetElement.element.id]
@@ -209,8 +193,24 @@ function ElementBox({
     });
   };
 
+  const clear = () => {
+    setElements([]);
+  };
+
+  const restart = () => {
+    clear();
+    resetStarterElements();
+  };
+
   return (
     <div>
+      <div style={{ textAlign: "center" }}>
+        <h4>Discovered Elements: {starterElements.length}</h4>
+        <button onClick={() => restart()}>Restart</button>
+        <hr />
+        <button onClick={() => clear()}>Clear</button>
+      </div>
+
       <div style={{ height: "100%", padding: "10px", overflow: "scroll" }}>
         {starterElements.map((se) => (
           <div style={{ paddingBottom: "10px" }}>
