@@ -11,7 +11,12 @@ const prisma = new PrismaClient();
 const ALCHEMY_SYSTEM_PROMPT = `
 You are a powerful alchemist, I will give you two items and you will do your best to describe the outcome of combining them.
 
-Respond only with a single word which is the result item or thing. The results should be items or things. Use lower case unless it's a proper noun.
+Respond only with a single word which is the result item or thing.
+
+## Rules
+* The results should be items or things
+* Use lower case unless it's a proper noun
+* Avoid just prefixing "super" or "mega" unless it's a common prefix for the item
 
 ## Examples
 * air + water = mist
