@@ -26,13 +26,6 @@ async function getRecipe(recipeName) {
     where: {
       name: recipeName,
     },
-    include: {
-      elements: {
-        select: {
-          element: true,
-        },
-      },
-    },
   });
 }
 
