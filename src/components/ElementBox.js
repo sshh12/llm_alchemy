@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import Element from "./Element";
-import { isTouchCapable } from "../lib/touch";
+import { isTouchCapable, enableScroll, disableScroll } from "../lib/touch";
 import { useGetFetch } from "../lib/api";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+
+const swal = withReactContent(Swal);
 
 function boxesIntersect(a, b) {
   const halfWidthA = a.w / 2;
@@ -32,7 +36,6 @@ function ElementBox({
   const idCnt = useRef(0);
   const dragId = useRef(null);
   const [elements, setElements] = useState([]);
-
   const [fetchAPI] = useGetFetch();
 
   useEffect(() => {
@@ -58,7 +61,6 @@ function ElementBox({
 
     const onTouch = (e) => {
       if (dragId.current === null) return;
-      e.preventDefault();
       const touch = e.targetTouches[0];
       onMove({ x: touch.pageX, y: touch.pageY });
     };
@@ -85,15 +87,14 @@ function ElementBox({
   }, [dragId]);
 
   const onDragStart = (element, e) => {
-    e.preventDefault();
-    document.getElementsByTagName("html")[0].style.overflow = "hidden";
+    disableScroll();
     dragId.current = element.id;
   };
 
   const onDragStop = (e) => {
     if (dragId.current === null) return;
     e.preventDefault();
-    document.getElementsByTagName("html")[0].style.overflow = null;
+    enableScroll();
     const otherIds = findIntersections(elements, dragId.current).slice(0, 1);
     const stopDragId = dragId.current;
     dragId.current = null;
@@ -114,6 +115,8 @@ function ElementBox({
           id: (idCnt.current++).toString(),
           element: null,
           imgUrl: null,
+          x: (targetElement.x + otherElements[0].x) / 2,
+          y: (targetElement.y + otherElements[0].y) / 2,
           name: "unknown",
         });
         fetchAPI(
@@ -121,25 +124,26 @@ function ElementBox({
             .concat(otherElements.map((e) => e.element.id))
             .join(",")}`
         ).then((v) => {
-          setElement(newElement.id, v);
-          updateStarterElements((state) => {
-            state = state.filter((e) => e.id !== v.id);
-            state = state.concat([v]);
-            state = state.sort((a, b) => a.name.localeCompare(b.name));
-            return state;
-          });
-          if (!v.imgUrl) {
-            fetchAPI(`/get-element?id=${v.id}`).then((updatedValue) => {
-              if (updatedValue.imgUrl) {
-                setElement(newElement.id, updatedValue);
-                updateStarterElements((state) => {
-                  state = state.filter((e) => e.id !== updatedValue.id);
-                  state = state.concat([updatedValue]);
-                  state = state.sort((a, b) => a.name.localeCompare(b.name));
-                  return state;
-                });
-              }
+          if (v.isNewElement) {
+            swal.fire({
+              title: `${v.name}`,
+              text: `Congrats! You are the first person to discover ${v.name}.`,
+              html: null,
             });
+          }
+          setElement(newElement.id, v);
+          if (!v.imgUrl) {
+            let imgInterval;
+            const checkImg = () => {
+              fetchAPI(`/get-element?id=${v.id}`).then((updatedValue) => {
+                if (updatedValue.imgUrl) {
+                  setElement(newElement.id, updatedValue);
+                  clearInterval(imgInterval);
+                }
+              });
+            };
+            checkImg();
+            imgInterval = setInterval(checkImg, 10000);
           }
         });
         state = state.concat([newElement]);
@@ -149,15 +153,14 @@ function ElementBox({
   };
 
   const onFactoryDragStart = (baseElement, e) => {
-    e.preventDefault();
-    document.getElementsByTagName("html")[0].style.overflow = "hidden";
+    disableScroll();
     setElements(
       ((state) => {
         const newId = (idCnt.current++).toString();
         const newElement = Object.assign(
           {
-            x: 0,
-            y: 0,
+            x: e.pageX,
+            y: e.pageY,
             w: elementW,
             h: elementH,
             hoverEffect: false,
@@ -191,6 +194,12 @@ function ElementBox({
       ]);
       return state;
     });
+    updateStarterElements((state) => {
+      state = state.filter((e) => e.id !== element.id);
+      state = state.concat([element]);
+      state = state.sort((a, b) => a.name.localeCompare(b.name));
+      return state;
+    });
   };
 
   const clear = () => {
@@ -213,9 +222,8 @@ function ElementBox({
 
       <div style={{ height: "100%", padding: "10px", overflow: "scroll" }}>
         {starterElements.map((se) => (
-          <div style={{ paddingBottom: "10px" }}>
+          <div key={se.id} style={{ paddingBottom: "10px" }}>
             <Element
-              key={se.id}
               size={{ w: elementW, h: elementH }}
               onDragStart={(e) => onFactoryDragStart(se, e)}
               onDragStop={(e) => onDragStop(e)}

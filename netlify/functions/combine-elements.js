@@ -90,17 +90,20 @@ exports.handler = async (event, context) => {
   const recipeName = "recipe:" + elementIds.join(",");
   const recipe = await getRecipe(recipeName);
   let resultElement;
+  let isNewElement = false;
   if (recipe) {
     resultElement = await prisma.AlchemyElement.findFirst({
       where: { id: recipe.resultElementId },
     });
   } else {
     resultElement = await buildRecipe(recipeName, elementIds);
+    isNewElement = true;
   }
   return {
     statusCode: 200,
-    body: JSON.stringify(resultElement, (_key, value) =>
-      typeof value === "bigint" ? value.toString() : value
+    body: JSON.stringify(
+      { ...resultElement, isNewElement: isNewElement },
+      (_key, value) => (typeof value === "bigint" ? value.toString() : value)
     ),
   };
 };

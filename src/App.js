@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import ElementBox from "./components/ElementBox";
+import InfoModal from "./components/InfoModal";
 import { useDefaultPersistentGet } from "./lib/api";
 import "./App.css";
 
@@ -11,6 +12,7 @@ function App() {
   );
   return (
     <div style={{ height: "100%" }}>
+      <InfoModal />
       {starterElements && (
         <ElementBox
           starterElements={starterElements}

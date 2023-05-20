@@ -11,11 +11,11 @@ const openai = new OpenAIApi(
 const imgur = new ImgurClient({ clientId: process.env.IMGUR_CLIENT_ID });
 
 exports.handler = async (event, context) => {
-  const { id } = event.queryStringParameters;
+  const { id, skipRender } = event.queryStringParameters;
   let element = await prisma.AlchemyElement.findFirst({
     where: { id: BigInt(id) },
   });
-  if (!element.imgUrl) {
+  if (!element.imgUrl && !skipRender) {
     const imgResult = await openai.createImage({
       prompt: `image of ${element.name}, white background`,
       n: 1,

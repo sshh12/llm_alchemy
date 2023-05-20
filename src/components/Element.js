@@ -24,11 +24,15 @@ function Element({
     <div
       {...onProps}
       style={{
-        backgroundColor: hoverEffect ? "#555" : "#eee",
+        backgroundColor: "#fefefe",
         width: size.w + "px",
         height: size.h + "px",
         padding: "5px",
         borderRadius: "5px",
+        outline: "#eee solid 2px",
+        boxShadow: hoverEffect
+          ? "rgba(0, 0, 0, 0.5) 0 0 20px"
+          : "10px 10px 10px -2px rgba(0, 0, 0, 0.05)",
         ...positionProps,
       }}
     >
@@ -36,12 +40,16 @@ function Element({
         style={{
           whiteSpace: "nowrap",
           maxWidth: size.w + "px",
+          overflow: "hidden",
+          display: "inline-block",
+          textOverflow: "ellipsis",
         }}
       >
         <b>{name}</b>
       </span>
       <img
         alt={""}
+        style={{ marginLeft: "8px" }}
         src={imgUrl || "https://i.imgur.com/HJaAOuF.png"}
         width={size.w - 18 + "px"}
         height={size.h - 18 + "px"}
