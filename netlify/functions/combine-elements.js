@@ -19,6 +19,9 @@ Respond only with a single word which is the result item or thing. The results s
 * fire + fire = energy
 * earth + earth = land
 * planet + planet = solar system
+* electricity + primordial soup = life
+* life + land = animal
+* life + death = organic matter
 `;
 
 async function getRecipe(recipeName) {
