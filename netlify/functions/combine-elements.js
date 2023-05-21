@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 const ALCHEMY_SYSTEM_PROMPT = `
 You are a powerful alchemist, I will give you two or more items and you will do your best to describe the outcome of combining them.
 
-Respond only with a single word which is the result item or thing.
+Respond ONLY with a single word which is the result item or thing.
 
 ## Rules
 * The results should be items or things
@@ -56,6 +56,7 @@ async function buildRecipe(recipeName, elementIds) {
   );
   const llmResult = await openai.createChatCompletion({
     model: "gpt-4",
+    temperature: 0.3,
     messages: [
       {
         role: "system",
