@@ -9,7 +9,7 @@ const openai = new OpenAIApi(
 const prisma = new PrismaClient();
 
 const ALCHEMY_SYSTEM_PROMPT = `
-You are a powerful alchemist, I will give you two items and you will do your best to describe the outcome of combining them.
+You are a powerful alchemist, I will give you two or more items and you will do your best to describe the outcome of combining them.
 
 Respond only with a single word which is the result item or thing.
 
