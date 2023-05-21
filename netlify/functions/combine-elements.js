@@ -30,6 +30,9 @@ Respond only with a single word which is the result item or thing.
 * life + death = organic matter
 * bird + metal = airplane
 * fire + stone = metal
+* earth + water + fire = steamy mud
+* human + airplane + solar system = space traveler
+* animal + metal + fire = mechanical beast
 `;
 
 async function getRecipe(recipeName) {
