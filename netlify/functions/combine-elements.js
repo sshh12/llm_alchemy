@@ -55,8 +55,8 @@ async function buildRecipe(recipeName, elementIds) {
     elementResult.find((elr) => elr.id === id)
   );
   const llmResult = await openai.createChatCompletion({
-    model: "gpt-4",
-    temperature: 0.3,
+    model: "gpt-3.5-turbo",
+    temperature: 0.1,
     messages: [
       {
         role: "system",
