@@ -37,6 +37,8 @@ function ElementBox({
   const [fetchAPI] = useGetFetch();
   const [search, setSearch] = useState("");
 
+  const maxElementY = elements.reduce((acc, el) => Math.max(acc, el.y), 0);
+
   useEffect(() => {
     const onMove = ({ x, y }) => {
       setElements((state) => {
@@ -138,12 +140,14 @@ function ElementBox({
           if (!v.imgUrl) {
             let imgInterval;
             const checkImg = () => {
-              fetchAPI(`/get-element?id=${v.id}`).then((updatedValue) => {
-                if (updatedValue.imgUrl) {
-                  setElement(newElement.id, updatedValue);
-                  clearInterval(imgInterval);
-                }
-              });
+              fetchAPI(`/get-element?id=${v.id}`)
+                .then((updatedValue) => {
+                  if (updatedValue.imgUrl) {
+                    setElement(newElement.id, updatedValue);
+                    clearInterval(imgInterval);
+                  }
+                })
+                .catch(console.error);
             };
             checkImg();
             imgInterval = setInterval(checkImg, 10000);
@@ -258,7 +262,7 @@ function ElementBox({
         </Stat>
         <Stat>
           <StatLabel>Total Known Elements</StatLabel>
-          <StatNumber>{stats?.totalElements}</StatNumber>
+          <StatNumber>{stats?.totalElements || "-"}</StatNumber>
         </Stat>
       </HStack>
       <hr />
@@ -294,7 +298,14 @@ function ElementBox({
         </InputGroup>
       </Box>
 
-      <div style={{ height: "100%", padding: "10px", overflow: "scroll" }}>
+      <div
+        style={{
+          height: "100%",
+          padding: "10px",
+          overflow: "scroll",
+          minHeight: `${Math.max(maxElementY, window.innerHeight)}px`,
+        }}
+      >
         {starterElements
           .filter(
             (se) =>
