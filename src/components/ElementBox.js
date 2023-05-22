@@ -258,15 +258,6 @@ function ElementBox({
           </a>
         </Box>
       </HStack>
-      <hr />
-      <HStack bgColor={"#4A5568"} color={"#fff"} p={2}>
-        <span>
-          <i>
-            NOTE: Hit the OpenAI billing limit, new elements wont combine (to be
-            fixed soon)
-          </i>
-        </span>
-      </HStack>
 
       <hr />
       <HStack padding={"20px"}>
