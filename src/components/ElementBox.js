@@ -245,19 +245,23 @@ function ElementBox({
   return (
     <div>
       <HStack bgColor={"#2D3748"} color={"#fff"} p={2}>
-        <span>
-          Infinite Alchemy <br />
-          <i>
-            NOTE: Hit the OpenAI billing limit, new elements wont combine (to be
-            fixed soon)
-          </i>
-        </span>
+        <span>Infinite Alchemy</span>
+        <span></span>
         <Spacer />
         <Box fontSize={"0.8rem"}>
           <a href="https://github.com/sshh12/llm_alchemy">
             GitHub <ExternalLinkIcon />
           </a>
         </Box>
+      </HStack>
+      <hr />
+      <HStack bgColor={"#4A5568"} color={"#fff"} p={2}>
+        <span>
+          <i>
+            NOTE: Hit the OpenAI billing limit, new elements wont combine (to be
+            fixed soon)
+          </i>
+        </span>
       </HStack>
 
       <hr />
