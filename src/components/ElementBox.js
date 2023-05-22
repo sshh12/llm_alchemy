@@ -128,6 +128,10 @@ function ElementBox({
             .concat(otherElements.map((e) => e.element.id))
             .join(",")}`
         ).then((v) => {
+          if (v.errorMessage) {
+            alert("Failed to combine elements! Out of OpenAI credits.");
+            return;
+          }
           if (v.isNewElement) {
             swal.fire({
               title: `${v.name}`,
