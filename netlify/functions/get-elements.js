@@ -24,18 +24,23 @@ async function deleteElementById(elementId) {
         challenges: true,
       },
     });
+    const associatedRecipes = await prisma.alchemyRecipesForElements.findMany({
+      where: {
+        elementId: element.id,
+      },
+    });
+    for (let recipe of associatedRecipes) {
+      await prisma.alchemyRecipe.delete({
+        where: {
+          id: recipe.recipeId,
+        },
+      });
+    }
     for (let recipe of element.recipes) {
       await prisma.alchemyRecipesForElements.deleteMany({
         where: {
           elementId: element.id,
           recipeId: recipe.recipeId,
-        },
-      });
-    }
-    for (let recipe of element.recipes) {
-      await prisma.alchemyRecipe.delete({
-        where: {
-          id: recipe.recipeId,
         },
       });
     }

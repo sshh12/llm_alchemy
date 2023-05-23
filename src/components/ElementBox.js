@@ -271,7 +271,7 @@ function ElementBox({
           <StatLabel>Your Elements</StatLabel>
           <StatNumber>{starterElements.length}</StatNumber>
           <StatHelpText>
-            {Math.floor((starterElements.length / stats?.totalElements) * 100)}%
+            {Math.ceil((starterElements.length / stats?.totalElements) * 100)}%
           </StatHelpText>
         </Stat>
         <Stat>
@@ -281,6 +281,15 @@ function ElementBox({
             You discovered {stats?.userCreatedElements}
           </StatHelpText>
         </Stat>
+      </HStack>
+      <hr />
+
+      <HStack p={2} align="center">
+        <Spacer />
+        <span>
+          Daily Challenge: <b>{stats?.challengeElementName}</b>
+        </span>
+        <Spacer />
       </HStack>
       <hr />
 

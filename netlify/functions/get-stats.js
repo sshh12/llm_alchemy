@@ -2,27 +2,61 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
+async function getChallenge() {
+  // await prisma.alchemyChallenge.deleteMany({});
+  const date = new Date().toISOString().slice(0, 10);
+  let challenge = await prisma.alchemyChallenge.findFirst({
+    where: { date: date },
+    include: { element: true },
+  });
+  if (!challenge) {
+    let elements = await prisma.alchemyElement.findMany({
+      include: {
+        recipes: true,
+        challenges: true,
+      },
+    });
+    elements = elements.filter(
+      (element) =>
+        element.recipes.length >= 10 && element.challenges.length === 0
+    );
+    const randomIndex = Math.floor(Math.random() * elements.length);
+    const randomElement = elements[randomIndex];
+    challenge = await prisma.alchemyChallenge.create({
+      data: { date: date, elementId: randomElement.id },
+    });
+  }
+  return challenge;
+}
+
 exports.handler = async (event, context) => {
   const { userId, allElements } = event.queryStringParameters;
-  const [totalElements, totalRecipes, recentElements, userCreatedElements] =
-    await Promise.all([
-      prisma.AlchemyElement.count(),
-      prisma.AlchemyRecipe.count(),
-      allElements
-        ? await prisma.AlchemyElement.findMany({})
-        : prisma.AlchemyElement.findMany({
-            orderBy: {
-              createdAt: "desc",
-            },
-            take: 10,
-          }),
-      prisma.AlchemyElement.count({ where: { createdUserId: userId } }),
-    ]);
+  const [
+    totalElements,
+    totalRecipes,
+    recentElements,
+    userCreatedElements,
+    challenge,
+  ] = await Promise.all([
+    prisma.AlchemyElement.count(),
+    prisma.AlchemyRecipe.count(),
+    allElements
+      ? await prisma.AlchemyElement.findMany({})
+      : prisma.AlchemyElement.findMany({
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 10,
+        }),
+    prisma.AlchemyElement.count({ where: { createdUserId: userId } }),
+    getChallenge(),
+  ]);
   const stats = {
     totalElements: totalElements,
     totalRecipes: totalRecipes,
     recentElementNames: recentElements.map((e) => e.name),
     userCreatedElements: userCreatedElements,
+    challengeElementName: challenge.element.name,
   };
   return {
     statusCode: 200,
