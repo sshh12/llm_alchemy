@@ -55,6 +55,22 @@ async function purgeInvalidRecipies() {
   });
 }
 
+async function purgeElementsWithNoRecipes() {
+  const recipes = await prisma.alchemyRecipe.findMany({
+    select: {
+      id: true,
+      resultElementId: true,
+    },
+  });
+  const elements = await prisma.alchemyElement.findMany({
+    where: {
+      id: { notIn: recipes.map((recipe) => recipe.resultElementId) },
+      starterElement: false,
+    },
+  });
+  await purgeElements(elements);
+}
+
 exports.handler = async (event, context) => {
   const { starterElements, purgeInvalid } = event.queryStringParameters;
   let options = {};
@@ -62,10 +78,10 @@ exports.handler = async (event, context) => {
     options.where = { starterElement: true };
   }
   const allElements = await prisma.AlchemyElement.findMany(options);
-  const invalidElements = allElements.filter((e) => !validateElement(e));
   if (purgeInvalid) {
-    await purgeElements(invalidElements);
+    await purgeElements(allElements.filter((e) => !validateElement(e)));
     await purgeInvalidRecipies();
+    await purgeElementsWithNoRecipes();
   }
   const resp = allElements.map((e) => ({ ...e, valid: validateElement(e) }));
   return {
