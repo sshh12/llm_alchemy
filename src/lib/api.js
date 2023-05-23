@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-const BASE_URL = "https://alchemy.sshh.io";
+const BASE_URL = "";
 
 export function useDefaultPersistentGet(key, path) {
   const [values, setValues] = useState(null);
@@ -66,7 +66,7 @@ export function useGetFetch() {
 }
 
 export function useLocalStorage(key, makeDefault) {
-  let [val, _setVal] = useState(null);
+  let [val, _setVal] = useState(JSON.parse(localStorage.getItem(key))?.value);
   const setVal = useCallback(
     (v) => {
       localStorage.setItem(key, JSON.stringify({ value: v }));

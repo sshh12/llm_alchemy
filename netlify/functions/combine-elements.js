@@ -43,7 +43,41 @@ async function getRecipe(recipeName) {
   });
 }
 
-async function buildRecipe(recipeName, elementIds) {
+async function generateElement(elements) {
+  let elementName = "";
+  let temp = 0.1;
+  for (let i = 0; i < 10; i++) {
+    const llmResult = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      temperature: temp,
+      messages: [
+        {
+          role: "system",
+          content: ALCHEMY_SYSTEM_PROMPT,
+        },
+        {
+          role: "user",
+          content: elements.map((e) => e.name).join(" + "),
+        },
+      ],
+    });
+    elementName = llmResult.data.choices[0].message.content;
+    elementName = elementName.toLowerCase();
+    elementName = elementName.replace(/[^a-z0-9\- ]/g, "");
+    if (
+      elementName.length > 0 &&
+      (elementName.match(/([\s]+)/g) || "").length < 3
+    ) {
+      return elementName;
+    }
+    temp = 0.8;
+  }
+  logging.error("Failed to generate element name", elements);
+  throw new Error("Failed to generate element name");
+}
+
+async function buildRecipe(recipeName, elementIds, userId) {
+  console.log("ASDASD");
   const elementResult = await prisma.AlchemyElement.findMany({
     where: {
       id: {
@@ -54,21 +88,7 @@ async function buildRecipe(recipeName, elementIds) {
   const elements = elementIds.map((id) =>
     elementResult.find((elr) => elr.id === id)
   );
-  const llmResult = await openai.createChatCompletion({
-    model: "gpt-3.5-turbo",
-    temperature: 0.1,
-    messages: [
-      {
-        role: "system",
-        content: ALCHEMY_SYSTEM_PROMPT,
-      },
-      {
-        role: "user",
-        content: elements.map((e) => e.name).join(" + "),
-      },
-    ],
-  });
-  const elementName = llmResult.data.choices[0].message.content;
+  const elementName = await generateElement(elements);
   let resultElement = await prisma.AlchemyElement.findFirst({
     where: { name: elementName },
   });
@@ -78,6 +98,7 @@ async function buildRecipe(recipeName, elementIds) {
       data: {
         name: elementName,
         imgUrl: "",
+        createdUserId: userId,
       },
     });
     isNewElement = true;
@@ -95,7 +116,7 @@ async function buildRecipe(recipeName, elementIds) {
 }
 
 exports.handler = async (event, context) => {
-  const { elementIdsCsv } = event.queryStringParameters;
+  const { elementIdsCsv, userId } = event.queryStringParameters;
   const elementIds = elementIdsCsv.split(",").map(BigInt).sort();
   const recipeName = "recipe:" + elementIds.join(",");
   const recipe = await getRecipe(recipeName);
@@ -106,7 +127,11 @@ exports.handler = async (event, context) => {
       where: { id: recipe.resultElementId },
     });
   } else {
-    [resultElement, isNewElement] = await buildRecipe(recipeName, elementIds);
+    [resultElement, isNewElement] = await buildRecipe(
+      recipeName,
+      elementIds,
+      userId
+    );
   }
   return {
     statusCode: 200,

@@ -17,6 +17,7 @@ import {
   Button,
   Flex,
   Spacer,
+  StatHelpText,
 } from "@chakra-ui/react";
 import { SearchIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 
@@ -27,6 +28,7 @@ function ElementBox({
   updateStarterElements,
   resetStarterElements,
   stats,
+  userId,
   pollStats,
   elementW,
   elementH,
@@ -124,12 +126,16 @@ function ElementBox({
           name: "unknown",
         });
         fetchAPI(
-          `/combine-elements?elementIdsCsv=${[targetElement.element.id]
+          `/combine-elements?userId=${userId}&elementIdsCsv=${[
+            targetElement.element.id,
+          ]
             .concat(otherElements.map((e) => e.element.id))
             .join(",")}`
         ).then((v) => {
           if (v.errorMessage) {
-            alert("Failed to combine elements! Out of OpenAI credits.");
+            alert(
+              "Failed to combine elements! It's possible this is a big or this project is out of OpenAI credits. Refresh and try again."
+            );
             return;
           }
           if (v.isNewElement) {
@@ -264,10 +270,16 @@ function ElementBox({
         <Stat>
           <StatLabel>Your Elements</StatLabel>
           <StatNumber>{starterElements.length}</StatNumber>
+          <StatHelpText>
+            {Math.floor((starterElements.length / stats?.totalElements) * 100)}%
+          </StatHelpText>
         </Stat>
         <Stat>
           <StatLabel>Total Known Elements</StatLabel>
           <StatNumber>{stats?.totalElements || "-"}</StatNumber>
+          <StatHelpText>
+            You discovered {stats?.userCreatedElements}
+          </StatHelpText>
         </Stat>
       </HStack>
       <hr />

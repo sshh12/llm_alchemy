@@ -14,7 +14,7 @@ function App() {
   const [starterElements, updateStarterElements, resetStarterElements] =
     useDefaultPersistentGet("elements", "/get-elements?starterElements=true");
   const [userId] = useLocalStorage("alchemy:userId", () => uuidv4());
-  const [stats, pollStats] = usePollingGet(`/get-stats?$userId=${userId}`);
+  const [stats, pollStats] = usePollingGet(`/get-stats?userId=${userId}`);
   const size = Math.floor(
     Math.max(Math.min(window.innerHeight, window.innerWidth) * 0.2, 100)
   );
@@ -31,6 +31,7 @@ function App() {
             pollStats={pollStats}
             elementW={size}
             elementH={size}
+            userId={userId}
           />
         )}
       </div>

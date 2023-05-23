@@ -16,8 +16,10 @@ model AlchemyElement {
   name            String @unique
   imgUrl          String
   recipes         AlchemyRecipesForElements[]
+  challenges      AlchemyChallenge[]
   starterElement  Boolean @default(false)
   createdAt       DateTime @default(now())
+  createdUserId   String @default("")
 }
 
 model AlchemyRecipe {
@@ -34,4 +36,11 @@ model AlchemyRecipesForElements {
   recipe        AlchemyRecipe @relation(fields: [recipeId], references: [id])
   recipeId      BigInt
   @@id([elementId, recipeId])
+}
+
+model AlchemyChallenge {
+  id            BigInt @id @default(autoincrement())
+  date          String
+  element       AlchemyElement @relation(fields: [elementId], references: [id])
+  elementId     BigInt
 }
