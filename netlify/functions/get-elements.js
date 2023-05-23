@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 function validateElement(element) {
   let elementName = element.name;
   elementName = elementName.toLowerCase();
-  elementName = elementName.replace(/[^a-z0-9'\- ]/g, "");
+  elementName = elementName.replace(/[^a-z'\- ]/g, "");
   return (
     elementName.length > 0 &&
     (elementName.match(/([\s]+)/g) || "").length < 3 &&
