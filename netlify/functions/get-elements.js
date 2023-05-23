@@ -13,53 +13,46 @@ function validateElement(element) {
   );
 }
 
-async function deleteElementById(elementId) {
-  try {
-    const element = await prisma.alchemyElement.findUnique({
-      where: {
-        id: elementId,
-      },
-      include: {
-        recipes: true,
-        challenges: true,
-      },
-    });
-    const associatedRecipes = await prisma.alchemyRecipesForElements.findMany({
-      where: {
-        elementId: element.id,
-      },
-    });
-    for (let recipe of associatedRecipes) {
-      await prisma.alchemyRecipe.delete({
-        where: {
-          id: recipe.recipeId,
-        },
-      });
-    }
-    for (let recipe of element.recipes) {
-      await prisma.alchemyRecipesForElements.deleteMany({
-        where: {
-          elementId: element.id,
-          recipeId: recipe.recipeId,
-        },
-      });
-    }
-    for (let challenge of element.challenges) {
-      await prisma.alchemyChallenge.delete({
-        where: {
-          id: challenge.id,
-        },
-      });
-    }
-    await prisma.alchemyElement.delete({
-      where: {
-        id: elementId,
-      },
-    });
-    console.log(`Element with id ${elementId} and its recipes deleted.`);
-  } catch (err) {
-    console.error(`Error deleting element with id ${elementId}:`, err);
-  }
+async function purgeElements(invalidElements) {
+  const elementIds = invalidElements.map((element) => element.id);
+  await prisma.alchemyRecipesForElements.deleteMany({
+    where: {
+      elementId: { in: elementIds },
+    },
+  });
+  await prisma.alchemyElement.deleteMany({
+    where: {
+      id: { in: elementIds },
+    },
+  });
+}
+
+async function purgeInvalidRecipies() {
+  const elements = await prisma.alchemyElement.findMany({
+    select: {
+      id: true,
+    },
+  });
+  const elementIds = elements.map((element) => element.id);
+  const recipes = await prisma.alchemyRecipe.findMany({
+    include: {
+      elements: true,
+    },
+  });
+  const invalidRecipes = recipes.filter(
+    (recipe) =>
+      !elementIds.includes(recipe.resultElementId) || elements.length === 0
+  );
+  await prisma.alchemyRecipesForElements.deleteMany({
+    where: {
+      recipeId: { in: invalidRecipes.map((recipe) => recipe.id) },
+    },
+  });
+  await prisma.alchemyRecipe.deleteMany({
+    where: {
+      id: { in: invalidRecipes.map((recipe) => recipe.id) },
+    },
+  });
 }
 
 exports.handler = async (event, context) => {
@@ -71,14 +64,8 @@ exports.handler = async (event, context) => {
   const allElements = await prisma.AlchemyElement.findMany(options);
   const invalidElements = allElements.filter((e) => !validateElement(e));
   if (purgeInvalid) {
-    for (let e of invalidElements) {
-      console.log("deleting", e);
-      try {
-        await deleteElementById(e.id);
-      } catch (e) {
-        await deleteElementById(e.id);
-      }
-    }
+    await purgeElements(invalidElements);
+    await purgeInvalidRecipies();
   }
   const resp = allElements.map((e) => ({ ...e, valid: validateElement(e) }));
   return {
