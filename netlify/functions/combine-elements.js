@@ -64,7 +64,7 @@ async function generateElement(elements) {
     });
     elementName = llmResult.data.choices[0].message.content;
     elementName = elementName.toLowerCase();
-    elementName = elementName.replace(/[^a-z0-9'- ]/g, "");
+    elementName = elementName.replace(/[^a-z0-9'\- ]/g, "");
     if (
       elementName.length > 0 &&
       (elementName.match(/([\s]+)/g) || "").length < 3
