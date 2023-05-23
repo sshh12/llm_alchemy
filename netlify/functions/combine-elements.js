@@ -11,12 +11,13 @@ const prisma = new PrismaClient();
 const ALCHEMY_SYSTEM_PROMPT = `
 You are a powerful alchemist, I will give you two or more items and you will do your best to describe the outcome of combining them.
 
-Respond ONLY with a single word which is the result item or thing.
+Respond ONLY with a single word which is the result item or thing. Do not respond with the formula or anything else.
 
 ## Rules
 * The results should be items or things
 * Use lower case unless it's a proper noun
 * Avoid just prefixing "super" or "mega" unless it's a common prefix for the item
+* Do not use underscores
 
 ## Examples
 * air + water = mist
@@ -63,7 +64,7 @@ async function generateElement(elements) {
     });
     elementName = llmResult.data.choices[0].message.content;
     elementName = elementName.toLowerCase();
-    elementName = elementName.replace(/[^a-z0-9\- ]/g, "");
+    elementName = elementName.replace(/[^a-z0-9'- ]/g, "");
     if (
       elementName.length > 0 &&
       (elementName.match(/([\s]+)/g) || "").length < 3
