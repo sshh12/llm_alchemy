@@ -14,8 +14,10 @@ exports.handler = async (event, context) => {
       process.env.STRIPE_PAYMENT_ENDPOINT_SECRET
     );
   } catch (err) {
-    response.status(400).send(`Webhook Error: ${err.message}`);
-    return;
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ success: false, error: err.message }),
+    };
   }
   switch (stripeEvent.type) {
     case "checkout.session.completed":
