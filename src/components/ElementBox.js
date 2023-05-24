@@ -154,7 +154,9 @@ function ElementBox({
             });
             pollStats();
           }
-          setCredits(v.creditsLeft);
+          if (v.creditsLeft) {
+            setCredits(v.creditsLeft);
+          }
           setElement(newElement.id, v);
           if (!v.imgUrl) {
             let imgInterval;
