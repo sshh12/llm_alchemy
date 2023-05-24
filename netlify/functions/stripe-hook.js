@@ -6,9 +6,9 @@ const prisma = new PrismaClient();
 exports.handler = async (event, context) => {
   const sig = event.headers["stripe-signature"];
 
-  let event;
+  let stripeEvent;
   try {
-    event = stripe.webhooks.constructEvent(
+    stripeEvent = stripe.webhooks.constructEvent(
       request.body,
       sig,
       process.env.STRIPE_PAYMENT_ENDPOINT_SECRET
@@ -17,9 +17,9 @@ exports.handler = async (event, context) => {
     response.status(400).send(`Webhook Error: ${err.message}`);
     return;
   }
-  switch (event.type) {
+  switch (stripeEvent.type) {
     case "checkout.session.completed":
-      const checkoutSessionCompleted = event.data.object;
+      const checkoutSessionCompleted = stripeEvent.data.object;
       const userId = checkoutSessionCompleted.client_reference_id;
       const credits = await prisma.AlchemyCredits.findFirst({
         where: { userId: userId },
@@ -33,7 +33,7 @@ exports.handler = async (event, context) => {
       });
       break;
     default:
-      console.log(`Unhandled event type ${event.type}`);
+      console.log(`Unhandled event type ${stripeEvent.type}`);
   }
   return {
     statusCode: 200,
