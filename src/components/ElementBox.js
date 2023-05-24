@@ -38,6 +38,11 @@ function ElementBox({
   const [elements, setElements] = useState([]);
   const [fetchAPI] = useGetFetch();
   const [search, setSearch] = useState("");
+  const [credits, setCredits] = useState(stats?.credits);
+
+  useEffect(() => {
+    setCredits(stats?.credits || 0);
+  }, [stats]);
 
   const maxElementY = elements.reduce((acc, el) => Math.max(acc, el.y), 0);
 
@@ -137,8 +142,11 @@ function ElementBox({
               "Failed to combine elements! It's possible this is a big or this project is out of OpenAI credits. Refresh and try again."
             );
             return;
-          }
-          if (v.isNewElement) {
+          } else if (v.error) {
+            alert(v.error);
+            setCredits(v.creditsLeft);
+            return;
+          } else if (v.isNewElement) {
             swal.fire({
               title: `${v.name}`,
               text: `Congrats! You are the first person to discover ${v.name}.`,
@@ -146,6 +154,7 @@ function ElementBox({
             });
             pollStats();
           }
+          setCredits(v.creditsLeft);
           setElement(newElement.id, v);
           if (!v.imgUrl) {
             let imgInterval;
@@ -268,17 +277,38 @@ function ElementBox({
       <hr />
       <HStack padding={"20px"}>
         <Stat>
-          <StatLabel>Your Elements</StatLabel>
+          <StatLabel>
+            Your
+            <br />
+            Elements
+          </StatLabel>
           <StatNumber>{starterElements.length}</StatNumber>
           <StatHelpText>
             {Math.ceil((starterElements.length / stats?.totalElements) * 100)}%
           </StatHelpText>
         </Stat>
         <Stat>
-          <StatLabel>Total Known Elements</StatLabel>
+          <StatLabel>
+            Known <br />
+            Elements
+          </StatLabel>
           <StatNumber>{stats?.totalElements || "-"}</StatNumber>
+          <StatHelpText>You invented {stats?.userCreatedElements}</StatHelpText>
+        </Stat>
+        <Stat>
+          <StatLabel>
+            Mixtures <br />
+            Remaining
+          </StatLabel>
+          <StatNumber>{credits || 0}</StatNumber>
           <StatHelpText>
-            You discovered {stats?.userCreatedElements}
+            <Button size="xs" colorScheme="green">
+              <a
+                href={`https://buy.stripe.com/6oE7w1cNbbC07IIeUV?client_reference_id=${userId}`}
+              >
+                Buy More
+              </a>
+            </Button>
           </StatHelpText>
         </Stat>
       </HStack>

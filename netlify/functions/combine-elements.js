@@ -78,7 +78,6 @@ async function generateElement(elements) {
 }
 
 async function buildRecipe(recipeName, elementIds, userId) {
-  console.log("ASDASD");
   const elementResult = await prisma.AlchemyElement.findMany({
     where: {
       id: {
@@ -123,22 +122,45 @@ exports.handler = async (event, context) => {
   const recipe = await getRecipe(recipeName);
   let resultElement;
   let isNewElement = false;
+  let resp;
   if (recipe) {
     resultElement = await prisma.AlchemyElement.findFirst({
       where: { id: recipe.resultElementId },
     });
+    resp = {
+      ...resultElement,
+    };
   } else {
-    [resultElement, isNewElement] = await buildRecipe(
-      recipeName,
-      elementIds,
-      userId
-    );
+    const credits = await prisma.AlchemyCredits.findFirst({
+      where: { userId: userId },
+    });
+    if (credits.credits <= 0) {
+      resp = {
+        error:
+          "Sorry GPT is expensive! Not enough mixtures. Buy more to make more elements.",
+        creditsLeft: 0,
+      };
+    } else {
+      [resultElement, isNewElement] = await buildRecipe(
+        recipeName,
+        elementIds,
+        userId
+      );
+      await prisma.AlchemyCredits.update({
+        where: { id: credits.id },
+        data: { credits: credits.credits - 1 },
+      });
+      resp = {
+        ...resultElement,
+        creditsLeft: credits.credits - 1,
+      };
+    }
   }
+  resp.isNewElement = isNewElement;
   return {
     statusCode: 200,
-    body: JSON.stringify(
-      { ...resultElement, isNewElement: isNewElement },
-      (_key, value) => (typeof value === "bigint" ? value.toString() : value)
+    body: JSON.stringify(resp, (_key, value) =>
+      typeof value === "bigint" ? value.toString() : value
     ),
   };
 };

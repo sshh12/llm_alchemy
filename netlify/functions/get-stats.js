@@ -37,6 +37,7 @@ exports.handler = async (event, context) => {
     recentElements,
     userCreatedElements,
     challenge,
+    credits,
   ] = await Promise.all([
     prisma.AlchemyElement.count(),
     prisma.AlchemyRecipe.count(),
@@ -50,6 +51,11 @@ exports.handler = async (event, context) => {
         }),
     prisma.AlchemyElement.count({ where: { createdUserId: userId } }),
     getChallenge(),
+    prisma.AlchemyCredits.upsert({
+      where: { userId: userId },
+      update: {},
+      create: { userId: userId, credits: 100, email: "" },
+    }),
   ]);
   const stats = {
     totalElements: totalElements,
@@ -57,6 +63,7 @@ exports.handler = async (event, context) => {
     recentElementNames: recentElements.map((e) => e.name),
     userCreatedElements: userCreatedElements,
     challengeElementName: challenge.element.name,
+    credits: credits.credits,
   };
   return {
     statusCode: 200,
