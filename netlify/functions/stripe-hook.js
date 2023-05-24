@@ -9,7 +9,7 @@ exports.handler = async (event, context) => {
   let stripeEvent;
   try {
     stripeEvent = stripe.webhooks.constructEvent(
-      request.body,
+      event.body,
       sig,
       process.env.STRIPE_PAYMENT_ENDPOINT_SECRET
     );
