@@ -267,7 +267,11 @@ function ElementBox({
     swal.fire({
       title: `Your Stats`,
       text: `Congrats! You are the first person to discover asdasd.`,
-      html: `You invented <b>${stats.userCreatedElements.length}</b> elements ${stats.userCreatedElements}<hr/>User Id: <b>${userId}</b>`,
+      html: `You invented <b>${stats.userCreatedElements.length}</b> elements ${
+        stats.userCreatedElements.length > 0
+          ? "<br/>" + stats.userCreatedElements.join(", ")
+          : ""
+      }<hr style="margin:10px"/>User ID: <b>${userId}</b>`,
     });
   };
 
