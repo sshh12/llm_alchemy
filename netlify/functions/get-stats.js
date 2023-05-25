@@ -31,6 +31,12 @@ async function getChallenge() {
 
 exports.handler = async (event, context) => {
   const { userId, allElements } = event.queryStringParameters;
+  if (!userId) {
+    return {
+      statusCode: 200,
+      body: JSON.stringify({}),
+    };
+  }
   const [
     totalElements,
     totalRecipes,
@@ -49,7 +55,7 @@ exports.handler = async (event, context) => {
           },
           take: 10,
         }),
-    prisma.AlchemyElement.count({ where: { createdUserId: userId } }),
+    prisma.AlchemyElement.findMany({ where: { createdUserId: userId } }),
     getChallenge(),
     prisma.AlchemyCredits.upsert({
       where: { userId: userId },
@@ -61,7 +67,7 @@ exports.handler = async (event, context) => {
     totalElements: totalElements,
     totalRecipes: totalRecipes,
     recentElementNames: recentElements.map((e) => e.name),
-    userCreatedElements: userCreatedElements,
+    userCreatedElements: userCreatedElements.map((e) => e.name),
     challengeElementName: challenge.element.name,
     credits: credits.credits,
   };

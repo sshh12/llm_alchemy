@@ -263,6 +263,14 @@ function ElementBox({
     resetStarterElements();
   };
 
+  const showUserInfo = () => {
+    swal.fire({
+      title: `Your Stats`,
+      text: `Congrats! You are the first person to discover asdasd.`,
+      html: `You invented <b>${stats.userCreatedElements.length}</b> elements ${stats.userCreatedElements}<hr/>User Id: <b>${userId}</b>`,
+    });
+  };
+
   return (
     <div>
       <HStack bgColor={"#2D3748"} color={"#fff"} p={2}>
@@ -295,7 +303,17 @@ function ElementBox({
             Elements
           </StatLabel>
           <StatNumber>{stats?.totalElements || "-"}</StatNumber>
-          <StatHelpText>You invented {stats?.userCreatedElements}</StatHelpText>
+          <StatHelpText>
+            {stats && (
+              <Button
+                size="xs"
+                colorScheme="blue"
+                onClick={() => showUserInfo()}
+              >
+                You invented {stats?.userCreatedElements.length}
+              </Button>
+            )}
+          </StatHelpText>
         </Stat>
         <Stat>
           <StatLabel>
@@ -304,13 +322,15 @@ function ElementBox({
           </StatLabel>
           <StatNumber>{credits || 0}</StatNumber>
           <StatHelpText>
-            <Button size="xs" colorScheme="green">
-              <a
-                href={`https://buy.stripe.com/6oE7w1cNbbC07IIeUV?client_reference_id=${userId}`}
-              >
-                Buy More
-              </a>
-            </Button>
+            {stats && userId && (
+              <Button size="xs" colorScheme="green">
+                <a
+                  href={`https://buy.stripe.com/6oE7w1cNbbC07IIeUV?client_reference_id=${userId}`}
+                >
+                  Buy More
+                </a>
+              </Button>
+            )}
           </StatHelpText>
         </Stat>
       </HStack>
