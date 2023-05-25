@@ -329,7 +329,7 @@ function ElementBox({
             {stats && userId && (
               <Button size="xs" colorScheme="green">
                 <a
-                  href={`https://buy.stripe.com/6oE7w1cNbbC07IIeUV?client_reference_id=${userId}`}
+                  href={`https://buy.stripe.com/6oE7w1cNbbC07IIeUV?client_reference_id=infalchemy:::${userId}`}
                 >
                   Buy More
                 </a>

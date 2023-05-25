@@ -3,6 +3,8 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const prisma = new PrismaClient();
 
+const APP_ID = "infalchemy";
+
 exports.handler = async (event, context) => {
   const sig = event.headers["stripe-signature"];
 
@@ -22,8 +24,11 @@ exports.handler = async (event, context) => {
   switch (stripeEvent.type) {
     case "checkout.session.completed":
       const checkoutSessionCompleted = stripeEvent.data.object;
-      const userId = checkoutSessionCompleted.client_reference_id;
-      if (userId) {
+      const refId = checkoutSessionCompleted.client_reference_id;
+      const [appId, userId] = refId.split(":::");
+      if (appId !== APP_ID) {
+        console.warn("AppId mismatch", appId);
+      } else if (userId) {
         const credits = await prisma.AlchemyCredits.findFirst({
           where: { userId: userId },
         });
