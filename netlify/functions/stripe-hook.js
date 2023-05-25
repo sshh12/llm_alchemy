@@ -23,16 +23,20 @@ exports.handler = async (event, context) => {
     case "checkout.session.completed":
       const checkoutSessionCompleted = stripeEvent.data.object;
       const userId = checkoutSessionCompleted.client_reference_id;
-      const credits = await prisma.AlchemyCredits.findFirst({
-        where: { userId: userId },
-      });
-      await prisma.AlchemyCredits.update({
-        where: { id: credits.id },
-        data: {
-          credits: credits.credits + 1000,
-          email: checkoutSessionCompleted.customer_details.email,
-        },
-      });
+      if (userId) {
+        const credits = await prisma.AlchemyCredits.findFirst({
+          where: { userId: userId },
+        });
+        await prisma.AlchemyCredits.update({
+          where: { id: credits.id },
+          data: {
+            credits: credits.credits + 1000,
+            email: checkoutSessionCompleted.customer_details.email,
+          },
+        });
+      } else {
+        console.error("No userId found for checkout session");
+      }
       break;
     default:
       console.log(`Unhandled event type ${stripeEvent.type}`);
