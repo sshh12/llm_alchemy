@@ -6,8 +6,8 @@ const prisma = new PrismaClient();
 const APP_ID = "infalchemy";
 
 async function onSessionCompleted(checkoutSessionCompleted) {
-  const refId = checkoutSessionCompleted.client_reference_id;
-  const [appId, userId] = refId.split("__");
+  const refId = checkoutSessionCompleted.client_reference_id.replace("_", ":");
+  const [appId, userId] = refId.split(":::");
   if (appId !== APP_ID) {
     console.warn("AppId mismatch", appId);
   } else if (userId) {
