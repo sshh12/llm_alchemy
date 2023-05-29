@@ -7,7 +7,7 @@ const APP_ID = "infalchemy";
 
 async function onSessionCompleted(checkoutSessionCompleted) {
   const refId = checkoutSessionCompleted.client_reference_id;
-  const [appId, userId] = refId.split(":::");
+  const [appId, userId] = refId.split("__");
   if (appId !== APP_ID) {
     console.warn("AppId mismatch", appId);
   } else if (userId) {
