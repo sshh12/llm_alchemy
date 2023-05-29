@@ -109,6 +109,9 @@ function ElementBox({
     const stopDragId = dragId.current;
     dragId.current = null;
     if (otherIds.length === 0) return;
+    window.gtag("event", "element_combined", {
+      numElements: otherIds.length + 1,
+    });
     setElements(
       ((state) => {
         const targetElement = state.find((e) => e.id === stopDragId);
@@ -151,6 +154,9 @@ function ElementBox({
               title: `${v.name}`,
               text: `Congrats! You are the first person to discover ${v.name}.`,
               html: null,
+            });
+            window.gtag("event", "element_new", {
+              element: v.name,
             });
             pollStats();
           }
@@ -254,6 +260,7 @@ function ElementBox({
   }, [fetchAPI, updateStarterElements, starterElements]);
 
   const clear = () => {
+    window.gtag("event", "element_cleared");
     setElements([]);
     setSearch("");
   };
