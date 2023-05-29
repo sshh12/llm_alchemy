@@ -53,7 +53,7 @@ exports.handler = async (event, context) => {
         console.log(`Unhandled event type ${stripeEvent.type}`);
     }
   } catch (err) {
-    err = "" + error;
+    error = "Error processing webhook event: " + err;
   }
   return {
     statusCode: 200,
