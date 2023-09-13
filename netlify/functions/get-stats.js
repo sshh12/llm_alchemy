@@ -60,7 +60,7 @@ exports.handler = async (event, context) => {
     prisma.AlchemyCredits.upsert({
       where: { userId: userId },
       update: {},
-      create: { userId: userId, credits: 25, email: "" },
+      create: { userId: userId, credits: 0, email: "" },
     }),
   ]);
   const stats = {
