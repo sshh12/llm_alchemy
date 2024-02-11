@@ -57,7 +57,7 @@ exports.handler = async (event, context) => {
       },
     }
   );
-  if (!challengeHistory.find((c) => c.challengeId === challenge.id)) {
+  if (!challengeHistory.find((c) => c.challenge.id === challenge.id)) {
     await prisma.alchemyDailyChallengeOnCredits.create({
       data: {
         challenge: { connect: { id: challenge.id } },

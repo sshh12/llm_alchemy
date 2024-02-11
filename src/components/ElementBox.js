@@ -25,7 +25,7 @@ import { SearchIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 
 const swal = withReactContent(Swal);
 
-function ChallengeSection({ stats }) {
+function ChallengeSection({ stats, showChallengeInfo }) {
   let completedCount = 0;
   if (stats?.dailyChallengeHistory) {
     completedCount = stats.dailyChallengeHistory.reduce(
@@ -49,7 +49,7 @@ function ChallengeSection({ stats }) {
         </Text>
         <Spacer />
       </HStack>
-      <Button size="xs" colorScheme="blue">
+      <Button size="xs" colorScheme="blue" onClick={() => showChallengeInfo()}>
         Completed Challenges {completedCount}
       </Button>
     </VStack>
@@ -194,7 +194,7 @@ function ElementBox({
             });
             pollStats();
           } else if (v.challengeCredits > 0) {
-            showChallengeInfo(v.challengeCredits);
+            showChallengeComplete(v.challengeCredits);
             window.gtag("event", "challenge_complete", {
               element: v.name,
             });
@@ -322,10 +322,38 @@ function ElementBox({
     });
   };
 
-  const showChallengeInfo = (challengeCredits) => {
+  const showChallengeComplete = (challengeCredits) => {
     swal.fire({
-      title: `Challenge Completed!`,
-      text: `Congrats! You recieved ${challengeCredits} free credits for completing the challenge.`,
+      title: `Daily Challenge Complete`,
+      text: `Congrats! You recieved ${challengeCredits} free credits for completing the daily challenge.`,
+    });
+  };
+
+  const showChallengeInfo = () => {
+    if (!stats) {
+      return;
+    }
+    const history = stats.dailyChallengeHistory;
+    history.sort((a, b) => (a.date < b.date ? 1 : -1));
+    const listHTML =
+      "<br/><br/>" +
+      history
+        .filter(
+          (dc) => dc.completedEasy || dc.completedHard || dc.completedExpert
+        )
+        .map((dc) => {
+          return `<b>${dc.date}</b> - ${dc.elementEasy} ${
+            dc.completedEasy ? "✅" : "❌"
+          } ${dc.elementHard} ${dc.completedHard ? "✅" : "❌"} ${
+            dc.elementExpert
+          } ${dc.completedExpert ? "✅" : "❌"}`;
+        })
+        .join("");
+    swal.fire({
+      title: `Daily Challenges`,
+      html:
+        `These are daily elements you can make to earn free credits. All challenges can be done by only combining 2 elements at a time and with already discovered combinations (meaning you can solve them without using any mixtures).` +
+        listHTML,
     });
   };
 
@@ -397,7 +425,7 @@ function ElementBox({
       </HStack>
       <hr />
 
-      <ChallengeSection stats={stats} />
+      <ChallengeSection stats={stats} showChallengeInfo={showChallengeInfo} />
 
       <hr />
 
