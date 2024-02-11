@@ -352,7 +352,7 @@ function ElementBox({
     swal.fire({
       title: `Daily Challenges`,
       html:
-        `These are daily elements you can make to earn free credits. All challenges can be done by only combining 2 elements at a time and with already discovered combinations (meaning you can solve them without using any mixtures).` +
+        `These are daily elements you can make to earn free credits (easy 5 / hard 50 / expert 500). All challenges can be done by only combining 2 elements at a time and with already discovered combinations (meaning you can solve them without using any mixtures).` +
         listHTML,
     });
   };
