@@ -137,7 +137,7 @@ exports.handler = async (event, context) => {
     if (credits.credits <= 0) {
       resp = {
         error:
-          "Sorry GPT is expensive! Not enough mixtures. Buy more to make more elements.",
+          "Sorry OpenAI is expensive! Not enough mixtures. Buy more to make more elements.",
         creditsLeft: 0,
       };
     } else {

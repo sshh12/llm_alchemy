@@ -23,6 +23,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "functions": "netlify functions:serve",
     "build": "react-scripts build && prisma generate"
   },
   "eslintConfig": {
