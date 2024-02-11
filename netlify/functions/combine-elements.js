@@ -36,14 +36,6 @@ Respond ONLY with a single word which is the result item or thing. Do not respon
 * animal + metal + fire = mechanical beast
 `;
 
-async function getRecipe(recipeName) {
-  return await prisma.AlchemyRecipe.findFirst({
-    where: {
-      name: recipeName,
-    },
-  });
-}
-
 async function generateElement(elements) {
   let elementName = "";
   let temp = 0.1;
@@ -116,10 +108,23 @@ async function buildRecipe(recipeName, elementIds, userId) {
 }
 
 exports.handler = async (event, context) => {
-  const { elementIdsCsv, userId } = event.queryStringParameters;
+  const { elementIdsCsv, userId, date } = event.queryStringParameters;
   const elementIds = elementIdsCsv.split(",").map(BigInt).sort();
   const recipeName = "recipe:" + elementIds.join(",");
-  const recipe = await getRecipe(recipeName);
+  const [recipe, challengeHistory] = await Promise.all([
+    prisma.AlchemyRecipe.findFirst({
+      where: {
+        name: recipeName,
+      },
+    }),
+    prisma.alchemyDailyChallengeOnCredits.findFirst({
+      where: { challenge: { date: date }, credits: { userId: userId } },
+      include: {
+        credits: true,
+        challenge: true,
+      },
+    }),
+  ]);
   let resultElement;
   let isNewElement = false;
   let resp;
@@ -157,6 +162,50 @@ exports.handler = async (event, context) => {
     }
   }
   resp.isNewElement = isNewElement;
+  let challengeCredits = 0;
+  let challengeComplete = false;
+  if (challengeHistory) {
+    const challenge = challengeHistory.challenge;
+    if (
+      !challengeHistory.completedEasy &&
+      challenge.elementEasyId === resultElement.id
+    ) {
+      challengeCredits = 5;
+      challengeComplete = true;
+      await prisma.alchemyDailyChallengeOnCredits.update({
+        where: { id: challengeHistory.id },
+        data: { completedEasy: true },
+      });
+    } else if (
+      !challengeHistory.completedHard &&
+      challenge.elementHardId === resultElement.id
+    ) {
+      challengeCredits = 50;
+      challengeComplete = true;
+      await prisma.alchemyDailyChallengeOnCredits.update({
+        where: { id: challengeHistory.id },
+        data: { completedHard: true },
+      });
+    } else if (
+      !challengeHistory.completedExpert &&
+      challenge.elementExpertId === resultElement.id
+    ) {
+      challengeCredits = 300;
+      challengeComplete = true;
+      await prisma.alchemyDailyChallengeOnCredits.update({
+        where: { id: challengeHistory.id },
+        data: { completedExpert: true },
+      });
+    }
+    if (challengeCredits > 0) {
+      await prisma.AlchemyCredits.update({
+        where: { id: challengeHistory.credits.id },
+        data: { credits: { increment: challengeCredits } },
+      });
+    }
+  }
+  resp.challengeCredits = challengeCredits;
+  resp.challengeComplete = challengeComplete;
   return {
     statusCode: 200,
     body: JSON.stringify(resp, (_key, value) =>

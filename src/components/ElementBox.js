@@ -18,10 +18,43 @@ import {
   Flex,
   Spacer,
   StatHelpText,
+  Text,
+  VStack,
 } from "@chakra-ui/react";
 import { SearchIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 
 const swal = withReactContent(Swal);
+
+function ChallengeSection({ stats }) {
+  let completedCount = 0;
+  if (stats?.dailyChallengeHistory) {
+    completedCount = stats.dailyChallengeHistory.reduce(
+      (acc, v) => acc + (v.completedEasy + v.completedHard + v.completedExpert),
+      0
+    );
+  }
+  return (
+    <VStack p={2}>
+      <HStack align="center" justifyContent={"space-around"}>
+        <Text color="green.700">
+          <b>{stats?.dailyChallenge.elementEasy}</b>
+        </Text>
+        <Spacer />
+        <Text color="orange.600">
+          <b>{stats?.dailyChallenge.elementHard}</b>
+        </Text>
+        <Spacer />
+        <Text color="red.700">
+          <b>{stats?.dailyChallenge.elementExpert}</b>
+        </Text>
+        <Spacer />
+      </HStack>
+      <Button size="xs" colorScheme="blue">
+        Completed Challenges {completedCount}
+      </Button>
+    </VStack>
+  );
+}
 
 function ElementBox({
   starterElements,
@@ -133,8 +166,9 @@ function ElementBox({
           y: newPos.y,
           name: "unknown",
         });
+        const date = new Date().toISOString().slice(0, 10);
         fetchAPI(
-          `/combine-elements?userId=${userId}&elementIdsCsv=${[
+          `/combine-elements?userId=${userId}&date=${date}&elementIdsCsv=${[
             targetElement.element.id,
           ]
             .concat(otherElements.map((e) => e.element.id))
@@ -156,6 +190,12 @@ function ElementBox({
               html: null,
             });
             window.gtag("event", "element_new", {
+              element: v.name,
+            });
+            pollStats();
+          } else if (v.challengeCredits > 0) {
+            showChallengeInfo(v.challengeCredits);
+            window.gtag("event", "challenge_complete", {
               element: v.name,
             });
             pollStats();
@@ -282,6 +322,13 @@ function ElementBox({
     });
   };
 
+  const showChallengeInfo = (challengeCredits) => {
+    swal.fire({
+      title: `Challenge Completed!`,
+      text: `Congrats! You recieved ${challengeCredits} free credits for completing the challenge.`,
+    });
+  };
+
   return (
     <div>
       <HStack bgColor={"#2D3748"} color={"#fff"} p={2}>
@@ -321,7 +368,7 @@ function ElementBox({
                 colorScheme="blue"
                 onClick={() => showUserInfo()}
               >
-                You invented {stats?.userCreatedElements.length}
+                You Invented {stats?.userCreatedElements.length}
               </Button>
             )}
           </StatHelpText>
@@ -350,13 +397,8 @@ function ElementBox({
       </HStack>
       <hr />
 
-      <HStack p={2} align="center">
-        <Spacer />
-        <span>
-          Daily Challenge: <b>{stats?.challengeElementName}</b>
-        </span>
-        <Spacer />
-      </HStack>
+      <ChallengeSection stats={stats} />
+
       <hr />
 
       <Flex
