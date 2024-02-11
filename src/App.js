@@ -17,7 +17,10 @@ function App() {
     "alchemy:userId",
     () => "alchemy:" + uuidv4()
   );
-  const [stats, pollStats] = usePollingGet(`/get-stats?userId=${userId}`);
+  const date = new Date().toISOString().slice(0, 10);
+  const [stats, pollStats] = usePollingGet(
+    `/get-stats?userId=${userId}&date=${date}`
+  );
   const size = Math.floor(
     Math.max(Math.min(window.innerHeight, window.innerWidth) * 0.2, 100)
   );

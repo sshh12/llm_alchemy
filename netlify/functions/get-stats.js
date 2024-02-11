@@ -2,35 +2,36 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-async function getChallenge() {
+async function getChallenge(date) {
   // await prisma.alchemyChallenge.deleteMany({});
-  const date = new Date().toISOString().slice(0, 10);
-  let challenge = await prisma.alchemyChallenge.findFirst({
-    where: { date: date },
-    include: { element: true },
-  });
-  if (!challenge) {
-    let elements = await prisma.alchemyElement.findMany({
-      include: {
-        recipes: true,
-        challenges: true,
-      },
-    });
-    elements = elements.filter(
-      (element) =>
-        element.recipes.length >= 10 && element.challenges.length === 0
-    );
-    const randomIndex = Math.floor(Math.random() * elements.length);
-    const randomElement = elements[randomIndex];
-    challenge = await prisma.alchemyChallenge.create({
-      data: { date: date, elementId: randomElement.id },
-    });
-  }
-  return challenge;
+  // const date = new Date().toISOString().slice(0, 10);
+  // let challenge = await prisma.alchemyChallenge.findFirst({
+  //   where: { date: date },
+  //   include: { element: true },
+  // });
+  // if (!challenge) {
+  //   let elements = await prisma.alchemyElement.findMany({
+  //     include: {
+  //       recipes: true,
+  //       challenges: true,
+  //     },
+  //   });
+  //   elements = elements.filter(
+  //     (element) =>
+  //       element.recipes.length >= 10 && element.challenges.length === 0
+  //   );
+  //   const randomIndex = Math.floor(Math.random() * elements.length);
+  //   const randomElement = elements[randomIndex];
+  //   challenge = await prisma.alchemyChallenge.create({
+  //     data: { date: date, elementId: randomElement.id },
+  //   });
+  // }
+  // return challenge;
+  return null;
 }
 
 exports.handler = async (event, context) => {
-  const { userId, allElements } = event.queryStringParameters;
+  const { userId, allElements, date } = event.queryStringParameters;
   if (!userId) {
     return {
       statusCode: 200,
@@ -56,7 +57,7 @@ exports.handler = async (event, context) => {
           take: 10,
         }),
     prisma.AlchemyElement.findMany({ where: { createdUserId: userId } }),
-    getChallenge(),
+    getChallenge(date),
     prisma.AlchemyCredits.upsert({
       where: { userId: userId },
       update: {},
@@ -68,7 +69,7 @@ exports.handler = async (event, context) => {
     totalRecipes: totalRecipes,
     recentElementNames: recentElements.map((e) => e.name),
     userCreatedElements: userCreatedElements.map((e) => e.name),
-    challengeElementName: challenge.element.name,
+    challengeElementName: null,
     credits: credits.credits,
   };
   return {

@@ -3,7 +3,7 @@ generator client {
   previewFeatures = ["cockroachdb"]
   // The following is needed when using deploying to netlify using `netlify deploy` locally
   // It can be removed if the deployment is configured on netlify to automatically deploy for each commit
-  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+  binaryTargets   = ["native", "rhel-openssl-1.0.x"]
 }
 
 datasource db {
@@ -12,42 +12,66 @@ datasource db {
 }
 
 model AlchemyElement {
-  id              BigInt @id @default(autoincrement())
-  name            String @unique
-  imgUrl          String
+  id             BigInt   @id @default(autoincrement())
+  name           String   @unique
+  imgUrl         String
+  starterElement Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  createdUserId  String   @default("")
+
   recipes         AlchemyRecipesForElements[]
-  challenges      AlchemyChallenge[]
-  starterElement  Boolean @default(false)
-  createdAt       DateTime @default(now())
-  createdUserId   String @default("")
+  challengeEasy   AlchemyDailyChallenge[]     @relation("challengeEasy")
+  challengeHard   AlchemyDailyChallenge[]     @relation("challengeHard")
+  challengeExpert AlchemyDailyChallenge[]     @relation("challengeExpert")
 }
 
 model AlchemyRecipe {
-  id               BigInt @id @default(autoincrement())
-  name             String @unique
-  elements         AlchemyRecipesForElements[]
-  resultElementId  BigInt @default(0)
-  createdAt        DateTime @default(now())
+  id              BigInt                      @id @default(autoincrement())
+  name            String                      @unique
+  elements        AlchemyRecipesForElements[]
+  resultElementId BigInt                      @default(0)
+  createdAt       DateTime                    @default(now())
 }
 
 model AlchemyRecipesForElements {
-  element       AlchemyElement @relation(fields: [elementId], references: [id])
-  elementId     BigInt
-  recipe        AlchemyRecipe @relation(fields: [recipeId], references: [id])
-  recipeId      BigInt
+  element   AlchemyElement @relation(fields: [elementId], references: [id])
+  elementId BigInt
+  recipe    AlchemyRecipe  @relation(fields: [recipeId], references: [id])
+  recipeId  BigInt
+
   @@id([elementId, recipeId])
 }
 
-model AlchemyChallenge {
-  id            BigInt @id @default(autoincrement())
-  date          String
-  element       AlchemyElement @relation(fields: [elementId], references: [id])
-  elementId     BigInt
+model AlchemyDailyChallenge {
+  id   BigInt @id @default(autoincrement())
+  date String @unique
+
+  elementEasy     AlchemyElement @relation("challengeEasy", fields: [elementEasyId], references: [id])
+  elementEasyId   BigInt
+  elementHard     AlchemyElement @relation("challengeHard", fields: [elementHardId], references: [id])
+  elementHardId   BigInt
+  elementExpert   AlchemyElement @relation("challengeExpert", fields: [elementExpertId], references: [id])
+  elementExpertId BigInt
+
+  AlchemyDailyChallengeOnUsers AlchemyDailyChallengeOnCredits[]
+}
+
+model AlchemyDailyChallengeOnCredits {
+  id              BigInt  @id @default(autoincrement())
+  completedEasy   Boolean @default(false)
+  completedHard   Boolean @default(false)
+  completedExpert Boolean @default(false)
+
+  challengeId BigInt
+  challenge   AlchemyDailyChallenge @relation(fields: [challengeId], references: [id])
+  creditsId   BigInt
+  credits     AlchemyCredits        @relation(fields: [creditsId], references: [id])
 }
 
 model AlchemyCredits {
-  id            BigInt @id @default(autoincrement())
-  userId        String @unique
-  credits       Int @default(0)
-  email         String
+  id                           BigInt                           @id @default(autoincrement())
+  userId                       String                           @unique
+  credits                      Int                              @default(0)
+  email                        String
+  AlchemyDailyChallengeOnUsers AlchemyDailyChallengeOnCredits[]
 }
