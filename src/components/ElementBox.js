@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Element from "./Element";
 import { isTouchCapable, enableScroll, disableScroll } from "../lib/touch";
-import { useGetFetch } from "../lib/api";
+import { useGetFetch, getDate } from "../lib/api";
 import { findIntersections, averagePosition } from "../lib/coords";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
@@ -166,7 +166,7 @@ function ElementBox({
           y: newPos.y,
           name: "unknown",
         });
-        const date = new Date().toISOString().slice(0, 10);
+        const date = getDate();
         fetchAPI(
           `/combine-elements?userId=${userId}&date=${date}&elementIdsCsv=${[
             targetElement.element.id,
@@ -336,19 +336,22 @@ function ElementBox({
     const history = stats.dailyChallengeHistory;
     history.sort((a, b) => (a.date < b.date ? 1 : -1));
     const listHTML =
-      "<br/><br/>" +
+      "<br/><br/><table>" +
       history
         .filter(
           (dc) => dc.completedEasy || dc.completedHard || dc.completedExpert
         )
         .map((dc) => {
-          return `<b>${dc.date}</b> - ${dc.elementEasy} ${
+          return `<tr><td><b>${dc.date}</b></td><td>${dc.elementEasy}</td><td>${
             dc.completedEasy ? "✅" : "❌"
-          } ${dc.elementHard} ${dc.completedHard ? "✅" : "❌"} ${
-            dc.elementExpert
-          } ${dc.completedExpert ? "✅" : "❌"}`;
+          }</td><td>${dc.elementHard}</td><td>${
+            dc.completedHard ? "✅" : "❌"
+          }</td><td>${dc.elementExpert}</td><td>${
+            dc.completedExpert ? "✅" : "❌"
+          }</td></tr>`;
         })
-        .join("");
+        .join("") +
+      "</table>";
     swal.fire({
       title: `Daily Challenges`,
       html:
