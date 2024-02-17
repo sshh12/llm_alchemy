@@ -163,6 +163,7 @@ exports.handler = async (event, context) => {
   }
   resp.isNewElement = isNewElement;
   let challengeCredits = 0;
+  let challengeLevelComplete = null;
   let challengeComplete = false;
   if (challengeHistory) {
     const challenge = challengeHistory.challenge;
@@ -172,6 +173,7 @@ exports.handler = async (event, context) => {
     ) {
       challengeCredits = 5;
       challengeComplete = true;
+      challengeLevelComplete = "easy";
       await prisma.alchemyDailyChallengeOnCredits.update({
         where: { id: challengeHistory.id },
         data: { completedEasy: true },
@@ -182,6 +184,7 @@ exports.handler = async (event, context) => {
     ) {
       challengeCredits = 50;
       challengeComplete = true;
+      challengeLevelComplete = "hard";
       await prisma.alchemyDailyChallengeOnCredits.update({
         where: { id: challengeHistory.id },
         data: { completedHard: true },
@@ -192,6 +195,7 @@ exports.handler = async (event, context) => {
     ) {
       challengeCredits = 300;
       challengeComplete = true;
+      challengeLevelComplete = "expert";
       await prisma.alchemyDailyChallengeOnCredits.update({
         where: { id: challengeHistory.id },
         data: { completedExpert: true },
@@ -206,6 +210,7 @@ exports.handler = async (event, context) => {
   }
   resp.challengeCredits = challengeCredits;
   resp.challengeComplete = challengeComplete;
+  resp.challengeLevelComplete = challengeLevelComplete;
   return {
     statusCode: 200,
     body: JSON.stringify(resp, (_key, value) =>

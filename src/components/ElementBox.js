@@ -6,9 +6,6 @@ import { findIntersections, averagePosition } from "../lib/coords";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import {
-  Stat,
-  StatLabel,
-  StatNumber,
   HStack,
   InputGroup,
   InputRightElement,
@@ -17,44 +14,12 @@ import {
   Button,
   Flex,
   Spacer,
-  StatHelpText,
-  Text,
-  VStack,
 } from "@chakra-ui/react";
 import { SearchIcon, ExternalLinkIcon } from "@chakra-ui/icons";
+import ChallengeDetails from "./ChallengeDetails";
+import OverviewDetails from "./OverviewDetails";
 
 const swal = withReactContent(Swal);
-
-function ChallengeSection({ stats, showChallengeInfo }) {
-  let completedCount = 0;
-  if (stats?.dailyChallengeHistory) {
-    completedCount = stats.dailyChallengeHistory.reduce(
-      (acc, v) => acc + (v.completedEasy + v.completedHard + v.completedExpert),
-      0
-    );
-  }
-  return (
-    <VStack p={2}>
-      <HStack align="center" justifyContent={"space-around"}>
-        <Text color="green.700">
-          <b>{stats?.dailyChallenge.elementEasy}</b>
-        </Text>
-        <Spacer />
-        <Text color="orange.600">
-          <b>{stats?.dailyChallenge.elementHard}</b>
-        </Text>
-        <Spacer />
-        <Text color="red.700">
-          <b>{stats?.dailyChallenge.elementExpert}</b>
-        </Text>
-        <Spacer />
-      </HStack>
-      <Button size="xs" colorScheme="blue" onClick={() => showChallengeInfo()}>
-        Completed Challenges {completedCount}
-      </Button>
-    </VStack>
-  );
-}
 
 function ElementBox({
   starterElements,
@@ -198,6 +163,13 @@ function ElementBox({
             window.gtag("event", "challenge_complete", {
               element: v.name,
             });
+            window.gtag(
+              "event",
+              `challenge_complete_${v.challengeLevelComplete}`,
+              {
+                element: v.name,
+              }
+            );
             pollStats();
           }
           if (v.creditsLeft) {
@@ -310,53 +282,10 @@ function ElementBox({
     resetStarterElements();
   };
 
-  const showUserInfo = () => {
-    swal.fire({
-      title: `Your Stats`,
-      text: `Congrats! You are the first person to discover asdasd.`,
-      html: `You invented <b>${stats.userCreatedElements.length}</b> elements ${
-        stats.userCreatedElements.length > 0
-          ? "<br/>" + stats.userCreatedElements.join(", ")
-          : ""
-      }<hr style="margin:10px"/>User ID: <b>${userId}</b>`,
-    });
-  };
-
   const showChallengeComplete = (challengeCredits) => {
     swal.fire({
       title: `Daily Challenge Complete`,
       text: `Congrats! You recieved ${challengeCredits} free credits for completing the daily challenge.`,
-    });
-  };
-
-  const showChallengeInfo = () => {
-    if (!stats) {
-      return;
-    }
-    const history = stats.dailyChallengeHistory;
-    history.sort((a, b) => (a.date < b.date ? 1 : -1));
-    const listHTML =
-      "<br/><br/><table>" +
-      history
-        .filter(
-          (dc) => dc.completedEasy || dc.completedHard || dc.completedExpert
-        )
-        .map((dc) => {
-          return `<tr><td><b>${dc.date}</b></td><td>${dc.elementEasy}</td><td>${
-            dc.completedEasy ? "✅" : "❌"
-          }</td><td>${dc.elementHard}</td><td>${
-            dc.completedHard ? "✅" : "❌"
-          }</td><td>${dc.elementExpert}</td><td>${
-            dc.completedExpert ? "✅" : "❌"
-          }</td></tr>`;
-        })
-        .join("") +
-      "</table>";
-    swal.fire({
-      title: `Daily Challenges`,
-      html:
-        `These are daily elements you can make to earn free credits (easy 5 / hard 50 / expert 500). All challenges can be done by only combining 2 elements at a time and with already discovered combinations (meaning you can solve them without using any mixtures).` +
-        listHTML,
     });
   };
 
@@ -374,61 +303,17 @@ function ElementBox({
       </HStack>
 
       <hr />
-      <HStack padding={"20px"}>
-        <Stat>
-          <StatLabel>
-            Your
-            <br />
-            Elements
-          </StatLabel>
-          <StatNumber>{starterElements.length}</StatNumber>
-          <StatHelpText>
-            {Math.ceil((starterElements.length / stats?.totalElements) * 100)}%
-          </StatHelpText>
-        </Stat>
-        <Stat>
-          <StatLabel>
-            Known <br />
-            Elements
-          </StatLabel>
-          <StatNumber>{stats?.totalElements || "-"}</StatNumber>
-          <StatHelpText>
-            {stats && (
-              <Button
-                size="xs"
-                colorScheme="blue"
-                onClick={() => showUserInfo()}
-              >
-                You Invented {stats?.userCreatedElements.length}
-              </Button>
-            )}
-          </StatHelpText>
-        </Stat>
-        <Stat>
-          <StatLabel>
-            Mixtures <br />
-            Remaining
-          </StatLabel>
-          <StatNumber>{credits || 0}</StatNumber>
-          <StatHelpText>
-            {stats && userId && (
-              <Button size="xs" colorScheme="green">
-                <a
-                  href={`https://buy.stripe.com/6oE7w1cNbbC07IIeUV?client_reference_id=infalchemy___${userId.replace(
-                    ":",
-                    "_"
-                  )}`}
-                >
-                  Buy More
-                </a>
-              </Button>
-            )}
-          </StatHelpText>
-        </Stat>
-      </HStack>
+
+      <OverviewDetails
+        stats={stats}
+        starterElements={starterElements}
+        userId={userId}
+        credits={credits}
+      />
+
       <hr />
 
-      <ChallengeSection stats={stats} showChallengeInfo={showChallengeInfo} />
+      <ChallengeDetails stats={stats} />
 
       <hr />
 
