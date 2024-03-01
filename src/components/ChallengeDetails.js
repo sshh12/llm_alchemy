@@ -17,7 +17,7 @@ export default function ChallengeDetails({ stats }) {
   }
 
   const showChallengeInfo = () => {
-    if (!stats || !!stats?.dailyChallenge?.elementEasy) {
+    if (!stats || !stats?.dailyChallenge?.elementEasy) {
       return;
     }
     const history = stats.dailyChallengeHistory;
