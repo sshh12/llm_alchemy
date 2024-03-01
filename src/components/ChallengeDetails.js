@@ -17,7 +17,7 @@ export default function ChallengeDetails({ stats }) {
   }
 
   const showChallengeInfo = () => {
-    if (!stats) {
+    if (!stats || !!stats?.dailyChallenge?.elementEasy) {
       return;
     }
     const history = stats.dailyChallengeHistory;
@@ -54,15 +54,15 @@ export default function ChallengeDetails({ stats }) {
     <VStack p={2}>
       <HStack align="center" justifyContent={"space-around"}>
         <Text color="green.700">
-          <b>{stats?.dailyChallenge.elementEasy}</b>
+          <b>{stats?.dailyChallenge?.elementEasy}</b>
         </Text>
         <Spacer />
         <Text color="orange.600">
-          <b>{stats?.dailyChallenge.elementHard}</b>
+          <b>{stats?.dailyChallenge?.elementHard}</b>
         </Text>
         <Spacer />
         <Text color="red.700">
-          <b>{stats?.dailyChallenge.elementExpert}</b>
+          <b>{stats?.dailyChallenge?.elementExpert}</b>
         </Text>
         <Spacer />
       </HStack>
