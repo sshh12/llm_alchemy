@@ -9,6 +9,7 @@ function Element({
   hoverEffect,
   imgUrl,
   name,
+  pinned,
 }) {
   const onProps = isTouchCapable
     ? { onTouchStart: (e) => onDragStart(e), onTouchEnd: (e) => onDragStop(e) }
@@ -29,7 +30,7 @@ function Element({
         height: size.h + "px",
         padding: "5px",
         borderRadius: "5px",
-        outline: "#eee solid 2px",
+        outline: pinned ? "#333 solid 3px" : "#eee solid 2px",
         boxShadow: hoverEffect
           ? "rgba(0, 0, 0, 0.5) 0 0 20px"
           : "10px 10px 10px -2px rgba(0, 0, 0, 0.05)",

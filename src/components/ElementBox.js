@@ -20,6 +20,7 @@ import ChallengeDetails from "./ChallengeDetails";
 import OverviewDetails from "./OverviewDetails";
 
 const swal = withReactContent(Swal);
+const DOUBLE_CLICK_MS = 150;
 
 function ElementBox({
   starterElements,
@@ -37,10 +38,16 @@ function ElementBox({
   const [fetchAPI] = useGetFetch();
   const [search, setSearch] = useState("");
   const [credits, setCredits] = useState(stats?.credits);
+  const [pinnedElementIds, setPinnedElementIds] = useState([]);
 
   useEffect(() => {
     setCredits(stats?.credits || 0);
   }, [stats]);
+
+  useEffect(() => {
+    window.newElementLastClick = 0;
+    window.newElementTimeout = null;
+  }, []);
 
   const maxElementY = elements.reduce((acc, el) => Math.max(acc, el.y), 0);
 
@@ -201,29 +208,48 @@ function ElementBox({
   const onFactoryDragStart = (baseElement, e) => {
     e.preventDefault();
     disableScroll();
-    setElements(
-      ((state) => {
-        const newId = (idCnt.current++).toString();
-        const newElement = Object.assign(
-          {
-            x: e.pageX,
-            y: e.pageY,
-            w: elementW,
-            h: elementH,
-            hoverEffect: false,
-            element: baseElement,
-            imgUrl: baseElement.imgUrl,
-            name: baseElement.name,
-          },
-          {
-            id: newId,
-          }
-        );
-        dragId.current = newId;
-        state = state.concat([newElement]);
+
+    const now = +Date.now();
+
+    if (now - window.lastClick < DOUBLE_CLICK_MS) {
+      clearTimeout(window.newElementTimeout);
+      setPinnedElementIds((state) => {
+        if (state.includes(baseElement.id)) {
+          state = state.filter((id) => id !== baseElement.id);
+        } else {
+          state = state.concat([baseElement.id]);
+        }
         return state;
-      })(elements)
-    );
+      });
+    } else {
+      window.newElementTimeout = setTimeout(() => {
+        setElements(
+          ((state) => {
+            const newId = (idCnt.current++).toString();
+            const newElement = Object.assign(
+              {
+                x: e.pageX,
+                y: e.pageY,
+                w: elementW,
+                h: elementH,
+                hoverEffect: false,
+                element: baseElement,
+                imgUrl: baseElement.imgUrl,
+                name: baseElement.name,
+              },
+              {
+                id: newId,
+              }
+            );
+            dragId.current = newId;
+            state = state.concat([newElement]);
+            return state;
+          })(elements)
+        );
+      }, DOUBLE_CLICK_MS);
+    }
+
+    window.lastClick = now;
   };
 
   const setElement = (id, element) => {
@@ -362,6 +388,12 @@ function ElementBox({
               search === "" ||
               se.name.toLowerCase().includes(search.toLowerCase())
           )
+          .sort(
+            (a, b) =>
+              pinnedElementIds.includes(b.id) * 10000 -
+              pinnedElementIds.includes(a.id) * 10000 +
+              a.name.localeCompare(b.name)
+          )
           .map((se) => (
             <div key={se.id} style={{ paddingBottom: "10px" }}>
               <Element
@@ -372,6 +404,7 @@ function ElementBox({
                 element={se}
                 imgUrl={se.imgUrl}
                 name={se.name}
+                pinned={pinnedElementIds.includes(se.id)}
               />
             </div>
           ))}
@@ -394,6 +427,7 @@ function ElementBox({
             hoverEffect={element.hoverEffect}
             imgUrl={element.imgUrl}
             name={element.name}
+            pinned={false}
           />
         ))}
       </div>
