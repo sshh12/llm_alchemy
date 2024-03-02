@@ -207,7 +207,6 @@ function ElementBox({
 
   const onFactoryDragStart = (baseElement, e) => {
     e.preventDefault();
-    disableScroll();
 
     const now = +Date.now();
 
@@ -223,6 +222,7 @@ function ElementBox({
       });
     } else {
       window.newElementTimeout = setTimeout(() => {
+        disableScroll();
         setElements(
           ((state) => {
             const newId = (idCnt.current++).toString();
