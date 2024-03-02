@@ -367,7 +367,7 @@ function ElementBox({
           </InputRightElement>
           <Input
             type="input"
-            placeholder="Elements"
+            placeholder="Elements (double tap elements to pin)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
