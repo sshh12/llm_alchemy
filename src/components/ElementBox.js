@@ -322,8 +322,8 @@ function ElementBox({
         <span></span>
         <Spacer />
         <Box fontSize={"0.8rem"}>
-          <a href="https://github.com/sshh12/llm_alchemy">
-            GitHub <ExternalLinkIcon />
+          <a href="https://open.substack.com/pub/shrivu/p/infinite-alchemy?r=1g8kq6&utm_campaign=post&utm_medium=web&showWelcomeOnShare=true">
+            Learn More <ExternalLinkIcon />
           </a>
         </Box>
       </HStack>
