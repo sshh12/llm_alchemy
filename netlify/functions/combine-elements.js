@@ -165,7 +165,7 @@ exports.handler = async (event, context) => {
   let challengeCredits = 0;
   let challengeLevelComplete = null;
   let challengeComplete = false;
-  if (challengeHistory) {
+  if (challengeHistory && resultElement) {
     const challenge = challengeHistory.challenge;
     if (
       !challengeHistory.completedEasy &&
