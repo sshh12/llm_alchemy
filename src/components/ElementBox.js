@@ -148,7 +148,7 @@ function ElementBox({
         ).then((v) => {
           if (v.errorMessage) {
             alert(
-              "Failed to combine elements! It's possible this is a big or this project is out of OpenAI credits. Refresh and try again."
+              "Failed to combine elements! It's possible this is a bug or this project is out of OpenAI credits. Refresh and try again."
             );
             return;
           } else if (v.error) {
