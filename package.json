@@ -1,50 +1,56 @@
 {
-  "name": "llm_alchemy",
-  "version": "0.1.0",
+  "name": "infinite-alchemy",
+  "version": "2.0.0",
   "private": true,
-  "dependencies": {
-    "@chakra-ui/icons": "^2.0.19",
-    "@chakra-ui/react": "^2.6.1",
-    "@emotion/react": "^11.11.0",
-    "@emotion/styled": "^11.11.0",
-    "@netlify/functions": "^1.6.0",
-    "@prisma/client": "^4.14.1",
-    "framer-motion": "^10.12.12",
-    "openai": "^3.2.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1",
-    "react-sweetalert2": "^0.5.2",
-    "request": "^2.88.2",
-    "stripe": "^12.6.0",
-    "sweetalert2-react-content": "^5.0.7",
-    "tslib": "^2.5.2",
-    "web-vitals": "^2.1.4"
+  "type": "module",
+  "description": "Infinite Alchemy: an AI-powered element-combining game. Mix two or more elements to discover anything.",
+  "engines": {
+    "node": ">=22.12"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "functions": "netlify functions:serve",
-    "build": "react-scripts build && prisma generate"
+    "dev": "netlify dev",
+    "dev:vite": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:backfill": "tsx scripts/backfill-legacy.ts",
+    "db:challenges": "tsx scripts/generate-challenges.ts",
+    "db:enrich": "tsx scripts/enrich-elements.ts",
+    "db:seed-e2e": "tsx scripts/seed-e2e.ts"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "dependencies": {
+    "@fontsource-variable/fraunces": "5.3.0",
+    "@fontsource-variable/instrument-sans": "5.3.0",
+    "@netlify/blobs": "11.1.8",
+    "@netlify/functions": "6.1.1",
+    "@noble/hashes": "2.4.0",
+    "@tanstack/react-virtual": "3.14.26",
+    "motion": "14.10.1",
+    "openai": "7.53.0",
+    "pg": "8.23.1",
+    "radix-ui": "1.8.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7",
+    "zustand": "5.1.0"
   },
   "devDependencies": {
-    "prisma": "^4.14.1"
+    "@playwright/test": "1.65.0",
+    "@tailwindcss/vite": "4.3.5",
+    "@types/node": "26.6.6",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "netlify-cli": "27.16.2",
+    "tailwindcss": "4.3.5",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
   }
 }
