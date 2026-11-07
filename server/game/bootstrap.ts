@@ -34,6 +34,9 @@ export const BootstrapSchema = z.object({
     .optional(),
 });
 
+/** Earth, Water, Air, Fire and Time. */
+const STARTER_COUNT = 5;
+
 const POW_MESSAGES: Record<Exclude<PowCheck, "ok">, string> = {
   malformed: "Proof-of-work solution was malformed.",
   bad_signature: "Proof-of-work challenge was not issued by this server.",
@@ -84,8 +87,17 @@ export async function bootstrap(req: Request, context: Context): Promise<Respons
   }
 
   const playerId = player.id;
+  // Legacy players are backfilled without starter rows. Adoption adds them, but a legacy player
+  // can also arrive via a transfer code (or lose them some other way), so make sure every load
+  // has all starters; this is a no-op once they're there.
+  const libraryWithStarters = async () => {
+    const rows = await library(playerId);
+    if (rows.filter((r) => r.is_starter).length >= STARTER_COUNT) return rows;
+    await ensureStarters(playerId);
+    return library(playerId);
+  };
   const [lib, firsts, known, challenge, chStats, recent] = await Promise.all([
-    library(playerId),
+    libraryWithStarters(),
     countFirsts(playerId),
     knownCount(),
     dailyChallenge(playerId, today),
