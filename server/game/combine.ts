@@ -216,21 +216,35 @@ export function subRecipeKeys(key: string[]): string[][] {
   return [...out.values()];
 }
 
-/** Results that smaller combinations already make: the model must not answer with those. */
+/**
+ * Results that smaller combinations already make: the model must not answer with those.
+ * Best-effort (it only improves answer quality), so a failure never blocks the combine.
+ */
 async function resultsToAvoid(key: string[], owned: ElementRow[]): Promise<AvoidResult[]> {
   const subs = subRecipeKeys(key);
   if (subs.length === 0) return [];
-  const rows = await q<{ ingredient_ids: string[]; name_key: string }>(
-    `SELECT r.ingredient_ids, e.name_key
-       FROM ${t("recipes")} r JOIN ${t("elements")} e ON e.id = r.result_id
-      WHERE r.status = 'active' AND r.ingredient_ids IN (${subs.map((_, i) => `$${i + 1}::INT8[]`).join(", ")})`,
-    subs,
-  );
-  const nameOf = (id: string) => owned.find((e) => e.id === String(id))?.name ?? "those ingredients";
-  return rows.map((r) => ({
-    key: r.name_key,
-    because: `that is what ${r.ingredient_ids.map(nameOf).join(" + ")} already makes`,
-  }));
+  try {
+    // CockroachDB rejects `array IN (array, ...)` (and rewrites OR'd array equalities into it),
+    // so look each key up separately; every branch is a unique-index point lookup.
+    const rows = await q<{ ingredient_ids: string[]; name_key: string }>(
+      subs
+        .map(
+          (_, i) => `(SELECT r.ingredient_ids, e.name_key
+               FROM ${t("recipes")} r JOIN ${t("elements")} e ON e.id = r.result_id
+              WHERE r.ingredient_ids = $${i + 1}::INT8[] AND r.status = 'active')`,
+        )
+        .join(" UNION ALL "),
+      subs,
+    );
+    const nameOf = (id: string) => owned.find((e) => e.id === String(id))?.name ?? "those ingredients";
+    return rows.map((r) => ({
+      key: r.name_key,
+      because: `that is what ${r.ingredient_ids.map(nameOf).join(" + ")} already makes`,
+    }));
+  } catch (e) {
+    console.warn("[combine] avoid lookup failed", (e as Error).message);
+    return [];
+  }
 }
 
 async function invent(playerId: string, ip: string, key: string[], owned: ElementRow[]): Promise<Outcome> {
