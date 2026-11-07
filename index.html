@@ -22,10 +22,10 @@
       } catch (e) {}
     </script>
     <!-- meta: SEO, Open Graph/Twitter, icons, manifest, JSON-LD and analytics (owned by web-meta) -->
-    <meta name="description" content="The original infinite AI alchemy game. Start with Earth, Water, Air, Fire and Time and combine them into anything: AI invents and paints every result. Free in your browser." />
+    <meta name="description" content="The original infinite AI alchemy game. Combine Earth, Water, Air, Fire and Time into anything; AI invents and paints every result. Free, no account." />
     <meta name="keywords" content="AI alchemy game, element combining game, crafting game, infinite craft, Little Alchemy, LLM game, browser game" />
     <meta name="author" content="Shrivu Shankar" />
-    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="is-agentic-site-type" content="app" />
     <link rel="canonical" href="https://alchemy.sshh.io/" />
 
@@ -145,39 +145,42 @@
       }
     </script>
 
-    <noscript>
-      <style>
-        body { margin: 0; background: #f6f1e7; color: #2a2118; font: 17px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-        .nojs { max-width: 40rem; margin: 0 auto; padding: 2.5rem 1rem 3rem; }
-        .nojs h1 { font: 600 2.4rem/1.1 Georgia, ui-serif, serif; margin: 0 0 0.5rem; }
-        .nojs h2 { font: 600 1.3rem/1.2 Georgia, ui-serif, serif; margin: 2rem 0 0.5rem; }
-        .nojs a { color: #a9471f; }
-        @media (prefers-color-scheme: dark) {
-          body { background: #16120e; color: #f3eadb; }
-          .nojs a { color: #e5835a; }
-        }
-      </style>
-    </noscript>
+    <style>
+      /* Session-independent intro: the first paint and the no-JS page. React replaces #root on mount. */
+      .intro { min-height: 100dvh; display: grid; place-content: center; gap: 14px; padding: 32px 20px; text-align: center; background: #f6f1e7; color: #2a2118; font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+      .intro-eyebrow { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #a9471f; }
+      .intro h1 { margin: 2px 0 0; font: 600 2.4rem/1.05 Georgia, ui-serif, serif; letter-spacing: -0.01em; }
+      .intro p { margin: 0 auto; max-width: 34rem; }
+      .intro .intro-eg { color: #6b5d4e; font-size: 15px; }
+      .intro nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; font-size: 15px; }
+      .intro a { color: #a9471f; text-underline-offset: 3px; }
+      @media (prefers-color-scheme: dark) {
+        .intro { background: #16120e; color: #f3eadb; }
+        .intro .intro-eg { color: #b4a693; }
+        .intro-eyebrow, .intro a { color: #e5835a; }
+      }
+    </style>
     <!-- /meta -->
   </head>
   <body>
-    <div id="root"></div>
-    <noscript>
-      <main class="nojs">
-        <h1>Infinite Alchemy</h1>
-        <p><strong>Combine elements, discover anything.</strong> Infinite Alchemy is a free, AI-powered element-combining game. Start with Earth, Water, Air, Fire and Time and mix them into anything you can imagine: an AI names every new element and paints it in a handmade clay style.</p>
-        <p>The game needs JavaScript. Please enable it to play.</p>
-        <h2>How to play</h2>
-        <ul>
-          <li><strong>Combine:</strong> drag one element onto another on the workbench, or tap one and then another. Mix up to four at once.</li>
-          <li><strong>Discover:</strong> each combination is decided once by the AI and stays the same for everyone. Make something nobody has made before and you earn a first discovery seal.</li>
-          <li><strong>Go deep:</strong> rarity grows with every step from the starters. Clever combinations can land on famous people, places, myths, characters and brands.</li>
-          <li><strong>Daily challenges:</strong> three new targets every day, easy, hard and expert.</li>
-        </ul>
-        <h2>About</h2>
-        <p>Infinite Alchemy was one of the first games to invent brand-new elements with AI on demand. It is inspired by <a href="https://littlealchemy.com/">Little Alchemy</a> by Jakub Koziol, was made by <a href="https://sshh.io/">Shrivu Shankar</a>, and is <a href="https://github.com/sshh12/llm_alchemy">open source</a>. Read <a href="https://blog.sshh.io/p/infinite-alchemy">the launch story</a> or the <a href="/llms.txt">guide for AI agents</a>.</p>
+    <div id="root">
+      <main class="intro">
+        <header>
+          <span class="intro-eyebrow">The original</span>
+          <h1>Infinite Alchemy</h1>
+        </header>
+        <p>Start with Earth, Water, Air, Fire and Time. Combine elements to discover new things, illustrated by AI.</p>
+        <p class="intro-eg">Water + Fire = Steam · Earth + Water = Mud · Air + Air = Wind</p>
+        <p>Play free in your browser, no account needed. Find a first discovery, or try today's three challenges.</p>
+        <nav aria-label="Learn more">
+          <a href="/how-to-play">How to play</a>
+          <a href="/daily">Today's challenge</a>
+          <a href="/recipes">Recipes</a>
+          <a href="/about">About</a>
+        </nav>
+        <noscript><p>Infinite Alchemy needs JavaScript to play.</p></noscript>
       </main>
-    </noscript>
+    </div>
     <script type="module" src="/src/app/main.tsx"></script>
   </body>
 </html>

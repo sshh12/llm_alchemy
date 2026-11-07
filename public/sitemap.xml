@@ -2,6 +2,21 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://alchemy.sshh.io/</loc>
-    <lastmod>2026-11-06</lastmod>
+    <lastmod>2026-11-07</lastmod>
+  </url>
+  <url>
+    <loc>https://alchemy.sshh.io/how-to-play</loc>
+    <lastmod>2026-11-07</lastmod>
+  </url>
+  <url>
+    <loc>https://alchemy.sshh.io/recipes</loc>
+    <lastmod>2026-11-07</lastmod>
+  </url>
+  <url>
+    <loc>https://alchemy.sshh.io/daily</loc>
+  </url>
+  <url>
+    <loc>https://alchemy.sshh.io/about</loc>
+    <lastmod>2026-11-07</lastmod>
   </url>
 </urlset>

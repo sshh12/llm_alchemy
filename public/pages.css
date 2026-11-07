@@ -1,0 +1,201 @@
+/* Static content pages (/how-to-play, /about, /recipes, /daily, 404) in the Kiln & Copper style.
+   Plain CSS with stable URLs so the pages work without JavaScript and the /daily function can
+   link it too. Tokens mirror src/app/styles/app.css. */
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/fraunces.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/instrument-sans.woff2") format("woff2");
+  font-weight: 400 700;
+  font-stretch: 75% 100%;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light dark;
+  --bg: #f6f1e7;
+  --grid: #e2d8c6;
+  --surface: #fffcf6;
+  --surface-2: #efe7d9;
+  --border: #ddd1be;
+  --ink: #2a2118;
+  --ink-muted: #6b5d4e;
+  --accent: #a9471f;
+  --on-accent: #fff8f0;
+  --gold: #8f6410;
+  --easy: #2b7566;
+  --hard: #9a5a00;
+  --expert: #8e2f6b;
+  --plate: radial-gradient(circle at 50% 45%, #ffffff 0%, #fbf4e8 58%, transparent 72%);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16120e;
+    --grid: #2c251e;
+    --surface: #211b15;
+    --surface-2: #2a231c;
+    --border: #3b3228;
+    --ink: #f3eadb;
+    --ink-muted: #b4a693;
+    --accent: #e5835a;
+    --on-accent: #1e130c;
+    --gold: #ebc062;
+    --easy: #62c2ab;
+    --hard: #e7a94a;
+    --expert: #e58bc4;
+    --plate: radial-gradient(circle at 50% 45%, rgba(255, 236, 210, 0.16) 0%, rgba(255, 236, 210, 0.06) 58%, transparent 72%);
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--grid) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  color: var(--ink);
+  font: 17px/1.6 "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+img { max-width: 100%; }
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 16px 16px 0;
+}
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+.brand img { width: 36px; height: 36px; border-radius: 10px; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.05; }
+.brand-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.brand-name { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 20px; font-variation-settings: "SOFT" 100; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn:hover { filter: brightness(1.06); text-decoration: none; }
+.btn-quiet { background: var(--surface); color: var(--ink); border: 1px solid var(--border); }
+
+main.page { max-width: 46rem; margin: 0 auto; padding: 28px 16px 56px; }
+.page h1 {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-variation-settings: "SOFT" 100;
+  font-size: clamp(2rem, 6vw, 2.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+}
+.page h2 {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.4rem;
+  line-height: 1.2;
+  margin: 2.2rem 0 0.6rem;
+}
+.page h3 { font-size: 1.05rem; margin: 1.4rem 0 0.3rem; }
+.lede { font-size: 1.15rem; color: var(--ink-muted); margin: 0 0 1.25rem; }
+.muted { color: var(--ink-muted); }
+.small { font-size: 0.92rem; }
+.page ul, .page ol { padding-left: 1.3rem; }
+.page li { margin: 0.35rem 0; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03), 0 10px 24px -18px rgba(42, 33, 24, 0.35);
+}
+.cta { display: flex; flex-wrap: wrap; gap: 10px; margin: 1.25rem 0 0.5rem; }
+
+/* Element tiles */
+.tile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 92px;
+  height: 92px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 18px -14px rgba(42, 33, 24, 0.45);
+  vertical-align: middle;
+  text-align: center;
+  flex: none;
+}
+.tile .art {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  background: var(--plate);
+  border-radius: 50%;
+  font-size: 34px;
+  line-height: 1;
+}
+.tile .art img { width: 58px; height: 58px; object-fit: contain; }
+.tile .name { font-size: 12.5px; font-weight: 600; line-height: 1.15; padding: 0 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile.sm { width: 64px; height: 64px; border-radius: 16px; }
+.tile.sm .art { width: 38px; height: 38px; font-size: 24px; }
+.tile.sm .art img { width: 38px; height: 38px; }
+.tile.sm .name { font-size: 10.5px; }
+
+.equation { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0.9rem 0; }
+.op { font-size: 1.4rem; font-weight: 600; color: var(--accent); }
+
+.starters { display: flex; flex-wrap: wrap; gap: 10px; margin: 0.8rem 0; }
+
+/* Recipe guide */
+.guide-index { display: flex; flex-wrap: wrap; gap: 8px; margin: 1rem 0 0.5rem; padding: 0; list-style: none; }
+.guide-index a { display: inline-block; padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--ink); text-decoration: none; font-size: 0.92rem; }
+.guide-index a:hover { border-color: var(--accent); }
+.recipe { margin: 1.25rem 0; scroll-margin-top: 16px; }
+.recipe-head { display: flex; align-items: center; gap: 16px; }
+.recipe-head h2 { margin: 0; }
+.recipe-head p { margin: 4px 0 0; }
+.steps { margin: 0.8rem 0 0; padding-left: 1.4rem; }
+.steps li { margin: 0.25rem 0; }
+.steps .result { font-weight: 600; }
+details.spoiler summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+
+/* Daily */
+.targets { display: grid; gap: 12px; margin: 1rem 0; }
+.target { display: flex; align-items: center; gap: 16px; }
+.tier { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.tier.easy { color: var(--easy); }
+.tier.hard { color: var(--hard); }
+.tier.expert { color: var(--expert); }
+.target h3 { margin: 2px 0 0; font-family: "Fraunces", Georgia, serif; font-size: 1.35rem; }
+
+.site-footer { max-width: 46rem; margin: 0 auto; padding: 0 16px 40px; font-size: 0.92rem; color: var(--ink-muted); }
+.site-footer nav { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 8px; }
+.site-footer a { color: var(--ink-muted); }
+
+@media (max-width: 420px) {
+  body { font-size: 16px; }
+  .tile { width: 80px; height: 80px; }
+  .tile .art, .tile .art img { width: 50px; height: 50px; }
+}

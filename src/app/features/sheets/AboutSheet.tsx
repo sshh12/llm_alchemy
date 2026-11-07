@@ -73,6 +73,12 @@ export default function AboutSheet({ open }: { open: boolean }) {
           Learn more <ExternalIcon size={13} />
         </a>
       </p>
+      <nav aria-label="Guides" className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[14px]">
+        <a className="font-semibold text-accent underline-offset-2 hover:underline" href="/how-to-play">How to play</a>
+        <a className="font-semibold text-accent underline-offset-2 hover:underline" href="/daily">Today's challenge</a>
+        <a className="font-semibold text-accent underline-offset-2 hover:underline" href="/recipes">Recipes</a>
+        <a className="font-semibold text-accent underline-offset-2 hover:underline" href="/about">About</a>
+      </nav>
       <Dialog.Close asChild>
         <button type="button" className="btn btn-primary mt-5 w-full" data-testid={onboarding ? "onboarding-dismiss" : undefined}>
           {onboarding ? "Start mixing" : "Back to the workbench"}

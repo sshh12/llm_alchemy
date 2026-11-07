@@ -3,7 +3,7 @@
 // handlers and buttons all funnel through here.
 import type { CombineResponse, ElementId, Tier } from "../../../shared/api.ts";
 import { localDay } from "../../../shared/dates.ts";
-import { track } from "../../lib/analytics.ts";
+import { track, trackOncePerSession } from "../../lib/analytics.ts";
 import { ApiFailure, combine } from "../../lib/api.ts";
 import { findSpawn, type Pt } from "../../lib/geometry.ts";
 import { haptic } from "../../lib/haptics.ts";
@@ -323,19 +323,20 @@ function succeedMerge(pendingUid: string, ids: ElementId[], res: CombineResponse
 
   const recipe = `${ids.map(nameOf).join(" + ")} → ${result.name}`;
   track("combine", { inputs: ids.length, cached: local, new: res.newForPlayer });
+  trackOncePerSession("first_combine", { inputs: ids.length });
   if (res.firstEver) {
     haptic("first");
     playSound("first");
     announce(`First discovery in the world: ${result.name}!`);
     celebrate({ kind: "first", elementId: result.id, ingredients: ids, at: new Date().toISOString() });
-    track("first_discovery", { name: result.name });
-    track("discovery", { name: result.name, first: true });
+    track("first_discovery", { rarity: result.rarity, notable: result.notable });
+    track("discovery", { first: true, rarity: result.rarity });
   } else if (res.newForPlayer) {
     haptic("new");
     playSound("new");
     announce(`New: ${result.name}.`);
     showToast({ kind: "new", text: result.name, elementId: result.id, notable: result.notable, duration: 2_500 });
-    track("discovery", { name: result.name, first: false });
+    track("discovery", { first: false, rarity: result.rarity });
   } else {
     announce(`${result.name}.`);
   }

@@ -113,16 +113,35 @@ function BootStatus() {
           >
             Try again
           </button>
+          <BootIntro />
         </div>
       </div>
     );
   }
   if (!slow && !pow) return null;
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-[40%] z-[60] flex justify-center" role="status">
+    <div className="pointer-events-none fixed inset-x-0 top-[40%] z-[60] flex flex-col items-center gap-4 px-6" role="status">
       <p className="pill shadow-lg">
         <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
         {pow ? "Setting up your lab…" : "Warming up the kiln…"}
+      </p>
+      <div className="pointer-events-auto max-w-[340px] text-center">
+        <BootIntro />
+      </div>
+    </div>
+  );
+}
+
+/** What the game is, readable even if the session never starts (slow networks, crawlers). */
+function BootIntro() {
+  return (
+    <div className="mt-4 text-[13.5px] leading-snug text-ink-muted">
+      <p>Start with Earth, Water, Air, Fire and Time. Combine elements to discover new things, illustrated by AI. Free, no account needed.</p>
+      <p className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1">
+        <a className="text-accent underline-offset-2 hover:underline" href="/how-to-play">How to play</a>
+        <a className="text-accent underline-offset-2 hover:underline" href="/daily">Today's challenge</a>
+        <a className="text-accent underline-offset-2 hover:underline" href="/recipes">Recipes</a>
+        <a className="text-accent underline-offset-2 hover:underline" href="/about">About</a>
       </p>
     </div>
   );

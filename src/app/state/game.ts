@@ -2,6 +2,7 @@
 // library, stats, today's challenge, history and the "fresh from the lab" feed.
 // Elements are normalized by id so art updates touch exactly one record.
 import { create } from "zustand";
+import { track } from "../lib/analytics.ts";
 import type {
   BootstrapResponse,
   ChallengeHistoryDay,
@@ -107,8 +108,11 @@ export async function bootGame(): Promise<void> {
       day,
       legacyWelcome,
     });
+    track("app_ready", { returning_legacy: !!legacyWelcome, elements: res.library.length });
   } catch (e) {
-    useGame.setState({ status: "error", powSolving: false, bootError: e instanceof ApiFailure ? e.code : "network" });
+    const code = e instanceof ApiFailure ? e.code : "network";
+    useGame.setState({ status: "error", powSolving: false, bootError: code });
+    track("load_failed", { code });
   }
 }
 

@@ -24,6 +24,16 @@
     Cache-Control = "no-cache, no-store, must-revalidate"
 
 [[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/pages.css"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
@@ -84,8 +94,32 @@
   to = "/maskable-512.png"
   status = 301
 
-# SPA fallback (functions and static files take precedence).
+# One canonical host: the default Netlify hostname redirects (single hop, path and query kept).
+# Deploy previews use other hostnames and are unaffected.
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+  from = "https://llm-alchemy.netlify.app/*"
+  to = "https://alchemy.sshh.io/:splat"
+  status = 301
+  force = true
+
+# Content pages have one clean URL each.
+[[redirects]]
+  from = "/how-to-play.html"
+  to = "/how-to-play"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/about.html"
+  to = "/about"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/recipes.html"
+  to = "/recipes"
+  status = 301
+  force = true
+
+# No catch-all: the game lives at "/", content pages are static files (/how-to-play, /about,
+# /recipes) or functions (/daily), and anything else gets public/404.html with a real 404.

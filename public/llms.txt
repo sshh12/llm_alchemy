@@ -21,6 +21,10 @@ Play at https://alchemy.sshh.io/ (free, no account, works on phones, tablets and
 ## Links
 
 - [Play Infinite Alchemy](https://alchemy.sshh.io/)
+- [How to play](https://alchemy.sshh.io/how-to-play): controls, first discoveries, rarity, daily challenges, saving progress
+- [Today's daily challenge](https://alchemy.sshh.io/daily): the current three targets (UTC date)
+- [Recipe guide](https://alchemy.sshh.io/recipes): verified step-by-step routes from the starters to classic elements
+- [About](https://alchemy.sshh.io/about): history (launched May 2023, rebuilt November 2026), creator, inspiration
 - [Source code on GitHub (MIT)](https://github.com/sshh12/llm_alchemy): README and docs/ARCHITECTURE.md
 - [The launch story](https://blog.sshh.io/p/infinite-alchemy)
 - [Sitemap](https://alchemy.sshh.io/sitemap.xml)

@@ -2,6 +2,7 @@
 // badge, date, site), shared via the Web Share API when files are supported, otherwise
 // downloaded with the link copied to the clipboard.
 import type { ElementDTO } from "../../shared/api.ts";
+import { track } from "./analytics.ts";
 import { SITE_HOST, SITE_URL } from "../content.ts";
 import { thumbUrl } from "./api.ts";
 import { formatDay } from "./format.ts";
@@ -158,6 +159,12 @@ async function renderShareCard({ element, recipe, first, at }: ShareInput): Prom
 export type ShareOutcome = "shared" | "downloaded" | "cancelled" | "failed";
 
 export async function shareElement(input: ShareInput): Promise<ShareOutcome> {
+  const outcome = await shareCard(input);
+  track("share", { outcome, first: !!input.first });
+  return outcome;
+}
+
+async function shareCard(input: ShareInput): Promise<ShareOutcome> {
   const { element, first } = input;
   const text = first ? `I was the first person ever to discover ${element.name} in Infinite Alchemy!` : `I made ${element.name} in Infinite Alchemy.`;
   try {

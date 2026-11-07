@@ -116,24 +116,27 @@ function StatsChip() {
 export function TopBar() {
   return (
     <header className="topbar">
-      <button
-        type="button"
-        className="-ml-1 flex min-h-11 min-w-0 items-center gap-1.5 rounded-xl px-1"
-        aria-label="Infinite Alchemy: about and how to play"
-        onClick={() => openSheet("about")}
-      >
-        <LogoMark size={28} />
-        <span className="flex min-w-0 flex-col items-start leading-none">
-          {/* Below 380px there is only room for "Alchemy" next to the chips. */}
-          <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.16em] text-accent max-[339px]:hidden">The original</span>
-          <span
-            className="whitespace-nowrap font-display text-[21px] font-semibold tracking-[-0.01em] text-ink min-[380px]:text-[16px] min-[420px]:text-[19px] sm:text-[21px]"
-            style={{ fontVariationSettings: '"SOFT" 100' }}
-          >
-            <span className="max-[379px]:hidden">Infinite </span>Alchemy
+      {/* The wordmark is the page's main heading (search engines and screen readers). */}
+      <h1 className="m-0 flex min-w-0">
+        <button
+          type="button"
+          className="-ml-1 flex min-h-11 min-w-0 items-center gap-1.5 rounded-xl px-1"
+          aria-label="Infinite Alchemy: about and how to play"
+          onClick={() => openSheet("about")}
+        >
+          <LogoMark size={28} />
+          <span className="flex min-w-0 flex-col items-start leading-none">
+            {/* Below 380px there is only room for "Alchemy" next to the chips. */}
+            <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.16em] text-accent max-[339px]:hidden">The original</span>
+            <span
+              className="whitespace-nowrap font-display text-[21px] font-semibold tracking-[-0.01em] text-ink min-[380px]:text-[16px] min-[420px]:text-[19px] sm:text-[21px]"
+              style={{ fontVariationSettings: '"SOFT" 100' }}
+            >
+              <span className="max-[379px]:hidden">Infinite </span>Alchemy
+            </span>
           </span>
-        </span>
-      </button>
+        </button>
+      </h1>
       <span className="flex-1" />
       <ChallengeChip />
       <StatsChip />
