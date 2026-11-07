@@ -120,6 +120,9 @@ Errors use `ApiError` with the right HTTP status (400/401/403/404/429/503/422).
   The backfill pre-creates a player for every valid legacy user id. On first visit the client
   sends `legacy` in bootstrap; the server adopts that player (sets the cookie), then imports
   the element ids (mapped via `legacy_element_map`, capped at 20k, max 3 imports per player).
+  Only a request whose legacy user id belongs to a backfilled player imports; without one (or
+  with an unknown one) nothing is written and the response says `imported: 0`, so a fresh
+  player cannot fill its library with caller-chosen elements.
   The client remembers `ia:legacyImported` and never deletes the legacy keys.
 - **Adopt-once** (migration 0005): legacy user ids are not secret (the 2023 API returned every
   element's creator id), so a legacy player is adopted by the first browser only. With a user id

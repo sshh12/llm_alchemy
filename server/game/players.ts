@@ -62,8 +62,12 @@ export async function claimLegacyPlayer(legacyUserId: string, claimHash: string 
     [legacyUserId, claimHash],
   );
   if (player) return { player, claimed: false };
-  const exists = await q1(`SELECT 1 FROM ${t("players")} WHERE legacy_user_id = $1`, [legacyUserId]);
-  return { claimed: exists !== undefined };
+  return { claimed: await legacyPlayerExists(legacyUserId) };
+}
+
+/** True when the backfill created a player for this legacy user id. */
+export async function legacyPlayerExists(legacyUserId: string): Promise<boolean> {
+  return (await q1(`SELECT 1 FROM ${t("players")} WHERE legacy_user_id = $1`, [legacyUserId])) !== undefined;
 }
 
 /**
@@ -92,6 +96,11 @@ export interface LegacyImportResult {
   skipped: number;
 }
 
+/** The result for an inventory that is not imported: every requested id counts as skipped. */
+export function notImported(legacyIds: readonly unknown[]): LegacyImportResult {
+  return { imported: 0, skipped: new Set(legacyIds.map(String)).size };
+}
+
 /**
  * Import a 2023-app inventory (legacy element ids) into the library. Ids map through
  * legacy_element_map (aliases resolve to their active twin); unknown ids are skipped. At most
@@ -111,7 +120,7 @@ export interface LegacyImportResult {
 export async function importLegacy(playerId: string, legacyIds: readonly unknown[]): Promise<LegacyImportResult> {
   const ids = [...new Set(legacyIds.filter(isElementId))].slice(0, MAX_LEGACY_IDS);
   const requested = new Set(legacyIds.map(String)).size;
-  if (ids.length === 0) return { imported: 0, skipped: requested };
+  if (ids.length === 0) return notImported(legacyIds);
   return withTx(async (c) => {
     const claimed = await q(
       `UPDATE ${t("players")}
@@ -121,7 +130,7 @@ export async function importLegacy(playerId: string, legacyIds: readonly unknown
       [playerId, MAX_LEGACY_IMPORTS],
       c,
     );
-    if (claimed.length === 0) return { imported: 0, skipped: requested };
+    if (claimed.length === 0) return notImported(legacyIds);
     const row = await q1<{ mapped_ids: string; elements: string }>(
       `WITH mapped AS (
          SELECT m.legacy_id, m.element_id, e.is_starter, e.created_at, e.status = 'active' AS active

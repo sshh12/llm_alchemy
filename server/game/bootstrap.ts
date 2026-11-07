@@ -18,7 +18,9 @@ import {
   importLegacy,
   isLegacyUserId,
   knownCount,
+  legacyPlayerExists,
   library,
+  notImported,
   recentElements,
   touchPlayer,
 } from "./players.ts";
@@ -75,6 +77,8 @@ export async function bootstrap(req: Request, context: Context): Promise<Respons
   let [player] = await Promise.all([sessionPlayer(req), enforce([{ limit: LIMITS.bootstrapIp, subject: ip }])]);
   let adopted = false;
   let claimed = false;
+  /** Whether a backfilled legacy player has `legacyUserId`, once the claim below has found out. */
+  let legacyExists: boolean | undefined;
   const legacyUserId = body.legacy?.userId;
   if (!player && isLegacyUserId(legacyUserId)) {
     await enforce([{ limit: LIMITS.adoptIp, subject: ip }]);
@@ -89,12 +93,20 @@ export async function bootstrap(req: Request, context: Context): Promise<Respons
     // stateless, so the 401 pow_required retry lands here again) and only gets a copy of the
     // inventory below. Firsts and challenge history stay with the bound player.
     claimed = claim.claimed;
+    legacyExists = claim.player !== undefined || claim.claimed;
   }
   player ??= await createWithPow(body.pow, ip);
 
   let legacyImport: BootstrapResponse["legacyImport"];
   if (body.legacy) {
-    const r = await importLegacy(player.id, body.legacy.elementIds);
+    // Only a real legacy user id imports: into its own (adopted) player, or as a copy when that
+    // player is bound to another browser. Without one (or with an unknown one) nothing is written,
+    // so a fresh player cannot fill its library with caller-chosen elements. The zero result still
+    // tells the client the import is settled, so it stops sending the inventory.
+    const eligible =
+      isLegacyUserId(legacyUserId) &&
+      (player.legacy_user_id === legacyUserId || (legacyExists ?? (await legacyPlayerExists(legacyUserId))));
+    const r = eligible ? await importLegacy(player.id, body.legacy.elementIds) : notImported(body.legacy.elementIds);
     legacyImport = { ...r, adopted, claimed };
   }
 
