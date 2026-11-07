@@ -79,6 +79,13 @@ All ids are INT8 and travel as decimal strings (they exceed JS safe integers).
 - Known recipe → result immediately. Unknown → LLM proposes `{name, emoji, description, notable}`;
   the server validates with `checkName` (retry once with feedback, then `fizzled`, nothing saved).
   The LLM must never return an ingredient unchanged.
+- `ruleViolations` (`server/ai/common.ts`) also rejects the old model's naming ladders that the
+  purge removed, each with retry feedback: counted/multiplied forms (Double/Quadruple Flag,
+  Doublejar, Twin X, X Trio, Pair of X, N-fold), spelled-out sums (Sixty-Four), hype prefixes
+  spaced or glued (Mega Mountain, Megageyser) and meme suffixes (Cakeception, Smogzilla), plus
+  ingredients glued with a shared letter (Dreamachine). An allowlist keeps established terms
+  (Double Rainbow, Twins, Supernova, Steampunk, Tornado); proper nouns skip all but the
+  multiplier check. Prompt rule 8 asks for the same up front.
 - The first player to create an element is its discoverer ("First discovery").
 - Daily challenge: producing a target via any combine on that day completes the tier.
   Tiers from the legacy generator: easy = BFS tier 2, hard = tier 4, expert = tier 6
