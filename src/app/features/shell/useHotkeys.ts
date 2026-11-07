@@ -1,9 +1,11 @@
 // Global keyboard shortcuts (ignored while typing or when a dialog is open):
 //   /  focus search     Ctrl/Cmd+Z undo     Shift+Ctrl/Cmd+Z or Ctrl+Y redo
 //   T  tidy             C  clear (undoable) Esc  clear selection
+//   S  custom sort (opens "Sort by anything", prefilled with the active spec)
 import { useEffect } from "react";
 import { useCanvas } from "../../state/canvas.ts";
-import { useUi } from "../../state/ui.ts";
+import { markCustomSortSeen } from "../../state/customSort.ts";
+import { openSheet, useUi } from "../../state/ui.ts";
 import { SEARCH_ID } from "../library/LibraryControls.tsx";
 import { clearCanvas, clearSelection, doRedo, doUndo, tidyCanvas } from "../workbench/actions.ts";
 
@@ -36,6 +38,10 @@ export function useHotkeys(): void {
         tidyCanvas();
       } else if (k === "c") {
         clearCanvas();
+      } else if (k === "s") {
+        e.preventDefault();
+        markCustomSortSeen(); // found it: the select's one-time "new" dot can go
+        openSheet("customSort");
       } else if (e.key === "Escape" && useCanvas.getState().selection.length) {
         clearSelection();
       }

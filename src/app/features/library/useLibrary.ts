@@ -1,61 +1,45 @@
-// Derives the visible library list (filter, search, sort, pinned-first) from the store.
+// Derives the visible library list (filter, search, pins, built-in or custom sort) from the
+// stores. The ordering itself is the pure orderLibrary() in lib/librarySort.ts.
 import { useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import type { ElementId } from "../../../shared/api.ts";
-import { RARITY_ORDER } from "../../../shared/rarity.ts";
+import { NEW_WINDOW_MS, orderLibrary, type CustomCounts } from "../../lib/librarySort.ts";
+import { useCustomSort } from "../../state/customSort.ts";
 import { useGame } from "../../state/game.ts";
 import { useUi } from "../../state/ui.ts";
 
-const NEW_WINDOW_MS = 24 * 3_600_000;
-
-export function useLibraryList(): ElementId[] {
+/** The ordered visible ids, plus custom-sort bucket counts (null unless a custom order is on screen). */
+export function useLibraryView(): { ids: ElementId[]; counts: CustomCounts | null } {
   const owned = useGame((s) => s.owned);
   const pins = useUi((s) => s.pins);
   const filter = useUi((s) => s.filter);
   const sort = useUi((s) => s.sort);
   const query = useUi((s) => s.query);
-  return useMemo(() => {
+  // Only what the order depends on, compared shallowly (status/epoch changes don't re-sort).
+  const custom = useCustomSort(
+    useShallow((s) =>
+      sort === "custom"
+        ? {
+            committed: s.committed,
+            pending: s.pending,
+            reverse: s.view.reverse,
+            other: s.view.other,
+            bucket: s.bucket,
+            prevSort: s.prevSort,
+            key: s.key,
+          }
+        : null,
+    ),
+  );
+  return useMemo(
     // Names, rarity and dates never change for an element, so reading the catalog
     // non-reactively here is safe (art updates must not re-sort thousands of items).
-    const els = useGame.getState().elements;
-    const q = query.trim().toLowerCase();
-    const cutoff = Date.now() - NEW_WINDOW_MS;
-    const ids = Object.keys(owned).filter((id) => {
-      const el = els[id];
-      if (!el) return false;
-      if (filter === "pinned" && !pins.has(id)) return false;
-      if (filter === "firsts" && !owned[id]!.first) return false;
-      if (filter === "new" && (el.starter || Date.parse(owned[id]!.discoveredAt) < cutoff)) return false;
-      return !q || el.name.toLowerCase().includes(q);
-    });
-    const name = (id: ElementId) => els[id]!.name;
-    const time = (id: ElementId) => Date.parse(owned[id]!.discoveredAt) || 0;
-    const rank = (id: ElementId) => RARITY_ORDER.indexOf(els[id]!.rarity);
-    // Within a tier, deeper is rarer. Starters are always the least rare; elements whose depth
-    // is unknown (no current path from the starters) sit just above them.
-    const depth = (id: ElementId) => (els[id]!.starter ? -1 : (els[id]!.depth ?? 0.5));
-    const byName = (a: ElementId, b: ElementId) => name(a).localeCompare(name(b));
-    const bySort =
-      sort === "az"
-        ? byName
-        : sort === "rarity"
-          ? (a: ElementId, b: ElementId) => rank(b) - rank(a) || depth(b) - depth(a) || byName(a, b)
-          : (a: ElementId, b: ElementId) => time(b) - time(a) || byName(a, b);
-    return ids.sort((a, b) => {
-      if (q) {
-        // Prefix matches first while searching.
-        const pa = name(a).toLowerCase().startsWith(q) ? 0 : 1;
-        const pb = name(b).toLowerCase().startsWith(q) ? 0 : 1;
-        if (pa !== pb) return pa - pb;
-      }
-      if (filter !== "pinned") {
-        const pa = pins.has(a) ? 0 : 1;
-        const pb = pins.has(b) ? 0 : 1;
-        if (pa !== pb) return pa - pb;
-      }
-      return bySort(a, b);
-    });
-  }, [owned, pins, filter, sort, query]);
+    () => orderLibrary({ owned, elements: useGame.getState().elements, pins, filter, sort, query, now: Date.now(), custom }),
+    [owned, pins, filter, sort, query, custom],
+  );
 }
+
+export const useLibraryList = (): ElementId[] => useLibraryView().ids;
 
 export function useFilterCounts() {
   const owned = useGame((s) => s.owned);

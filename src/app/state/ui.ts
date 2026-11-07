@@ -2,12 +2,14 @@
 // actions, library view (filter/sort/search), pins and screen-reader announcements.
 import { create } from "zustand";
 import type { ElementId, Tier } from "../../shared/api.ts";
+import { readStoredSort, type BuiltInSort } from "../lib/customSort.ts";
 import { KEYS, readJSON, writeJSON } from "../lib/storage.ts";
 
-export type SheetName = "challenges" | "stats" | "settings" | "about";
+export type SheetName = "challenges" | "stats" | "settings" | "about" | "customSort";
 export type ShelfSnap = "peek" | "half" | "full";
 export type LibraryFilter = "all" | "pinned" | "new" | "firsts";
-export type LibrarySort = "recent" | "az" | "rarity";
+/** "custom" = the player's own AI-weighed order (state/customSort.ts). */
+export type LibrarySort = BuiltInSort | "custom";
 
 export interface ToastAction {
   label: string;
@@ -75,7 +77,8 @@ export const useUi = create<UiState>(() => ({
   celebrations: [],
   details: null,
   filter: view.filter === "pinned" || view.filter === "new" || view.filter === "firsts" ? view.filter : "all",
-  sort: view.sort === "az" || view.sort === "rarity" ? view.sort : "recent",
+  // Custom survives a reload only with a valid stored spec to sort by.
+  sort: view.sort === "az" || view.sort === "rarity" ? view.sort : view.sort === "custom" && readStoredSort().spec ? "custom" : "recent",
   query: "",
   pins: new Set(Array.isArray(pins) ? pins.filter((p): p is string => typeof p === "string") : []),
   live: { polite: "", assertive: "", n: 0 },

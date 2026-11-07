@@ -112,6 +112,13 @@ export const SparkleIcon = (p: P) => (
     <path d="M19 15c.2 1.8 1 2.8 2.8 3-1.8.2-2.6 1.2-2.8 3-.2-1.8-1-2.8-2.8-3 1.8-.2 2.6-1.2 2.8-3Z" />
   </Svg>
 );
+/** Up and down arrows side by side (reverse an order). */
+export const ReverseIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M8 19V5M4.5 8.5 8 5l3.5 3.5" />
+    <path d="M16 5v14M12.5 15.5 16 19l3.5-3.5" />
+  </Svg>
+);
 export const ExternalIcon = (p: P) => (
   <Svg {...p}>
     <path d="M14 4h6v6M20 4l-9 9" />

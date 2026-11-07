@@ -64,6 +64,15 @@
   --ph-c1: 0.07;
   --ph-l2: 0.78;
   --ph-c2: 0.1;
+  /* Custom sort groups (bucket chip dots, tile meters): one hue per group slot, in order. */
+  --grp-0: #3f86d1;
+  --grp-1: #e8872f;
+  --grp-2: #4fa463;
+  --grp-3: #8b62c9;
+  --grp-4: #d9534a;
+  --grp-5: #d9b42a;
+  --grp-6: #9a6b45;
+  --grp-7: #8494a6;
   /* Motion: a soft ease-out for entrances and a low-bounce spring (visualDuration 0.35,
      bounce 0.3, sampled from lib/spring.ts) for things that pop. */
   --ease-out: cubic-bezier(0.2, 0.9, 0.25, 1);
@@ -110,6 +119,14 @@
     --ph-c1: 0.07;
     --ph-l2: 0.32;
     --ph-c2: 0.09;
+    --grp-0: #5c9ee6;
+    --grp-1: #f59a47;
+    --grp-2: #66bd7a;
+    --grp-3: #a37fe0;
+    --grp-4: #ef6b62;
+    --grp-5: #e9c84a;
+    --grp-6: #b8865e;
+    --grp-7: #9aa9ba;
     color-scheme: dark;
   }
 }
@@ -152,6 +169,14 @@
   --ph-c1: 0.07;
   --ph-l2: 0.32;
   --ph-c2: 0.09;
+  --grp-0: #5c9ee6;
+  --grp-1: #f59a47;
+  --grp-2: #66bd7a;
+  --grp-3: #a37fe0;
+  --grp-4: #ef6b62;
+  --grp-5: #e9c84a;
+  --grp-6: #b8865e;
+  --grp-7: #9aa9ba;
   color-scheme: dark;
 }
 
@@ -1295,6 +1320,138 @@
     font-size: 13px;
     font-weight: 600;
   }
+  /* One-time "new" dot on the select (custom sort), on the visible pill's top-right edge. */
+  .sort-wrap {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+  }
+  .sort-wrap[data-new]::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 1.5px var(--surface);
+    pointer-events: none;
+  }
+
+  /* ==========================================================================
+     Custom sort ("Sort by anything"): the bar, tile meters, the weighing state
+     ========================================================================== */
+
+  /* The active sort's "lens" chip: accent-tinted, and (like .sort-select) a 32 px pill drawn in
+     a 44 px tall control, the transparent top/bottom border being the finger-sized hit area. */
+  .cs-lens {
+    height: 44px;
+    border-color: transparent;
+    border-width: 6px 0;
+    background: var(--accent-soft);
+    background-clip: padding-box;
+    color: var(--accent);
+  }
+  .cs-lens::after {
+    inset: 0;
+  }
+  /* An indeterminate sweep along the bar's bottom edge while a new spec weighs. */
+  .cs-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: linear-gradient(100deg, transparent 30%, var(--accent) 50%, transparent 70%);
+    background-size: 300% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
+  .cs-busy {
+    animation: cs-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes cs-pulse {
+    50% {
+      opacity: 0.45;
+    }
+  }
+  /* A mouse needs less room than a finger: on the narrow rail the bar's icon buttons give the
+     lens back some width (still 44 px tall, well over the 24 px pointer target). */
+  @media (pointer: fine) {
+    .rail .cs-icon {
+      width: 32px;
+    }
+  }
+
+  /* A hairline meter in the 8 px row gap under each tile: rank fills to the score, groups
+     show the group colour (Other is neutral), pending shimmers. */
+  .lt[data-cs] {
+    position: relative;
+  }
+  .lt[data-cs]::after {
+    content: "";
+    position: absolute;
+    bottom: -5.5px;
+    left: 25%;
+    width: 50%;
+    height: 3px;
+    border-radius: 2px;
+    pointer-events: none;
+    transition: background 0.3s var(--ease-out);
+  }
+  .lt[data-cs="rank"]::after {
+    background: linear-gradient(90deg, var(--accent) calc(var(--s) * 100%), var(--border) 0);
+  }
+  .lt[data-cs="group"]::after,
+  .lt[data-cs="other"]::after {
+    left: 15%;
+    width: 70%;
+    background: var(--grp, var(--border-strong));
+  }
+  .lt[data-cs="other"] {
+    --grp: var(--border-strong);
+  }
+  .lt[data-group="0"] {
+    --grp: var(--grp-0);
+  }
+  .lt[data-group="1"] {
+    --grp: var(--grp-1);
+  }
+  .lt[data-group="2"] {
+    --grp: var(--grp-2);
+  }
+  .lt[data-group="3"] {
+    --grp: var(--grp-3);
+  }
+  .lt[data-group="4"] {
+    --grp: var(--grp-4);
+  }
+  .lt[data-group="5"] {
+    --grp: var(--grp-5);
+  }
+  .lt[data-group="6"] {
+    --grp: var(--grp-6);
+  }
+  .lt[data-group="7"] {
+    --grp: var(--grp-7);
+  }
+  .lt[data-cs="pending"]::after {
+    background: linear-gradient(100deg, var(--surface-2) 30%, var(--accent) 50%, var(--surface-2) 70%);
+    background-size: 300% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
+  /* The phone peek row is one tile tall and clips vertically (no room below a tile), so there
+     the meter sits in the 4 px gap above each tile. */
+  .peek-row .lt[data-cs]::after {
+    top: -3.5px;
+    bottom: auto;
+  }
+  /* The old order stays while a new spec weighs; it dims only if that takes more than 150 ms. */
+  .grid-scroll[data-sort-state="scoring"] .lt,
+  .peek-row[data-sort-state="scoring"] .lt {
+    opacity: 0.6;
+    transition: opacity 0.2s ease 0.15s;
+  }
 
   /* ==========================================================================
      Floating UI: toasts, selection pill, sheets, popovers, cards
@@ -2076,8 +2233,18 @@
   .shimmer,
   .foil-badge,
   .empty-zone::before,
-  .flame {
+  .flame,
+  .lt[data-cs="pending"]::after,
+  .cs-progress,
+  .cs-busy {
     animation: none !important;
+  }
+  /* Static frames for the two sweeps: stopped at 0% their 300%-wide gradients show only the
+     faded edge (surface-2 on the surface-2 shelf: invisible), so centre the accent stop. A
+     pending meter then reads as an accent glow, still unlike a rank meter's left fill. */
+  .lt[data-cs="pending"]::after,
+  .cs-progress {
+    background-position: 50% 0;
   }
   .sparks,
   .flakes,
@@ -2101,8 +2268,16 @@
 :root[data-motion="reduce"] .shimmer,
 :root[data-motion="reduce"] .foil-badge,
 :root[data-motion="reduce"] .empty-zone::before,
-:root[data-motion="reduce"] .flame {
+:root[data-motion="reduce"] .flame,
+:root[data-motion="reduce"] .lt[data-cs="pending"]::after,
+:root[data-motion="reduce"] .cs-progress,
+:root[data-motion="reduce"] .cs-busy {
   animation: none !important;
+}
+/* Static frames (see the media block above). */
+:root[data-motion="reduce"] .lt[data-cs="pending"]::after,
+:root[data-motion="reduce"] .cs-progress {
+  background-position: 50% 0;
 }
 :root[data-motion="reduce"] .sparks,
 :root[data-motion="reduce"] .flakes,

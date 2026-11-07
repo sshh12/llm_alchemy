@@ -1,0 +1,5993 @@
+{
+ "_readme": "Custom-sort eval set for scripts/eval-sort.ts. 286 element names (cat 'junk' = legacy junk names). rank: high = clear members, low = clear non-members, tiers = chains ordered low -> high; pair_with = positive twin of a negation, components = parts of a compound. groups: expected = strict label (a group or 'Other'), accept = soft labels (any listed bucket is correct). split 'tune' may be looked at while changing prompts; 'holdout' is for confirming a change once. informational cases were labeled after seeing results; never gate on them.",
+ "version": 1,
+ "model": "jev-1.14.0",
+ "elements": [
+  {
+   "id": "1100000000000000037",
+   "name": "Earth",
+   "cat": "starter"
+  },
+  {
+   "id": "1100000000000000074",
+   "name": "Water",
+   "cat": "starter"
+  },
+  {
+   "id": "1100000000000000111",
+   "name": "Air",
+   "cat": "starter"
+  },
+  {
+   "id": "1100000000000000148",
+   "name": "Fire",
+   "cat": "starter"
+  },
+  {
+   "id": "1100000000000000185",
+   "name": "Time",
+   "cat": "starter"
+  },
+  {
+   "id": "1100000000000000222",
+   "name": "Mud",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000259",
+   "name": "Steam",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000296",
+   "name": "Brick",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000333",
+   "name": "Stone",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000370",
+   "name": "Clay",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000407",
+   "name": "Pottery",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000444",
+   "name": "Glass",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000481",
+   "name": "Metal",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000518",
+   "name": "Sand",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000555",
+   "name": "Dust",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000592",
+   "name": "Pebble",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000629",
+   "name": "Boulder",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000666",
+   "name": "Concrete",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000703",
+   "name": "Paper",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000740",
+   "name": "Book",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000777",
+   "name": "Spoon",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000814",
+   "name": "Kitchen Knife",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000851",
+   "name": "Frying Pan",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000888",
+   "name": "Toaster",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000925",
+   "name": "Oven",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000962",
+   "name": "Refrigerator",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000000999",
+   "name": "Pillow",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001036",
+   "name": "Teddy Bear",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001073",
+   "name": "Candle",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001110",
+   "name": "Campfire",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001147",
+   "name": "Ember",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001184",
+   "name": "Bubble",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001221",
+   "name": "Balloon",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001258",
+   "name": "Kite",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001295",
+   "name": "Feather",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001332",
+   "name": "Nail",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001369",
+   "name": "Sword",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001406",
+   "name": "Snowman",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001443",
+   "name": "Coffin",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001480",
+   "name": "Skull",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001517",
+   "name": "Voodoo Doll",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001554",
+   "name": "Jack-o'-Lantern",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001591",
+   "name": "Magic Wand",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001628",
+   "name": "Potion",
+   "cat": "everyday"
+  },
+  {
+   "id": "1100000000000001665",
+   "name": "Rain",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000001702",
+   "name": "Storm",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000001739",
+   "name": "Snow",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000001776",
+   "name": "Ice",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000001813",
+   "name": "Cloud",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000001850",
+   "name": "Lightning",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000001887",
+   "name": "Tornado",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000001924",
+   "name": "Hurricane",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000001961",
+   "name": "Tsunami",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000001998",
+   "name": "Earthquake",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002035",
+   "name": "Fog",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002072",
+   "name": "Blizzard",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002109",
+   "name": "Wind",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002146",
+   "name": "Rainbow",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002183",
+   "name": "Winter",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002220",
+   "name": "Summer",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002257",
+   "name": "Lava",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002294",
+   "name": "Volcano",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002331",
+   "name": "Mountain",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002368",
+   "name": "Ocean",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002405",
+   "name": "Lake",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002442",
+   "name": "Glacier",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002479",
+   "name": "Iceberg",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002516",
+   "name": "Desert",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002553",
+   "name": "Beach",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002590",
+   "name": "Cave",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002627",
+   "name": "Geyser",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002664",
+   "name": "Inferno",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002701",
+   "name": "Plasma",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002738",
+   "name": "Tree",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002775",
+   "name": "Flower",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002812",
+   "name": "Sunflower",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002849",
+   "name": "Grass",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002886",
+   "name": "Cactus",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002923",
+   "name": "Seaweed",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002960",
+   "name": "Coral Reef",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000002997",
+   "name": "Mushroom",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000003034",
+   "name": "Seed",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000003071",
+   "name": "Fossil",
+   "cat": "nature"
+  },
+  {
+   "id": "1100000000000003108",
+   "name": "Sun",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003145",
+   "name": "Galaxy",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003182",
+   "name": "Universe",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003219",
+   "name": "Planet",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003256",
+   "name": "Mars",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003293",
+   "name": "Star",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003330",
+   "name": "Comet",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003367",
+   "name": "Asteroid",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003404",
+   "name": "Black Hole",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003441",
+   "name": "Supernova",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003478",
+   "name": "Nebula",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003515",
+   "name": "Big Bang",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003552",
+   "name": "Space Station",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003589",
+   "name": "Moon Base",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003626",
+   "name": "UFO",
+   "cat": "space"
+  },
+  {
+   "id": "1100000000000003663",
+   "name": "Puppy",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000003700",
+   "name": "Kitten",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000003737",
+   "name": "Bunny",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000003774",
+   "name": "Koala",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000003811",
+   "name": "Lion",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000003848",
+   "name": "Tiger",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000003885",
+   "name": "Elephant",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000003922",
+   "name": "Whale",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000003959",
+   "name": "Shark",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000003996",
+   "name": "Dolphin",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004033",
+   "name": "Octopus",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004070",
+   "name": "Jellyfish",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004107",
+   "name": "Pufferfish",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004144",
+   "name": "Penguin",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004181",
+   "name": "Eagle",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004218",
+   "name": "Owl",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004255",
+   "name": "Bird",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004292",
+   "name": "Bat",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004329",
+   "name": "Bee",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004366",
+   "name": "Butterfly",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004403",
+   "name": "Ant",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004440",
+   "name": "Spider",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004477",
+   "name": "Rat",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004514",
+   "name": "Mouse",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004551",
+   "name": "Cockroach",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004588",
+   "name": "Frog",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004625",
+   "name": "Cow",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004662",
+   "name": "Chicken",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004699",
+   "name": "Camel",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004736",
+   "name": "Wolf",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004773",
+   "name": "Black Cat",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004810",
+   "name": "Dinosaur",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004847",
+   "name": "Bacteria",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004884",
+   "name": "Virus",
+   "cat": "life"
+  },
+  {
+   "id": "1100000000000004921",
+   "name": "Bread",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000004958",
+   "name": "Cheese",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000004995",
+   "name": "Pizza",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005032",
+   "name": "Cake",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005069",
+   "name": "Cupcake",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005106",
+   "name": "Sugar",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005143",
+   "name": "Salt",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005180",
+   "name": "Flour",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005217",
+   "name": "Butter",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005254",
+   "name": "Honey",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005291",
+   "name": "Milk",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005328",
+   "name": "Egg",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005365",
+   "name": "Rice",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005402",
+   "name": "Sushi",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005439",
+   "name": "Taco",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005476",
+   "name": "Spaghetti",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005513",
+   "name": "Hamburger",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005550",
+   "name": "Soup",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005587",
+   "name": "Chocolate",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005624",
+   "name": "Ice Cream",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005661",
+   "name": "Apple",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005698",
+   "name": "Banana",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005735",
+   "name": "Strawberry",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005772",
+   "name": "Watermelon",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005809",
+   "name": "Coffee",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005846",
+   "name": "Wine",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005883",
+   "name": "Ghost Pepper",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005920",
+   "name": "Poison Apple",
+   "cat": "food"
+  },
+  {
+   "id": "1100000000000005957",
+   "name": "Car",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000005994",
+   "name": "Train",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006031",
+   "name": "Airplane",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006068",
+   "name": "Helicopter",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006105",
+   "name": "Bicycle",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006142",
+   "name": "Submarine",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006179",
+   "name": "Titanic",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006216",
+   "name": "Rocket",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006253",
+   "name": "Computer",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006290",
+   "name": "Smartphone",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006327",
+   "name": "Robot",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006364",
+   "name": "Internet",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006401",
+   "name": "Wi-Fi",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006438",
+   "name": "Microchip",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006475",
+   "name": "Drone",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006512",
+   "name": "Light Bulb",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006549",
+   "name": "Bitcoin",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006586",
+   "name": "Atom Bomb",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006623",
+   "name": "Spreadsheet",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006660",
+   "name": "Atom",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006697",
+   "name": "Electron",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006734",
+   "name": "Energy",
+   "cat": "tech"
+  },
+  {
+   "id": "1100000000000006771",
+   "name": "House",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000006808",
+   "name": "Castle",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000006845",
+   "name": "Skyscraper",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000006882",
+   "name": "Hospital",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000006919",
+   "name": "School",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000006956",
+   "name": "City",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000006993",
+   "name": "Road",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000007030",
+   "name": "Kitchen",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000007067",
+   "name": "Graveyard",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000007104",
+   "name": "Haunted House",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000007141",
+   "name": "Pyramid",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000007178",
+   "name": "Stonehenge",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000007215",
+   "name": "Igloo",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000007252",
+   "name": "Lighthouse",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000007289",
+   "name": "Hogwarts",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000007326",
+   "name": "Atlantis",
+   "cat": "place"
+  },
+  {
+   "id": "1100000000000007363",
+   "name": "Love",
+   "cat": "abstract"
+  },
+  {
+   "id": "1100000000000007400",
+   "name": "Gravity",
+   "cat": "abstract"
+  },
+  {
+   "id": "1100000000000007437",
+   "name": "Democracy",
+   "cat": "abstract"
+  },
+  {
+   "id": "1100000000000007474",
+   "name": "Taxes",
+   "cat": "abstract"
+  },
+  {
+   "id": "1100000000000007511",
+   "name": "Monday",
+   "cat": "abstract"
+  },
+  {
+   "id": "1100000000000007548",
+   "name": "Joy",
+   "cat": "abstract"
+  },
+  {
+   "id": "1100000000000007585",
+   "name": "Nightmare",
+   "cat": "abstract"
+  },
+  {
+   "id": "1100000000000007622",
+   "name": "Life",
+   "cat": "abstract"
+  },
+  {
+   "id": "1100000000000007659",
+   "name": "Meme",
+   "cat": "abstract"
+  },
+  {
+   "id": "1100000000000007696",
+   "name": "Emoji",
+   "cat": "abstract"
+  },
+  {
+   "id": "1100000000000007733",
+   "name": "Selfie",
+   "cat": "abstract"
+  },
+  {
+   "id": "1100000000000007770",
+   "name": "Isaac Newton",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000007807",
+   "name": "Albert Einstein",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000007844",
+   "name": "Leonardo da Vinci",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000007881",
+   "name": "Elvis Presley",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000007918",
+   "name": "William Shakespeare",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000007955",
+   "name": "Cleopatra",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000007992",
+   "name": "Pharaoh",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000008029",
+   "name": "Human",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000008066",
+   "name": "Caveman",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000008103",
+   "name": "Astronaut",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000008140",
+   "name": "Wizard",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000008177",
+   "name": "Witch",
+   "cat": "people"
+  },
+  {
+   "id": "1100000000000008214",
+   "name": "Pikachu",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008251",
+   "name": "Charizard",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008288",
+   "name": "Jigglypuff",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008325",
+   "name": "Bulbasaur",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008362",
+   "name": "Mewtwo",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008399",
+   "name": "Poké Ball",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008436",
+   "name": "Harry Potter",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008473",
+   "name": "Voldemort",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008510",
+   "name": "Darth Vader",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008547",
+   "name": "Mickey Mouse",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008584",
+   "name": "Mario",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008621",
+   "name": "Bowser",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008658",
+   "name": "Superman",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008695",
+   "name": "Batman",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008732",
+   "name": "Joker",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008769",
+   "name": "Robin Hood",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008806",
+   "name": "Dracula",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008843",
+   "name": "Coca-Cola",
+   "cat": "character"
+  },
+  {
+   "id": "1100000000000008880",
+   "name": "Zeus",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000008917",
+   "name": "Poseidon",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000008954",
+   "name": "Hades",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000008991",
+   "name": "Athena",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009028",
+   "name": "Hercules",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009065",
+   "name": "Achilles",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009102",
+   "name": "Medusa",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009139",
+   "name": "Pegasus",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009176",
+   "name": "Minotaur",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009213",
+   "name": "Cyclops",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009250",
+   "name": "Trojan Horse",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009287",
+   "name": "Thor",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009324",
+   "name": "Anubis",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009361",
+   "name": "Dragon",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009398",
+   "name": "Unicorn",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009435",
+   "name": "Phoenix",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009472",
+   "name": "Mermaid",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009509",
+   "name": "Kraken",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009546",
+   "name": "Fairy",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009583",
+   "name": "Werewolf",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009620",
+   "name": "Vampire",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009657",
+   "name": "Ghost",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009694",
+   "name": "Zombie",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009731",
+   "name": "Skeleton",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009768",
+   "name": "Mummy",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009805",
+   "name": "Grim Reaper",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009842",
+   "name": "Poltergeist",
+   "cat": "myth"
+  },
+  {
+   "id": "1100000000000009879",
+   "name": "Clockwork Owl",
+   "cat": "gamestyle"
+  },
+  {
+   "id": "1100000000000009916",
+   "name": "Glowing Golem",
+   "cat": "gamestyle"
+  },
+  {
+   "id": "1100000000000009953",
+   "name": "Frozen Lantern",
+   "cat": "gamestyle"
+  },
+  {
+   "id": "1100000000000009990",
+   "name": "Sunken Cathedral",
+   "cat": "gamestyle"
+  },
+  {
+   "id": "1100000000000010027",
+   "name": "Molten Forge",
+   "cat": "gamestyle"
+  },
+  {
+   "id": "1100000000000010064",
+   "name": "Lunar Garden",
+   "cat": "gamestyle"
+  },
+  {
+   "id": "1100000000000010101",
+   "name": "Timetimetime",
+   "cat": "junk"
+  },
+  {
+   "id": "1100000000000010138",
+   "name": "Sparkleglop",
+   "cat": "junk"
+  },
+  {
+   "id": "1100000000000010175",
+   "name": "Mechamechagolem",
+   "cat": "junk"
+  },
+  {
+   "id": "1100000000000010212",
+   "name": "Headlights Car Vehicle",
+   "cat": "junk"
+  },
+  {
+   "id": "1100000000000010249",
+   "name": "Firefirefire",
+   "cat": "junk"
+  },
+  {
+   "id": "1100000000000010286",
+   "name": "Mudmudmud",
+   "cat": "junk"
+  },
+  {
+   "id": "1100000000000010323",
+   "name": "Blorbo Glorp",
+   "cat": "junk"
+  },
+  {
+   "id": "1100000000000010360",
+   "name": "Super Mega Ultra Dragon",
+   "cat": "junk"
+  },
+  {
+   "id": "1100000000000010397",
+   "name": "Steam Steam Steam",
+   "cat": "junk"
+  },
+  {
+   "id": "1100000000000010434",
+   "name": "Waterwaterwater",
+   "cat": "junk"
+  },
+  {
+   "id": "1100000000000010471",
+   "name": "Shrunken Head",
+   "cat": "audit"
+  },
+  {
+   "id": "1100000000000010508",
+   "name": "Haunted Doll",
+   "cat": "audit"
+  },
+  {
+   "id": "1100000000000010545",
+   "name": "Fugu",
+   "cat": "audit"
+  },
+  {
+   "id": "1100000000000010582",
+   "name": "Poison Mushroom",
+   "cat": "audit"
+  }
+ ],
+ "rank": [
+  {
+   "id": "spookiest",
+   "split": "tune",
+   "category": "quality",
+   "prompt": "spookiest",
+   "high": [
+    "Ghost",
+    "Dracula",
+    "Vampire",
+    "Zombie",
+    "Haunted House",
+    "Grim Reaper",
+    "Werewolf",
+    "Skeleton",
+    "Mummy",
+    "Graveyard",
+    "Poltergeist",
+    "Coffin",
+    "Skull",
+    "Jack-o'-Lantern",
+    "Voodoo Doll",
+    "Nightmare",
+    "Shrunken Head",
+    "Haunted Doll"
+   ],
+   "low": [
+    "Puppy",
+    "Kitten",
+    "Bunny",
+    "Rainbow",
+    "Bread",
+    "Teddy Bear",
+    "Cupcake",
+    "Sunflower",
+    "Butterfly",
+    "Ice Cream",
+    "Spoon",
+    "Beach",
+    "Banana",
+    "Koala",
+    "Strawberry",
+    "Pillow",
+    "Toaster",
+    "Rice",
+    "Flower",
+    "Balloon",
+    "Joy",
+    "Cheese",
+    "Pizza",
+    "Honey",
+    "Dolphin",
+    "Sugar",
+    "Watermelon",
+    "Love"
+   ]
+  },
+  {
+   "id": "cutest",
+   "split": "holdout",
+   "category": "quality",
+   "prompt": "cutest",
+   "high": [
+    "Puppy",
+    "Kitten",
+    "Bunny",
+    "Koala",
+    "Teddy Bear",
+    "Pikachu",
+    "Penguin",
+    "Jigglypuff"
+   ],
+   "low": [
+    "Cockroach",
+    "Atom Bomb",
+    "Taxes",
+    "Concrete",
+    "Zombie",
+    "Skeleton",
+    "Grim Reaper",
+    "Volcano",
+    "Spreadsheet",
+    "Nail",
+    "Tornado",
+    "Black Hole",
+    "Voldemort",
+    "Monday",
+    "Skull"
+   ]
+  },
+  {
+   "id": "most-dangerous",
+   "split": "tune",
+   "category": "quality",
+   "prompt": "most dangerous",
+   "high": [
+    "Atom Bomb",
+    "Black Hole",
+    "Lava",
+    "Volcano",
+    "Tornado",
+    "Tsunami",
+    "Hurricane",
+    "Earthquake",
+    "Supernova",
+    "Shark",
+    "Tiger",
+    "Inferno"
+   ],
+   "low": [
+    "Pillow",
+    "Teddy Bear",
+    "Bunny",
+    "Rainbow",
+    "Bread",
+    "Cupcake",
+    "Feather",
+    "Kitten",
+    "Butterfly",
+    "Cloud",
+    "Sunflower",
+    "Bubble",
+    "Puppy",
+    "Emoji",
+    "Joy"
+   ]
+  },
+  {
+   "id": "most-magical",
+   "split": "holdout",
+   "category": "quality",
+   "prompt": "most magical",
+   "high": [
+    "Wizard",
+    "Unicorn",
+    "Magic Wand",
+    "Potion",
+    "Fairy",
+    "Phoenix",
+    "Hogwarts",
+    "Harry Potter",
+    "Witch"
+   ],
+   "low": [
+    "Brick",
+    "Taxes",
+    "Spreadsheet",
+    "Spoon",
+    "Toaster",
+    "Monday",
+    "Concrete",
+    "Nail",
+    "Mud",
+    "Cockroach",
+    "Road",
+    "Refrigerator",
+    "Bicycle",
+    "Paper",
+    "Salt"
+   ]
+  },
+  {
+   "id": "biggest",
+   "split": "tune",
+   "category": "scale",
+   "prompt": "biggest",
+   "high": [
+    "Universe",
+    "Galaxy",
+    "Sun",
+    "Planet",
+    "Ocean",
+    "Mountain",
+    "Nebula",
+    "Mars",
+    "Star"
+   ],
+   "low": [
+    "Atom",
+    "Electron",
+    "Bacteria",
+    "Virus",
+    "Ant",
+    "Dust",
+    "Seed",
+    "Microchip",
+    "Pebble",
+    "Nail",
+    "Bee",
+    "Feather"
+   ],
+   "tiers": [
+    [
+     "Electron",
+     "Atom",
+     "Bacteria",
+     "Ant",
+     "Mouse",
+     "Human",
+     "Car",
+     "House",
+     "Skyscraper",
+     "Mountain",
+     "Planet",
+     "Sun",
+     "Galaxy",
+     "Universe"
+    ],
+    [
+     "Virus",
+     "Bacteria"
+    ],
+    [
+     "Pebble",
+     "Boulder",
+     "Mountain"
+    ],
+    [
+     "Seed",
+     "Tree"
+    ],
+    [
+     "Kitten",
+     "Lion",
+     "Elephant",
+     "Whale"
+    ],
+    [
+     "Bicycle",
+     "Car",
+     "Titanic"
+    ],
+    [
+     "Lake",
+     "Ocean"
+    ],
+    [
+     "Cupcake",
+     "Cake"
+    ],
+    [
+     "House",
+     "Castle"
+    ]
+   ]
+  },
+  {
+   "id": "hottest",
+   "split": "holdout",
+   "category": "scale",
+   "prompt": "hottest",
+   "high": [
+    "Sun",
+    "Lava",
+    "Fire",
+    "Inferno",
+    "Plasma",
+    "Supernova",
+    "Volcano",
+    "Star",
+    "Campfire",
+    "Ember"
+   ],
+   "low": [
+    "Ice",
+    "Snow",
+    "Glacier",
+    "Iceberg",
+    "Snowman",
+    "Blizzard",
+    "Winter",
+    "Igloo",
+    "Ice Cream"
+   ],
+   "tiers": [
+    [
+     "Snowman",
+     "Coffee",
+     "Lava",
+     "Sun",
+     "Supernova"
+    ],
+    [
+     "Ice",
+     "Water",
+     "Steam"
+    ],
+    [
+     "Glacier",
+     "Desert"
+    ],
+    [
+     "Winter",
+     "Summer"
+    ],
+    [
+     "Ice Cream",
+     "Soup"
+    ]
+   ]
+  },
+  {
+   "id": "heaviest",
+   "split": "tune",
+   "category": "scale",
+   "prompt": "heaviest",
+   "high": [
+    "Planet",
+    "Mountain",
+    "Sun",
+    "Black Hole",
+    "Galaxy",
+    "Star",
+    "Universe",
+    "Mars"
+   ],
+   "low": [
+    "Feather",
+    "Bubble",
+    "Balloon",
+    "Dust",
+    "Atom",
+    "Electron",
+    "Paper",
+    "Seed",
+    "Bacteria",
+    "Virus"
+   ],
+   "tiers": [
+    [
+     "Feather",
+     "Apple",
+     "Brick",
+     "Human",
+     "Car",
+     "Elephant",
+     "Whale",
+     "Titanic",
+     "Mountain",
+     "Planet",
+     "Sun",
+     "Galaxy"
+    ],
+    [
+     "Pebble",
+     "Boulder"
+    ],
+    [
+     "Kitten",
+     "Lion"
+    ],
+    [
+     "Bicycle",
+     "Car",
+     "Train"
+    ],
+    [
+     "Mouse",
+     "Cow"
+    ]
+   ]
+  },
+  {
+   "id": "oldest",
+   "split": "holdout",
+   "category": "scale",
+   "prompt": "oldest",
+   "high": [
+    "Big Bang",
+    "Universe",
+    "Dinosaur",
+    "Fossil",
+    "Pyramid",
+    "Mummy",
+    "Stonehenge",
+    "Caveman",
+    "Pharaoh",
+    "Galaxy",
+    "Star",
+    "Sun"
+   ],
+   "low": [
+    "Smartphone",
+    "Wi-Fi",
+    "Bitcoin",
+    "Selfie",
+    "Emoji",
+    "Meme",
+    "Internet",
+    "Drone",
+    "Microchip",
+    "Computer",
+    "Spreadsheet"
+   ],
+   "tiers": [
+    [
+     "Smartphone",
+     "Car",
+     "Pyramid",
+     "Dinosaur",
+     "Universe"
+    ],
+    [
+     "Elvis Presley",
+     "Albert Einstein",
+     "Isaac Newton",
+     "Leonardo da Vinci",
+     "Cleopatra"
+    ],
+    [
+     "Bitcoin",
+     "Internet",
+     "Light Bulb",
+     "Pyramid"
+    ],
+    [
+     "Titanic",
+     "Stonehenge"
+    ]
+   ]
+  },
+  {
+   "id": "kitchen",
+   "split": "tune",
+   "category": "membership",
+   "prompt": "things in a kitchen",
+   "high": [
+    "Kitchen Knife",
+    "Spoon",
+    "Oven",
+    "Toaster",
+    "Frying Pan",
+    "Refrigerator",
+    "Flour",
+    "Salt",
+    "Sugar",
+    "Butter",
+    "Egg",
+    "Milk"
+   ],
+   "low": [
+    "Galaxy",
+    "Volcano",
+    "Shark",
+    "Asteroid",
+    "Mars",
+    "Tornado",
+    "Glacier",
+    "Dinosaur",
+    "Democracy",
+    "Skyscraper",
+    "Black Hole",
+    "Whale",
+    "Iceberg",
+    "Universe",
+    "Kraken",
+    "Stonehenge"
+   ]
+  },
+  {
+   "id": "ocean",
+   "split": "holdout",
+   "category": "membership",
+   "prompt": "related to the ocean",
+   "high": [
+    "Ocean",
+    "Whale",
+    "Shark",
+    "Octopus",
+    "Kraken",
+    "Mermaid",
+    "Poseidon",
+    "Submarine",
+    "Coral Reef",
+    "Jellyfish",
+    "Seaweed",
+    "Tsunami",
+    "Dolphin",
+    "Pufferfish",
+    "Atlantis"
+   ],
+   "low": [
+    "Desert",
+    "Cactus",
+    "Camel",
+    "Mars",
+    "Toaster",
+    "Democracy",
+    "Galaxy",
+    "Bicycle",
+    "Pyramid",
+    "Taxes",
+    "Skyscraper",
+    "Spreadsheet",
+    "Moon Base",
+    "Cow",
+    "Bitcoin"
+   ]
+  },
+  {
+   "id": "made-by-humans",
+   "split": "tune",
+   "category": "membership",
+   "prompt": "made by humans",
+   "high": [
+    "Brick",
+    "House",
+    "Sword",
+    "Car",
+    "Computer",
+    "Smartphone",
+    "Robot",
+    "Skyscraper",
+    "Pottery",
+    "Airplane",
+    "Bicycle",
+    "Toaster",
+    "Kitchen Knife",
+    "Pyramid",
+    "Rocket",
+    "Space Station",
+    "Concrete",
+    "Pizza"
+   ],
+   "low": [
+    "Galaxy",
+    "Sun",
+    "Volcano",
+    "Ocean",
+    "Lightning",
+    "Mountain",
+    "Tree",
+    "Shark",
+    "Rain",
+    "Tornado",
+    "Glacier",
+    "Bacteria",
+    "Dinosaur",
+    "Lava",
+    "Planet",
+    "Whale"
+   ]
+  },
+  {
+   "id": "alive",
+   "split": "holdout",
+   "category": "membership",
+   "prompt": "alive",
+   "high": [
+    "Puppy",
+    "Kitten",
+    "Tree",
+    "Whale",
+    "Shark",
+    "Bee",
+    "Human",
+    "Frog",
+    "Elephant",
+    "Ant",
+    "Flower",
+    "Bacteria",
+    "Bird",
+    "Cow",
+    "Grass",
+    "Cactus"
+   ],
+   "low": [
+    "Brick",
+    "Stone",
+    "Sword",
+    "Car",
+    "Computer",
+    "Spoon",
+    "Skeleton",
+    "Fossil",
+    "Glass",
+    "Toaster",
+    "Smartphone",
+    "Lava",
+    "Pebble",
+    "Concrete",
+    "Nail",
+    "Mummy",
+    "Robot"
+   ]
+  },
+  {
+   "id": "can-fly",
+   "split": "tune",
+   "category": "membership",
+   "prompt": "things that can fly",
+   "high": [
+    "Bird",
+    "Airplane",
+    "Bat",
+    "Bee",
+    "Butterfly",
+    "Dragon",
+    "Phoenix",
+    "Rocket",
+    "Helicopter",
+    "Eagle",
+    "Owl",
+    "Pegasus",
+    "Drone",
+    "UFO",
+    "Kite",
+    "Superman"
+   ],
+   "low": [
+    "Stone",
+    "Brick",
+    "House",
+    "Whale",
+    "Elephant",
+    "Car",
+    "Penguin",
+    "Mountain",
+    "Spoon",
+    "Pizza",
+    "Cactus",
+    "Skyscraper",
+    "Boulder",
+    "Cow",
+    "Camel",
+    "Refrigerator"
+   ]
+  },
+  {
+   "id": "edible",
+   "split": "holdout",
+   "category": "membership",
+   "prompt": "edible",
+   "high": [
+    "Bread",
+    "Apple",
+    "Pizza",
+    "Cheese",
+    "Banana",
+    "Rice",
+    "Honey",
+    "Sushi",
+    "Cake",
+    "Egg",
+    "Butter",
+    "Chocolate",
+    "Spaghetti",
+    "Taco",
+    "Strawberry",
+    "Watermelon",
+    "Hamburger",
+    "Cupcake",
+    "Ice Cream"
+   ],
+   "low": [
+    "Brick",
+    "Stone",
+    "Sword",
+    "Glass",
+    "Computer",
+    "Car",
+    "Lava",
+    "Smartphone",
+    "Concrete",
+    "Galaxy",
+    "Nail",
+    "Spoon",
+    "Toaster",
+    "Pebble",
+    "Skyscraper",
+    "Robot",
+    "Atom Bomb"
+   ]
+  },
+  {
+   "id": "greek-myth",
+   "split": "tune",
+   "category": "niche",
+   "prompt": "things from Greek mythology",
+   "high": [
+    "Zeus",
+    "Poseidon",
+    "Hades",
+    "Athena",
+    "Hercules",
+    "Achilles",
+    "Medusa",
+    "Pegasus",
+    "Minotaur",
+    "Cyclops",
+    "Trojan Horse"
+   ],
+   "low": [
+    "Thor",
+    "Anubis",
+    "Dracula",
+    "Pikachu",
+    "Harry Potter",
+    "Darth Vader",
+    "Smartphone",
+    "Pizza",
+    "Wi-Fi",
+    "Taxes",
+    "Toaster",
+    "Mario",
+    "Bitcoin",
+    "Superman",
+    "Spreadsheet"
+   ]
+  },
+  {
+   "id": "pokemon",
+   "split": "holdout",
+   "category": "niche",
+   "prompt": "would fit in a Pokémon game",
+   "high": [
+    "Pikachu",
+    "Charizard",
+    "Jigglypuff",
+    "Bulbasaur",
+    "Mewtwo",
+    "Poké Ball",
+    "Potion",
+    "Bicycle"
+   ],
+   "low": [
+    "Taxes",
+    "Democracy",
+    "Spreadsheet",
+    "Monday",
+    "Bitcoin",
+    "Atom Bomb",
+    "Darth Vader",
+    "Mickey Mouse",
+    "Coca-Cola",
+    "Isaac Newton",
+    "Concrete",
+    "Albert Einstein",
+    "Batman",
+    "William Shakespeare"
+   ]
+  },
+  {
+   "id": "least-spooky",
+   "split": "tune",
+   "category": "negation",
+   "prompt": "least spooky",
+   "high": [
+    "Puppy",
+    "Kitten",
+    "Bunny",
+    "Rainbow",
+    "Bread",
+    "Teddy Bear",
+    "Cupcake",
+    "Sunflower",
+    "Butterfly",
+    "Ice Cream",
+    "Spoon",
+    "Beach",
+    "Banana",
+    "Koala",
+    "Strawberry",
+    "Pillow",
+    "Toaster",
+    "Rice",
+    "Flower",
+    "Balloon",
+    "Joy",
+    "Cheese",
+    "Pizza",
+    "Honey",
+    "Dolphin",
+    "Sugar",
+    "Watermelon",
+    "Love"
+   ],
+   "low": [
+    "Ghost",
+    "Dracula",
+    "Vampire",
+    "Zombie",
+    "Haunted House",
+    "Grim Reaper",
+    "Werewolf",
+    "Skeleton",
+    "Mummy",
+    "Graveyard",
+    "Poltergeist",
+    "Coffin",
+    "Skull",
+    "Jack-o'-Lantern",
+    "Voodoo Doll",
+    "Nightmare",
+    "Shrunken Head",
+    "Haunted Doll"
+   ],
+   "pair_with": "spookiest"
+  },
+  {
+   "id": "smallest",
+   "split": "tune",
+   "category": "negation",
+   "prompt": "smallest",
+   "high": [
+    "Atom",
+    "Electron",
+    "Bacteria",
+    "Virus",
+    "Ant",
+    "Dust",
+    "Seed",
+    "Microchip",
+    "Pebble",
+    "Nail",
+    "Bee",
+    "Feather"
+   ],
+   "low": [
+    "Universe",
+    "Galaxy",
+    "Sun",
+    "Planet",
+    "Ocean",
+    "Mountain",
+    "Nebula",
+    "Mars",
+    "Star"
+   ],
+   "tiers": [
+    [
+     "Universe",
+     "Galaxy",
+     "Sun",
+     "Planet",
+     "Mountain",
+     "Skyscraper",
+     "House",
+     "Car",
+     "Human",
+     "Mouse",
+     "Ant",
+     "Bacteria",
+     "Atom",
+     "Electron"
+    ],
+    [
+     "Bacteria",
+     "Virus"
+    ],
+    [
+     "Mountain",
+     "Boulder",
+     "Pebble"
+    ],
+    [
+     "Tree",
+     "Seed"
+    ],
+    [
+     "Whale",
+     "Elephant",
+     "Lion",
+     "Kitten"
+    ],
+    [
+     "Titanic",
+     "Car",
+     "Bicycle"
+    ],
+    [
+     "Ocean",
+     "Lake"
+    ],
+    [
+     "Cake",
+     "Cupcake"
+    ],
+    [
+     "Castle",
+     "House"
+    ]
+   ],
+   "pair_with": "biggest"
+  },
+  {
+   "id": "coldest",
+   "split": "holdout",
+   "category": "negation",
+   "prompt": "coldest",
+   "high": [
+    "Ice",
+    "Snow",
+    "Glacier",
+    "Iceberg",
+    "Snowman",
+    "Blizzard",
+    "Winter",
+    "Igloo",
+    "Ice Cream"
+   ],
+   "low": [
+    "Sun",
+    "Lava",
+    "Fire",
+    "Inferno",
+    "Plasma",
+    "Supernova",
+    "Volcano",
+    "Star",
+    "Campfire",
+    "Ember"
+   ],
+   "tiers": [
+    [
+     "Supernova",
+     "Sun",
+     "Lava",
+     "Coffee",
+     "Snowman"
+    ],
+    [
+     "Steam",
+     "Water",
+     "Ice"
+    ],
+    [
+     "Desert",
+     "Glacier"
+    ],
+    [
+     "Summer",
+     "Winter"
+    ],
+    [
+     "Soup",
+     "Ice Cream"
+    ]
+   ],
+   "pair_with": "hottest"
+  },
+  {
+   "id": "not-edible",
+   "split": "holdout",
+   "category": "negation",
+   "prompt": "not edible",
+   "high": [
+    "Brick",
+    "Stone",
+    "Sword",
+    "Glass",
+    "Computer",
+    "Car",
+    "Lava",
+    "Smartphone",
+    "Concrete",
+    "Galaxy",
+    "Nail",
+    "Spoon",
+    "Toaster",
+    "Pebble",
+    "Skyscraper",
+    "Robot",
+    "Atom Bomb"
+   ],
+   "low": [
+    "Bread",
+    "Apple",
+    "Pizza",
+    "Cheese",
+    "Banana",
+    "Rice",
+    "Honey",
+    "Sushi",
+    "Cake",
+    "Egg",
+    "Butter",
+    "Chocolate",
+    "Spaghetti",
+    "Taco",
+    "Strawberry",
+    "Watermelon",
+    "Hamburger",
+    "Cupcake",
+    "Ice Cream"
+   ],
+   "pair_with": "edible"
+  },
+  {
+   "id": "spooky-and-small",
+   "split": "tune",
+   "category": "compound",
+   "prompt": "spooky and small",
+   "high": [
+    "Spider",
+    "Bat",
+    "Rat",
+    "Skull",
+    "Voodoo Doll",
+    "Black Cat",
+    "Shrunken Head",
+    "Haunted Doll"
+   ],
+   "low": [
+    "Puppy",
+    "Kitten",
+    "Rainbow",
+    "Mountain",
+    "Galaxy",
+    "Whale",
+    "Ocean",
+    "Planet",
+    "Sun",
+    "Beach",
+    "Cupcake",
+    "Bunny",
+    "Elephant",
+    "Skyscraper",
+    "Universe",
+    "Teddy Bear"
+   ],
+   "tiers": [
+    [
+     "Haunted House",
+     "Skull"
+    ],
+    [
+     "Graveyard",
+     "Spider"
+    ],
+    [
+     "Kitten",
+     "Black Cat"
+    ],
+    [
+     "Puppy",
+     "Bat"
+    ],
+    [
+     "Grim Reaper",
+     "Voodoo Doll"
+    ],
+    [
+     "Teddy Bear",
+     "Voodoo Doll"
+    ]
+   ],
+   "components": [
+    "spookiest",
+    "smallest"
+   ]
+  },
+  {
+   "id": "edible-but-dangerous",
+   "split": "holdout",
+   "category": "compound",
+   "prompt": "edible but dangerous",
+   "high": [
+    "Pufferfish",
+    "Ghost Pepper",
+    "Poison Apple",
+    "Fugu",
+    "Poison Mushroom"
+   ],
+   "low": [
+    "Bread",
+    "Rice",
+    "Milk",
+    "Banana",
+    "Cupcake",
+    "Atom Bomb",
+    "Sword",
+    "Lava",
+    "Tornado",
+    "Black Hole",
+    "Pillow",
+    "Teddy Bear"
+   ],
+   "tiers": [
+    [
+     "Bread",
+     "Pufferfish"
+    ],
+    [
+     "Atom Bomb",
+     "Pufferfish"
+    ],
+    [
+     "Lava",
+     "Ghost Pepper"
+    ],
+    [
+     "Strawberry",
+     "Ghost Pepper"
+    ],
+    [
+     "Apple",
+     "Poison Apple"
+    ],
+    [
+     "Sword",
+     "Poison Apple"
+    ]
+   ],
+   "components": [
+    "edible",
+    "most-dangerous"
+   ]
+  },
+  {
+   "id": "ng-least-spooky-graded",
+   "split": "tune",
+   "category": "negation",
+   "prompt": "least spooky",
+   "high": [
+    "Puppy",
+    "Kitten",
+    "Bunny",
+    "Rainbow",
+    "Bread",
+    "Teddy Bear",
+    "Cupcake",
+    "Sunflower",
+    "Butterfly",
+    "Ice Cream",
+    "Spoon",
+    "Beach",
+    "Banana",
+    "Koala",
+    "Strawberry",
+    "Pillow",
+    "Toaster",
+    "Rice",
+    "Flower",
+    "Balloon",
+    "Joy",
+    "Cheese",
+    "Pizza",
+    "Honey",
+    "Dolphin",
+    "Sugar",
+    "Watermelon",
+    "Love"
+   ],
+   "low": [
+    "Ghost",
+    "Dracula",
+    "Vampire",
+    "Zombie",
+    "Haunted House",
+    "Grim Reaper",
+    "Werewolf",
+    "Skeleton",
+    "Mummy",
+    "Graveyard",
+    "Poltergeist",
+    "Coffin",
+    "Skull",
+    "Jack-o'-Lantern",
+    "Voodoo Doll",
+    "Nightmare",
+    "Shrunken Head",
+    "Haunted Doll"
+   ],
+   "tiers": [
+    [
+     "Ghost",
+     "Bat",
+     "Puppy"
+    ],
+    [
+     "Grim Reaper",
+     "Black Cat",
+     "Kitten"
+    ],
+    [
+     "Haunted Doll",
+     "Teddy Bear"
+    ],
+    [
+     "Graveyard",
+     "Cave",
+     "Beach"
+    ],
+    [
+     "Skull",
+     "Spider",
+     "Butterfly"
+    ],
+    [
+     "Vampire",
+     "Bat",
+     "Bird"
+    ],
+    [
+     "Haunted House",
+     "House"
+    ],
+    [
+     "Nightmare",
+     "Fog",
+     "Summer"
+    ],
+    [
+     "Zombie",
+     "Owl",
+     "Bunny"
+    ]
+   ],
+   "pair_with": "spookiest"
+  },
+  {
+   "id": "ng-least-dangerous",
+   "split": "tune",
+   "category": "negation",
+   "prompt": "least dangerous",
+   "high": [
+    "Pillow",
+    "Teddy Bear",
+    "Bunny",
+    "Rainbow",
+    "Bread",
+    "Cupcake",
+    "Feather",
+    "Kitten",
+    "Butterfly",
+    "Cloud",
+    "Sunflower",
+    "Bubble",
+    "Puppy",
+    "Emoji",
+    "Joy"
+   ],
+   "low": [
+    "Atom Bomb",
+    "Black Hole",
+    "Lava",
+    "Volcano",
+    "Tornado",
+    "Tsunami",
+    "Hurricane",
+    "Earthquake",
+    "Supernova",
+    "Shark",
+    "Tiger",
+    "Inferno"
+   ],
+   "tiers": [
+    [
+     "Atom Bomb",
+     "Shark",
+     "Kitchen Knife",
+     "Spoon"
+    ],
+    [
+     "Volcano",
+     "Campfire",
+     "Candle"
+    ],
+    [
+     "Tsunami",
+     "Rain"
+    ],
+    [
+     "Hurricane",
+     "Wind"
+    ],
+    [
+     "Tiger",
+     "Kitten"
+    ],
+    [
+     "Wolf",
+     "Puppy"
+    ],
+    [
+     "Sword",
+     "Pillow"
+    ],
+    [
+     "Lava",
+     "Mud"
+    ],
+    [
+     "Poison Apple",
+     "Apple"
+    ],
+    [
+     "Lightning",
+     "Cloud"
+    ]
+   ],
+   "pair_with": "most-dangerous"
+  },
+  {
+   "id": "ng-cant-fly",
+   "split": "tune",
+   "category": "negation",
+   "prompt": "things that can't fly",
+   "high": [
+    "Stone",
+    "Brick",
+    "House",
+    "Whale",
+    "Elephant",
+    "Car",
+    "Penguin",
+    "Mountain",
+    "Spoon",
+    "Pizza",
+    "Cactus",
+    "Skyscraper",
+    "Boulder",
+    "Cow",
+    "Camel",
+    "Refrigerator"
+   ],
+   "low": [
+    "Bird",
+    "Airplane",
+    "Bat",
+    "Bee",
+    "Butterfly",
+    "Dragon",
+    "Phoenix",
+    "Rocket",
+    "Helicopter",
+    "Eagle",
+    "Owl",
+    "Pegasus",
+    "Drone",
+    "UFO",
+    "Kite",
+    "Superman"
+   ],
+   "pair_with": "can-fly"
+  },
+  {
+   "id": "ng-not-made-by-humans",
+   "split": "tune",
+   "category": "negation",
+   "prompt": "not made by humans",
+   "high": [
+    "Galaxy",
+    "Sun",
+    "Volcano",
+    "Ocean",
+    "Lightning",
+    "Mountain",
+    "Tree",
+    "Shark",
+    "Rain",
+    "Tornado",
+    "Glacier",
+    "Bacteria",
+    "Dinosaur",
+    "Lava",
+    "Planet",
+    "Whale"
+   ],
+   "low": [
+    "Brick",
+    "House",
+    "Sword",
+    "Car",
+    "Computer",
+    "Smartphone",
+    "Robot",
+    "Skyscraper",
+    "Pottery",
+    "Airplane",
+    "Bicycle",
+    "Toaster",
+    "Kitchen Knife",
+    "Pyramid",
+    "Rocket",
+    "Space Station",
+    "Concrete",
+    "Pizza"
+   ],
+   "pair_with": "made-by-humans"
+  },
+  {
+   "id": "ng-non-living",
+   "split": "tune",
+   "category": "negation",
+   "prompt": "non-living things",
+   "high": [
+    "Brick",
+    "Stone",
+    "Sword",
+    "Car",
+    "Computer",
+    "Spoon",
+    "Skeleton",
+    "Fossil",
+    "Glass",
+    "Toaster",
+    "Smartphone",
+    "Lava",
+    "Pebble",
+    "Concrete",
+    "Nail",
+    "Mummy",
+    "Robot"
+   ],
+   "low": [
+    "Puppy",
+    "Kitten",
+    "Tree",
+    "Whale",
+    "Shark",
+    "Bee",
+    "Human",
+    "Frog",
+    "Elephant",
+    "Ant",
+    "Flower",
+    "Bacteria",
+    "Bird",
+    "Cow",
+    "Grass",
+    "Cactus"
+   ],
+   "pair_with": "alive"
+  },
+  {
+   "id": "ng-not-alive",
+   "split": "holdout",
+   "category": "negation",
+   "prompt": "not alive",
+   "high": [
+    "Brick",
+    "Stone",
+    "Sword",
+    "Car",
+    "Computer",
+    "Spoon",
+    "Skeleton",
+    "Fossil",
+    "Glass",
+    "Toaster",
+    "Smartphone",
+    "Lava",
+    "Pebble",
+    "Concrete",
+    "Nail",
+    "Mummy",
+    "Robot"
+   ],
+   "low": [
+    "Puppy",
+    "Kitten",
+    "Tree",
+    "Whale",
+    "Shark",
+    "Bee",
+    "Human",
+    "Frog",
+    "Elephant",
+    "Ant",
+    "Flower",
+    "Bacteria",
+    "Bird",
+    "Cow",
+    "Grass",
+    "Cactus"
+   ],
+   "pair_with": "alive"
+  },
+  {
+   "id": "ng-least-magical",
+   "split": "holdout",
+   "category": "negation",
+   "prompt": "least magical",
+   "high": [
+    "Brick",
+    "Taxes",
+    "Spreadsheet",
+    "Spoon",
+    "Toaster",
+    "Monday",
+    "Concrete",
+    "Nail",
+    "Mud",
+    "Cockroach",
+    "Road",
+    "Refrigerator",
+    "Bicycle",
+    "Paper",
+    "Salt"
+   ],
+   "low": [
+    "Wizard",
+    "Unicorn",
+    "Magic Wand",
+    "Potion",
+    "Fairy",
+    "Phoenix",
+    "Hogwarts",
+    "Harry Potter",
+    "Witch"
+   ],
+   "pair_with": "most-magical"
+  },
+  {
+   "id": "ng-least-cute",
+   "split": "holdout",
+   "category": "negation",
+   "prompt": "least cute",
+   "high": [
+    "Cockroach",
+    "Atom Bomb",
+    "Taxes",
+    "Concrete",
+    "Zombie",
+    "Skeleton",
+    "Grim Reaper",
+    "Volcano",
+    "Spreadsheet",
+    "Nail",
+    "Tornado",
+    "Black Hole",
+    "Voldemort",
+    "Monday",
+    "Skull"
+   ],
+   "low": [
+    "Puppy",
+    "Kitten",
+    "Bunny",
+    "Koala",
+    "Teddy Bear",
+    "Pikachu",
+    "Penguin",
+    "Jigglypuff"
+   ],
+   "pair_with": "cutest"
+  },
+  {
+   "id": "ng-inedible",
+   "split": "holdout",
+   "category": "negation",
+   "prompt": "inedible",
+   "high": [
+    "Brick",
+    "Stone",
+    "Sword",
+    "Glass",
+    "Computer",
+    "Car",
+    "Lava",
+    "Smartphone",
+    "Concrete",
+    "Galaxy",
+    "Nail",
+    "Spoon",
+    "Toaster",
+    "Pebble",
+    "Skyscraper",
+    "Robot",
+    "Atom Bomb"
+   ],
+   "low": [
+    "Bread",
+    "Apple",
+    "Pizza",
+    "Cheese",
+    "Banana",
+    "Rice",
+    "Honey",
+    "Sushi",
+    "Cake",
+    "Egg",
+    "Butter",
+    "Chocolate",
+    "Spaghetti",
+    "Taco",
+    "Strawberry",
+    "Watermelon",
+    "Hamburger",
+    "Cupcake",
+    "Ice Cream"
+   ],
+   "pair_with": "edible"
+  },
+  {
+   "id": "ng-not-in-kitchen",
+   "split": "holdout",
+   "category": "negation",
+   "prompt": "things not found in a kitchen",
+   "high": [
+    "Galaxy",
+    "Volcano",
+    "Shark",
+    "Asteroid",
+    "Mars",
+    "Tornado",
+    "Glacier",
+    "Dinosaur",
+    "Democracy",
+    "Skyscraper",
+    "Black Hole",
+    "Whale",
+    "Iceberg",
+    "Universe",
+    "Kraken",
+    "Stonehenge"
+   ],
+   "low": [
+    "Kitchen Knife",
+    "Spoon",
+    "Oven",
+    "Toaster",
+    "Frying Pan",
+    "Refrigerator",
+    "Flour",
+    "Salt",
+    "Sugar",
+    "Butter",
+    "Egg",
+    "Milk"
+   ],
+   "pair_with": "kitchen"
+  },
+  {
+   "id": "ng-not-greek",
+   "split": "holdout",
+   "category": "negation",
+   "prompt": "not from Greek mythology",
+   "high": [
+    "Thor",
+    "Anubis",
+    "Dracula",
+    "Pikachu",
+    "Harry Potter",
+    "Darth Vader",
+    "Smartphone",
+    "Pizza",
+    "Wi-Fi",
+    "Taxes",
+    "Toaster",
+    "Mario",
+    "Bitcoin",
+    "Superman",
+    "Spreadsheet"
+   ],
+   "low": [
+    "Zeus",
+    "Poseidon",
+    "Hades",
+    "Athena",
+    "Hercules",
+    "Achilles",
+    "Medusa",
+    "Pegasus",
+    "Minotaur",
+    "Cyclops",
+    "Trojan Horse"
+   ],
+   "pair_with": "greek-myth"
+  },
+  {
+   "id": "ng-small-but-dangerous",
+   "split": "tune",
+   "category": "compound",
+   "prompt": "small but dangerous",
+   "high": [
+    "Virus",
+    "Bacteria",
+    "Spider",
+    "Bee",
+    "Poison Mushroom",
+    "Pufferfish",
+    "Fugu",
+    "Poison Apple"
+   ],
+   "low": [
+    "Volcano",
+    "Tsunami",
+    "Hurricane",
+    "Black Hole",
+    "Supernova",
+    "Earthquake",
+    "Tornado",
+    "Feather",
+    "Seed",
+    "Butterfly",
+    "Kitten",
+    "Bunny",
+    "Cupcake",
+    "Pebble",
+    "Bubble",
+    "Mountain",
+    "Rainbow",
+    "Cloud",
+    "Whale",
+    "Beach"
+   ],
+   "tiers": [
+    [
+     "Volcano",
+     "Virus"
+    ],
+    [
+     "Shark",
+     "Pufferfish"
+    ],
+    [
+     "Butterfly",
+     "Bee"
+    ],
+    [
+     "Tiger",
+     "Spider"
+    ],
+    [
+     "Mushroom",
+     "Poison Mushroom"
+    ],
+    [
+     "Apple",
+     "Poison Apple"
+    ]
+   ]
+  },
+  {
+   "id": "ng-hot-and-wet",
+   "split": "tune",
+   "category": "compound",
+   "prompt": "hot and wet",
+   "high": [
+    "Steam",
+    "Geyser",
+    "Soup",
+    "Coffee"
+   ],
+   "low": [
+    "Desert",
+    "Fire",
+    "Sun",
+    "Inferno",
+    "Sand",
+    "Ice",
+    "Snow",
+    "Glacier",
+    "Brick",
+    "Pebble",
+    "Rain",
+    "Ocean",
+    "Iceberg",
+    "Blizzard"
+   ],
+   "tiers": [
+    [
+     "Fire",
+     "Steam"
+    ],
+    [
+     "Ice",
+     "Steam"
+    ],
+    [
+     "Desert",
+     "Geyser"
+    ],
+    [
+     "Ocean",
+     "Soup"
+    ],
+    [
+     "Sun",
+     "Coffee"
+    ],
+    [
+     "Rain",
+     "Coffee"
+    ]
+   ]
+  },
+  {
+   "id": "ng-magical-not-spooky",
+   "split": "tune",
+   "category": "compound",
+   "prompt": "magical but not spooky",
+   "high": [
+    "Unicorn",
+    "Fairy",
+    "Pegasus",
+    "Magic Wand",
+    "Phoenix",
+    "Mermaid",
+    "Wizard",
+    "Harry Potter"
+   ],
+   "low": [
+    "Ghost",
+    "Vampire",
+    "Voodoo Doll",
+    "Poltergeist",
+    "Werewolf",
+    "Grim Reaper",
+    "Haunted House",
+    "Zombie",
+    "Dracula",
+    "Haunted Doll",
+    "Brick",
+    "Spreadsheet",
+    "Taxes",
+    "Concrete",
+    "Toaster",
+    "Spoon"
+   ],
+   "tiers": [
+    [
+     "Voodoo Doll",
+     "Magic Wand"
+    ],
+    [
+     "Ghost",
+     "Fairy"
+    ],
+    [
+     "Brick",
+     "Unicorn"
+    ],
+    [
+     "Haunted House",
+     "Hogwarts"
+    ],
+    [
+     "Werewolf",
+     "Pegasus"
+    ],
+    [
+     "Spreadsheet",
+     "Wizard"
+    ]
+   ]
+  },
+  {
+   "id": "ng-cats-and-dogs",
+   "split": "tune",
+   "category": "compound-union",
+   "prompt": "cats and dogs",
+   "high": [
+    "Kitten",
+    "Black Cat",
+    "Puppy"
+   ],
+   "low": [
+    "Brick",
+    "Spoon",
+    "Galaxy",
+    "Bread",
+    "Car",
+    "Pizza",
+    "Mountain",
+    "Shark",
+    "Eagle",
+    "Bee",
+    "Spreadsheet",
+    "Volcano",
+    "Rainbow",
+    "Taxes",
+    "Cactus"
+   ]
+  },
+  {
+   "id": "ng-big-and-alive",
+   "split": "holdout",
+   "category": "compound",
+   "prompt": "big and alive",
+   "high": [
+    "Whale",
+    "Elephant",
+    "Camel",
+    "Cow",
+    "Lion",
+    "Shark",
+    "Tiger",
+    "Tree"
+   ],
+   "low": [
+    "Mountain",
+    "Galaxy",
+    "Skyscraper",
+    "Titanic",
+    "Planet",
+    "Sun",
+    "Universe",
+    "Castle",
+    "Ant",
+    "Bee",
+    "Bacteria",
+    "Mouse",
+    "Butterfly",
+    "Pebble",
+    "Spoon",
+    "Nail",
+    "Feather"
+   ],
+   "tiers": [
+    [
+     "Mountain",
+     "Whale"
+    ],
+    [
+     "Ant",
+     "Elephant"
+    ],
+    [
+     "Galaxy",
+     "Whale"
+    ],
+    [
+     "Mouse",
+     "Cow"
+    ],
+    [
+     "Titanic",
+     "Whale"
+    ],
+    [
+     "Kitten",
+     "Lion"
+    ]
+   ]
+  },
+  {
+   "id": "ng-alive-in-sea",
+   "split": "holdout",
+   "category": "compound",
+   "prompt": "alive and in the sea",
+   "high": [
+    "Whale",
+    "Shark",
+    "Dolphin",
+    "Octopus",
+    "Jellyfish",
+    "Pufferfish",
+    "Seaweed",
+    "Coral Reef"
+   ],
+   "low": [
+    "Submarine",
+    "Titanic",
+    "Tsunami",
+    "Atlantis",
+    "Iceberg",
+    "Camel",
+    "Cow",
+    "Elephant",
+    "Lion",
+    "Cactus",
+    "Kitten",
+    "Bee",
+    "Eagle",
+    "Brick",
+    "Desert",
+    "Spreadsheet"
+   ],
+   "tiers": [
+    [
+     "Submarine",
+     "Whale"
+    ],
+    [
+     "Camel",
+     "Dolphin"
+    ],
+    [
+     "Titanic",
+     "Octopus"
+    ],
+    [
+     "Tsunami",
+     "Shark"
+    ]
+   ]
+  },
+  {
+   "id": "ng-fire-and-ice",
+   "split": "holdout",
+   "category": "compound-union",
+   "prompt": "fire and ice",
+   "high": [
+    "Fire",
+    "Ice",
+    "Inferno",
+    "Glacier",
+    "Iceberg",
+    "Snow",
+    "Blizzard",
+    "Campfire",
+    "Ember"
+   ],
+   "low": [
+    "Bread",
+    "Spoon",
+    "Puppy",
+    "Car",
+    "Book",
+    "Spreadsheet",
+    "Democracy",
+    "Banana",
+    "Tree",
+    "Cow",
+    "Pillow",
+    "Taxes",
+    "Grass",
+    "Bicycle"
+   ]
+  },
+  {
+   "id": "ng-p-not-spooky",
+   "split": "tune",
+   "category": "negation-phrasing",
+   "prompt": "not spooky",
+   "high": [
+    "Puppy",
+    "Kitten",
+    "Bunny",
+    "Rainbow",
+    "Bread",
+    "Teddy Bear",
+    "Cupcake",
+    "Sunflower",
+    "Butterfly",
+    "Ice Cream",
+    "Spoon",
+    "Beach",
+    "Banana",
+    "Koala",
+    "Strawberry",
+    "Pillow",
+    "Toaster",
+    "Rice",
+    "Flower",
+    "Balloon",
+    "Joy",
+    "Cheese",
+    "Pizza",
+    "Honey",
+    "Dolphin",
+    "Sugar",
+    "Watermelon",
+    "Love"
+   ],
+   "low": [
+    "Ghost",
+    "Dracula",
+    "Vampire",
+    "Zombie",
+    "Haunted House",
+    "Grim Reaper",
+    "Werewolf",
+    "Skeleton",
+    "Mummy",
+    "Graveyard",
+    "Poltergeist",
+    "Coffin",
+    "Skull",
+    "Jack-o'-Lantern",
+    "Voodoo Doll",
+    "Nightmare",
+    "Shrunken Head",
+    "Haunted Doll"
+   ],
+   "pair_with": "spookiest"
+  },
+  {
+   "id": "ng-p-anything-but-spooky",
+   "split": "tune",
+   "category": "negation-phrasing",
+   "prompt": "anything but spooky",
+   "high": [
+    "Puppy",
+    "Kitten",
+    "Bunny",
+    "Rainbow",
+    "Bread",
+    "Teddy Bear",
+    "Cupcake",
+    "Sunflower",
+    "Butterfly",
+    "Ice Cream",
+    "Spoon",
+    "Beach",
+    "Banana",
+    "Koala",
+    "Strawberry",
+    "Pillow",
+    "Toaster",
+    "Rice",
+    "Flower",
+    "Balloon",
+    "Joy",
+    "Cheese",
+    "Pizza",
+    "Honey",
+    "Dolphin",
+    "Sugar",
+    "Watermelon",
+    "Love"
+   ],
+   "low": [
+    "Ghost",
+    "Dracula",
+    "Vampire",
+    "Zombie",
+    "Haunted House",
+    "Grim Reaper",
+    "Werewolf",
+    "Skeleton",
+    "Mummy",
+    "Graveyard",
+    "Poltergeist",
+    "Coffin",
+    "Skull",
+    "Jack-o'-Lantern",
+    "Voodoo Doll",
+    "Nightmare",
+    "Shrunken Head",
+    "Haunted Doll"
+   ],
+   "pair_with": "spookiest"
+  },
+  {
+   "id": "ng-p-opposite-spooky",
+   "split": "tune",
+   "category": "negation-phrasing",
+   "prompt": "the opposite of spooky",
+   "high": [
+    "Puppy",
+    "Kitten",
+    "Bunny",
+    "Rainbow",
+    "Bread",
+    "Teddy Bear",
+    "Cupcake",
+    "Sunflower",
+    "Butterfly",
+    "Ice Cream",
+    "Spoon",
+    "Beach",
+    "Banana",
+    "Koala",
+    "Strawberry",
+    "Pillow",
+    "Toaster",
+    "Rice",
+    "Flower",
+    "Balloon",
+    "Joy",
+    "Cheese",
+    "Pizza",
+    "Honey",
+    "Dolphin",
+    "Sugar",
+    "Watermelon",
+    "Love"
+   ],
+   "low": [
+    "Ghost",
+    "Dracula",
+    "Vampire",
+    "Zombie",
+    "Haunted House",
+    "Grim Reaper",
+    "Werewolf",
+    "Skeleton",
+    "Mummy",
+    "Graveyard",
+    "Poltergeist",
+    "Coffin",
+    "Skull",
+    "Jack-o'-Lantern",
+    "Voodoo Doll",
+    "Nightmare",
+    "Shrunken Head",
+    "Haunted Doll"
+   ],
+   "pair_with": "spookiest"
+  },
+  {
+   "id": "ng-p-not-scary-at-all",
+   "split": "tune",
+   "category": "negation-phrasing",
+   "prompt": "not scary at all",
+   "high": [
+    "Puppy",
+    "Kitten",
+    "Bunny",
+    "Rainbow",
+    "Bread",
+    "Teddy Bear",
+    "Cupcake",
+    "Sunflower",
+    "Butterfly",
+    "Ice Cream",
+    "Spoon",
+    "Beach",
+    "Banana",
+    "Koala",
+    "Strawberry",
+    "Pillow",
+    "Toaster",
+    "Rice",
+    "Flower",
+    "Balloon",
+    "Joy",
+    "Cheese",
+    "Pizza",
+    "Honey",
+    "Dolphin",
+    "Sugar",
+    "Watermelon",
+    "Love"
+   ],
+   "low": [
+    "Ghost",
+    "Dracula",
+    "Vampire",
+    "Zombie",
+    "Haunted House",
+    "Grim Reaper",
+    "Werewolf",
+    "Skeleton",
+    "Mummy",
+    "Graveyard",
+    "Poltergeist",
+    "Coffin",
+    "Skull",
+    "Jack-o'-Lantern",
+    "Voodoo Doll",
+    "Nightmare",
+    "Shrunken Head",
+    "Haunted Doll"
+   ],
+   "pair_with": "spookiest"
+  },
+  {
+   "id": "ng-p-small-and-spooky",
+   "split": "tune",
+   "category": "compound-phrasing",
+   "prompt": "small and spooky",
+   "high": [
+    "Spider",
+    "Bat",
+    "Rat",
+    "Skull",
+    "Voodoo Doll",
+    "Black Cat",
+    "Shrunken Head",
+    "Haunted Doll"
+   ],
+   "low": [
+    "Puppy",
+    "Kitten",
+    "Rainbow",
+    "Mountain",
+    "Galaxy",
+    "Whale",
+    "Ocean",
+    "Planet",
+    "Sun",
+    "Beach",
+    "Cupcake",
+    "Bunny",
+    "Elephant",
+    "Skyscraper",
+    "Universe",
+    "Teddy Bear"
+   ],
+   "tiers": [
+    [
+     "Haunted House",
+     "Skull"
+    ],
+    [
+     "Graveyard",
+     "Spider"
+    ],
+    [
+     "Kitten",
+     "Black Cat"
+    ],
+    [
+     "Puppy",
+     "Bat"
+    ],
+    [
+     "Grim Reaper",
+     "Voodoo Doll"
+    ],
+    [
+     "Teddy Bear",
+     "Voodoo Doll"
+    ]
+   ]
+  },
+  {
+   "id": "ng-p-spooky-but-small",
+   "split": "tune",
+   "category": "compound-phrasing",
+   "prompt": "spooky but small",
+   "high": [
+    "Spider",
+    "Bat",
+    "Rat",
+    "Skull",
+    "Voodoo Doll",
+    "Black Cat",
+    "Shrunken Head",
+    "Haunted Doll"
+   ],
+   "low": [
+    "Puppy",
+    "Kitten",
+    "Rainbow",
+    "Mountain",
+    "Galaxy",
+    "Whale",
+    "Ocean",
+    "Planet",
+    "Sun",
+    "Beach",
+    "Cupcake",
+    "Bunny",
+    "Elephant",
+    "Skyscraper",
+    "Universe",
+    "Teddy Bear"
+   ],
+   "tiers": [
+    [
+     "Haunted House",
+     "Skull"
+    ],
+    [
+     "Graveyard",
+     "Spider"
+    ],
+    [
+     "Kitten",
+     "Black Cat"
+    ],
+    [
+     "Puppy",
+     "Bat"
+    ],
+    [
+     "Grim Reaper",
+     "Voodoo Doll"
+    ],
+    [
+     "Teddy Bear",
+     "Voodoo Doll"
+    ]
+   ]
+  },
+  {
+   "id": "ng-p-tiny-spooky-things",
+   "split": "tune",
+   "category": "compound-phrasing",
+   "prompt": "tiny spooky things",
+   "high": [
+    "Spider",
+    "Bat",
+    "Rat",
+    "Skull",
+    "Voodoo Doll",
+    "Black Cat",
+    "Shrunken Head",
+    "Haunted Doll"
+   ],
+   "low": [
+    "Puppy",
+    "Kitten",
+    "Rainbow",
+    "Mountain",
+    "Galaxy",
+    "Whale",
+    "Ocean",
+    "Planet",
+    "Sun",
+    "Beach",
+    "Cupcake",
+    "Bunny",
+    "Elephant",
+    "Skyscraper",
+    "Universe",
+    "Teddy Bear"
+   ],
+   "tiers": [
+    [
+     "Haunted House",
+     "Skull"
+    ],
+    [
+     "Graveyard",
+     "Spider"
+    ],
+    [
+     "Kitten",
+     "Black Cat"
+    ],
+    [
+     "Puppy",
+     "Bat"
+    ],
+    [
+     "Grim Reaper",
+     "Voodoo Doll"
+    ],
+    [
+     "Teddy Bear",
+     "Voodoo Doll"
+    ]
+   ]
+  },
+  {
+   "id": "ng-p-least-ocean",
+   "split": "holdout",
+   "category": "negation-phrasing",
+   "prompt": "least related to the ocean",
+   "high": [
+    "Desert",
+    "Cactus",
+    "Camel",
+    "Mars",
+    "Toaster",
+    "Democracy",
+    "Galaxy",
+    "Bicycle",
+    "Pyramid",
+    "Taxes",
+    "Skyscraper",
+    "Spreadsheet",
+    "Moon Base",
+    "Cow",
+    "Bitcoin"
+   ],
+   "low": [
+    "Ocean",
+    "Whale",
+    "Shark",
+    "Octopus",
+    "Kraken",
+    "Mermaid",
+    "Poseidon",
+    "Submarine",
+    "Coral Reef",
+    "Jellyfish",
+    "Seaweed",
+    "Tsunami",
+    "Dolphin",
+    "Pufferfish",
+    "Atlantis"
+   ],
+   "pair_with": "ocean"
+  },
+  {
+   "id": "ng-p-not-hot",
+   "split": "holdout",
+   "category": "negation-phrasing",
+   "prompt": "not hot",
+   "high": [
+    "Ice",
+    "Snow",
+    "Glacier",
+    "Iceberg",
+    "Snowman",
+    "Blizzard",
+    "Winter",
+    "Igloo",
+    "Ice Cream"
+   ],
+   "low": [
+    "Sun",
+    "Lava",
+    "Fire",
+    "Inferno",
+    "Plasma",
+    "Supernova",
+    "Volcano",
+    "Star",
+    "Campfire",
+    "Ember"
+   ],
+   "pair_with": "hottest"
+  },
+  {
+   "id": "ng-p-cute-and-small",
+   "split": "holdout",
+   "category": "compound-phrasing",
+   "prompt": "cute and small",
+   "high": [
+    "Kitten",
+    "Puppy",
+    "Bunny",
+    "Jigglypuff",
+    "Pikachu",
+    "Teddy Bear",
+    "Butterfly",
+    "Mouse"
+   ],
+   "low": [
+    "Whale",
+    "Mountain",
+    "Galaxy",
+    "Skyscraper",
+    "Titanic",
+    "Cockroach",
+    "Virus",
+    "Spider",
+    "Zombie",
+    "Tornado",
+    "Volcano",
+    "Elephant",
+    "Dinosaur",
+    "Spreadsheet",
+    "Taxes",
+    "Nail"
+   ],
+   "tiers": [
+    [
+     "Elephant",
+     "Kitten"
+    ],
+    [
+     "Cockroach",
+     "Butterfly"
+    ],
+    [
+     "Lion",
+     "Kitten"
+    ],
+    [
+     "Whale",
+     "Bunny"
+    ],
+    [
+     "Spider",
+     "Mouse"
+    ]
+   ]
+  },
+  {
+   "id": "ng-probe-cats-or-dogs",
+   "split": "tune",
+   "category": "probe-union-or",
+   "prompt": "cats or dogs",
+   "high": [
+    "Kitten",
+    "Black Cat",
+    "Puppy"
+   ],
+   "low": [
+    "Brick",
+    "Spoon",
+    "Galaxy",
+    "Bread",
+    "Car",
+    "Pizza",
+    "Mountain",
+    "Shark",
+    "Eagle",
+    "Bee",
+    "Spreadsheet",
+    "Volcano",
+    "Rainbow",
+    "Taxes",
+    "Cactus"
+   ],
+   "informational": true
+  },
+  {
+   "id": "ng-probe-fire-or-ice",
+   "split": "holdout",
+   "category": "probe-union-or",
+   "prompt": "fire or ice",
+   "high": [
+    "Fire",
+    "Ice",
+    "Inferno",
+    "Glacier",
+    "Iceberg",
+    "Snow",
+    "Blizzard",
+    "Campfire",
+    "Ember"
+   ],
+   "low": [
+    "Bread",
+    "Spoon",
+    "Puppy",
+    "Car",
+    "Book",
+    "Spreadsheet",
+    "Democracy",
+    "Banana",
+    "Tree",
+    "Cow",
+    "Pillow",
+    "Taxes",
+    "Grass",
+    "Bicycle"
+   ],
+   "informational": true
+  }
+ ],
+ "groups": [
+  {
+   "id": "g-animals-food-weather",
+   "split": "tune",
+   "category": "groups-other",
+   "other": true,
+   "groups": [
+    "Animals",
+    "Food & drink",
+    "Weather"
+   ],
+   "expected": {
+    "Puppy": "Animals",
+    "Kitten": "Animals",
+    "Shark": "Animals",
+    "Whale": "Animals",
+    "Penguin": "Animals",
+    "Elephant": "Animals",
+    "Bee": "Animals",
+    "Frog": "Animals",
+    "Lion": "Animals",
+    "Tiger": "Animals",
+    "Cow": "Animals",
+    "Ant": "Animals",
+    "Eagle": "Animals",
+    "Owl": "Animals",
+    "Camel": "Animals",
+    "Dolphin": "Animals",
+    "Wolf": "Animals",
+    "Bread": "Food & drink",
+    "Pizza": "Food & drink",
+    "Cheese": "Food & drink",
+    "Coffee": "Food & drink",
+    "Wine": "Food & drink",
+    "Banana": "Food & drink",
+    "Sushi": "Food & drink",
+    "Cake": "Food & drink",
+    "Milk": "Food & drink",
+    "Taco": "Food & drink",
+    "Coca-Cola": "Food & drink",
+    "Soup": "Food & drink",
+    "Spaghetti": "Food & drink",
+    "Hamburger": "Food & drink",
+    "Chocolate": "Food & drink",
+    "Ice Cream": "Food & drink",
+    "Rain": "Weather",
+    "Storm": "Weather",
+    "Snow": "Weather",
+    "Tornado": "Weather",
+    "Hurricane": "Weather",
+    "Fog": "Weather",
+    "Blizzard": "Weather",
+    "Lightning": "Weather",
+    "Cloud": "Weather",
+    "Wind": "Weather",
+    "Brick": "Other",
+    "Sword": "Other",
+    "Computer": "Other",
+    "Smartphone": "Other",
+    "Democracy": "Other",
+    "Taxes": "Other",
+    "Skyscraper": "Other",
+    "Car": "Other",
+    "Book": "Other",
+    "Galaxy": "Other",
+    "Gravity": "Other",
+    "Isaac Newton": "Other",
+    "Pyramid": "Other",
+    "Robot": "Other",
+    "Toaster": "Other",
+    "Mars": "Other",
+    "Bicycle": "Other",
+    "Sparkleglop": "Other",
+    "Timetimetime": "Other",
+    "Headlights Car Vehicle": "Other",
+    "Bunny": "Animals",
+    "Koala": "Animals",
+    "Octopus": "Animals",
+    "Jellyfish": "Animals",
+    "Pufferfish": "Animals",
+    "Butterfly": "Animals",
+    "Spider": "Animals",
+    "Rat": "Animals",
+    "Mouse": "Animals",
+    "Cockroach": "Animals",
+    "Chicken": "Animals",
+    "Bat": "Animals",
+    "Black Cat": "Animals",
+    "Bird": "Animals",
+    "Honey": "Food & drink",
+    "Egg": "Food & drink",
+    "Sugar": "Food & drink",
+    "Flour": "Food & drink",
+    "Butter": "Food & drink",
+    "Rice": "Food & drink",
+    "Apple": "Food & drink",
+    "Strawberry": "Food & drink",
+    "Watermelon": "Food & drink",
+    "Cupcake": "Food & drink",
+    "Ghost Pepper": "Food & drink",
+    "Kitchen": "Other",
+    "Frying Pan": "Other",
+    "Oven": "Other",
+    "Refrigerator": "Other",
+    "Spoon": "Other",
+    "Kitchen Knife": "Other",
+    "Teddy Bear": "Other",
+    "Snowman": "Other",
+    "Volcano": "Other",
+    "Earthquake": "Other",
+    "Lava": "Other",
+    "Ocean": "Other",
+    "Glacier": "Other",
+    "Iceberg": "Other",
+    "Steam": "Other",
+    "Poké Ball": "Other",
+    "Airplane": "Other",
+    "Planet": "Other",
+    "Love": "Other",
+    "Monday": "Other",
+    "Paper": "Other",
+    "Candle": "Other",
+    "Castle": "Other",
+    "Albert Einstein": "Other",
+    "Frozen Lantern": "Other",
+    "Molten Forge": "Other",
+    "Blorbo Glorp": "Other",
+    "Firefirefire": "Other",
+    "Mudmudmud": "Other",
+    "Mechamechagolem": "Other"
+   },
+   "accept": {
+    "Dinosaur": [
+     "Animals",
+     "Other"
+    ],
+    "Fugu": [
+     "Food & drink",
+     "Animals"
+    ],
+    "Salt": [
+     "Food & drink",
+     "Other"
+    ],
+    "Poison Apple": [
+     "Food & drink",
+     "Other"
+    ],
+    "Mushroom": [
+     "Food & drink",
+     "Other"
+    ],
+    "Potion": [
+     "Other",
+     "Food & drink"
+    ],
+    "Water": [
+     "Food & drink",
+     "Other"
+    ],
+    "Seaweed": [
+     "Food & drink",
+     "Other"
+    ],
+    "Seed": [
+     "Other",
+     "Food & drink"
+    ],
+    "Rainbow": [
+     "Weather",
+     "Other"
+    ],
+    "Summer": [
+     "Weather",
+     "Other"
+    ],
+    "Winter": [
+     "Weather",
+     "Other"
+    ],
+    "Ice": [
+     "Weather",
+     "Other"
+    ],
+    "Sun": [
+     "Weather",
+     "Other"
+    ],
+    "Tsunami": [
+     "Other",
+     "Weather"
+    ],
+    "Air": [
+     "Other",
+     "Weather"
+    ],
+    "Clockwork Owl": [
+     "Other",
+     "Animals"
+    ],
+    "Mickey Mouse": [
+     "Other",
+     "Animals"
+    ],
+    "Pikachu": [
+     "Other",
+     "Animals"
+    ],
+    "Werewolf": [
+     "Other",
+     "Animals"
+    ],
+    "Dragon": [
+     "Other",
+     "Animals"
+    ],
+    "Unicorn": [
+     "Other",
+     "Animals"
+    ],
+    "Kraken": [
+     "Other",
+     "Animals"
+    ],
+    "Super Mega Ultra Dragon": [
+     "Other",
+     "Animals"
+    ],
+    "Human": [
+     "Other",
+     "Animals"
+    ],
+    "Feather": [
+     "Other",
+     "Animals"
+    ],
+    "Waterwaterwater": [
+     "Other",
+     "Food & drink"
+    ]
+   }
+  },
+  {
+   "id": "g-fire-water-earth-air",
+   "split": "holdout",
+   "category": "groups-closest",
+   "other": false,
+   "groups": [
+    "Fire",
+    "Water",
+    "Earth",
+    "Air"
+   ],
+   "expected": {
+    "Fire": "Fire",
+    "Inferno": "Fire",
+    "Ember": "Fire",
+    "Campfire": "Fire",
+    "Candle": "Fire",
+    "Phoenix": "Fire",
+    "Firefirefire": "Fire",
+    "Water": "Water",
+    "Ocean": "Water",
+    "Lake": "Water",
+    "Rain": "Water",
+    "Whale": "Water",
+    "Mermaid": "Water",
+    "Poseidon": "Water",
+    "Tsunami": "Water",
+    "Octopus": "Water",
+    "Jellyfish": "Water",
+    "Dolphin": "Water",
+    "Coral Reef": "Water",
+    "Waterwaterwater": "Water",
+    "Earth": "Earth",
+    "Mountain": "Earth",
+    "Stone": "Earth",
+    "Mud": "Earth",
+    "Sand": "Earth",
+    "Clay": "Earth",
+    "Boulder": "Earth",
+    "Pebble": "Earth",
+    "Desert": "Earth",
+    "Cave": "Earth",
+    "Earthquake": "Earth",
+    "Fossil": "Earth",
+    "Mudmudmud": "Earth",
+    "Air": "Air",
+    "Wind": "Air",
+    "Tornado": "Air",
+    "Bird": "Air",
+    "Airplane": "Air",
+    "Balloon": "Air",
+    "Feather": "Air",
+    "Eagle": "Air",
+    "Kite": "Air",
+    "Helicopter": "Air",
+    "Sun": "Fire",
+    "Plasma": "Fire",
+    "Molten Forge": "Fire",
+    "Supernova": "Fire",
+    "Ice": "Water",
+    "Snow": "Water",
+    "Glacier": "Water",
+    "Iceberg": "Water",
+    "Shark": "Water",
+    "Submarine": "Water",
+    "Titanic": "Water",
+    "Seaweed": "Water",
+    "Kraken": "Water",
+    "Pufferfish": "Water",
+    "Atlantis": "Water",
+    "Sunken Cathedral": "Water",
+    "Tree": "Earth",
+    "Flower": "Earth",
+    "Cactus": "Earth",
+    "Mushroom": "Earth",
+    "Brick": "Earth",
+    "Concrete": "Earth",
+    "Pyramid": "Earth",
+    "Metal": "Earth",
+    "Grass": "Earth",
+    "Sunflower": "Earth",
+    "Stonehenge": "Earth",
+    "Butterfly": "Air",
+    "Owl": "Air",
+    "Pegasus": "Air",
+    "Drone": "Air"
+   },
+   "accept": {
+    "Lava": [
+     "Fire",
+     "Earth"
+    ],
+    "Volcano": [
+     "Fire",
+     "Earth"
+    ],
+    "Dragon": [
+     "Fire",
+     "Air"
+    ],
+    "Ghost Pepper": [
+     "Fire",
+     "Earth"
+    ],
+    "Summer": [
+     "Fire",
+     "Air"
+    ],
+    "Energy": [
+     "Fire",
+     "Air"
+    ],
+    "Fog": [
+     "Water",
+     "Air"
+    ],
+    "Cloud": [
+     "Water",
+     "Air"
+    ],
+    "Steam": [
+     "Water",
+     "Air"
+    ],
+    "Frog": [
+     "Water",
+     "Earth"
+    ],
+    "Dust": [
+     "Earth",
+     "Air"
+    ],
+    "Bee": [
+     "Air",
+     "Earth"
+    ],
+    "Bat": [
+     "Air",
+     "Earth"
+    ],
+    "Rocket": [
+     "Air",
+     "Fire"
+    ],
+    "Hurricane": [
+     "Air",
+     "Water"
+    ],
+    "Storm": [
+     "Air",
+     "Water"
+    ],
+    "Lightning": [
+     "Air",
+     "Fire"
+    ],
+    "Bubble": [
+     "Air",
+     "Water"
+    ],
+    "Penguin": [
+     "Water",
+     "Earth"
+    ],
+    "Glass": [
+     "Earth",
+     "Fire"
+    ]
+   }
+  },
+  {
+   "id": "g-heroes-villains",
+   "split": "holdout",
+   "category": "groups-other",
+   "other": true,
+   "groups": [
+    "Heroes",
+    "Villains"
+   ],
+   "expected": {
+    "Superman": "Heroes",
+    "Batman": "Heroes",
+    "Harry Potter": "Heroes",
+    "Hercules": "Heroes",
+    "Robin Hood": "Heroes",
+    "Mario": "Heroes",
+    "Achilles": "Heroes",
+    "Thor": "Heroes",
+    "Darth Vader": "Villains",
+    "Voldemort": "Villains",
+    "Joker": "Villains",
+    "Bowser": "Villains",
+    "Dracula": "Villains",
+    "Medusa": "Villains",
+    "Brick": "Other",
+    "Spoon": "Other",
+    "Bread": "Other",
+    "Rain": "Other",
+    "Galaxy": "Other",
+    "Toaster": "Other",
+    "Democracy": "Other",
+    "Mud": "Other",
+    "Cloud": "Other",
+    "Banana": "Other",
+    "Glass": "Other",
+    "Puppy": "Other",
+    "Sunflower": "Other",
+    "Taxes": "Other",
+    "Pebble": "Other",
+    "Concrete": "Other",
+    "Sparkleglop": "Other",
+    "Mechamechagolem": "Other",
+    "Earth": "Other",
+    "Water": "Other",
+    "Fire": "Other",
+    "Air": "Other",
+    "Tree": "Other",
+    "Flower": "Other",
+    "Car": "Other",
+    "House": "Other",
+    "Sugar": "Other",
+    "Pizza": "Other",
+    "Kitten": "Other",
+    "Penguin": "Other",
+    "Snow": "Other",
+    "Sand": "Other",
+    "Paper": "Other",
+    "Pillow": "Other",
+    "Book": "Other",
+    "Bicycle": "Other",
+    "Rainbow": "Other",
+    "Coffee": "Other",
+    "Teddy Bear": "Other",
+    "Blorbo Glorp": "Other",
+    "Firefirefire": "Other",
+    "Cockroach": "Other",
+    "Monday": "Other",
+    "Butter": "Other",
+    "Rice": "Other",
+    "Ice": "Other",
+    "Lake": "Other",
+    "Spreadsheet": "Other",
+    "Light Bulb": "Other"
+   },
+   "accept": {
+    "Athena": [
+     "Heroes",
+     "Other"
+    ],
+    "Zeus": [
+     "Heroes",
+     "Other"
+    ],
+    "Pikachu": [
+     "Heroes",
+     "Other"
+    ],
+    "Astronaut": [
+     "Heroes",
+     "Other"
+    ],
+    "Wizard": [
+     "Heroes",
+     "Other"
+    ],
+    "Mickey Mouse": [
+     "Heroes",
+     "Other"
+    ],
+    "Isaac Newton": [
+     "Other",
+     "Heroes"
+    ],
+    "Albert Einstein": [
+     "Other",
+     "Heroes"
+    ],
+    "Hades": [
+     "Villains",
+     "Other"
+    ],
+    "Grim Reaper": [
+     "Villains",
+     "Other"
+    ],
+    "Witch": [
+     "Villains",
+     "Other"
+    ],
+    "Vampire": [
+     "Villains",
+     "Other"
+    ],
+    "Zombie": [
+     "Villains",
+     "Other"
+    ],
+    "Werewolf": [
+     "Villains",
+     "Other"
+    ],
+    "Minotaur": [
+     "Villains",
+     "Other"
+    ],
+    "Kraken": [
+     "Villains",
+     "Other"
+    ],
+    "Cyclops": [
+     "Villains",
+     "Other"
+    ],
+    "Poltergeist": [
+     "Villains",
+     "Other"
+    ],
+    "Ghost": [
+     "Villains",
+     "Other"
+    ],
+    "Dragon": [
+     "Villains",
+     "Other"
+    ],
+    "Atom Bomb": [
+     "Other",
+     "Villains"
+    ],
+    "Nightmare": [
+     "Other",
+     "Villains"
+    ],
+    "Shark": [
+     "Other",
+     "Villains"
+    ],
+    "Virus": [
+     "Other",
+     "Villains"
+    ]
+   }
+  },
+  {
+   "id": "g-land-sea-sky-space",
+   "split": "tune",
+   "category": "groups-closest",
+   "other": false,
+   "groups": [
+    "On land",
+    "In the sea",
+    "In the sky",
+    "In outer space"
+   ],
+   "expected": {
+    "Desert": "On land",
+    "Mountain": "On land",
+    "Cactus": "On land",
+    "Camel": "On land",
+    "Lion": "On land",
+    "Car": "On land",
+    "House": "On land",
+    "Tree": "On land",
+    "Elephant": "On land",
+    "City": "On land",
+    "Road": "On land",
+    "Train": "On land",
+    "Bicycle": "On land",
+    "Skyscraper": "On land",
+    "Cow": "On land",
+    "Whale": "In the sea",
+    "Shark": "In the sea",
+    "Octopus": "In the sea",
+    "Submarine": "In the sea",
+    "Coral Reef": "In the sea",
+    "Jellyfish": "In the sea",
+    "Mermaid": "In the sea",
+    "Seaweed": "In the sea",
+    "Dolphin": "In the sea",
+    "Pufferfish": "In the sea",
+    "Kraken": "In the sea",
+    "Atlantis": "In the sea",
+    "Cloud": "In the sky",
+    "Bird": "In the sky",
+    "Airplane": "In the sky",
+    "Rainbow": "In the sky",
+    "Eagle": "In the sky",
+    "Balloon": "In the sky",
+    "Helicopter": "In the sky",
+    "Kite": "In the sky",
+    "Lightning": "In the sky",
+    "Galaxy": "In outer space",
+    "Planet": "In outer space",
+    "Mars": "In outer space",
+    "Comet": "In outer space",
+    "Asteroid": "In outer space",
+    "Black Hole": "In outer space",
+    "Supernova": "In outer space",
+    "Space Station": "In outer space",
+    "Moon Base": "In outer space",
+    "Nebula": "In outer space",
+    "Astronaut": "In outer space",
+    "Chicken": "On land",
+    "Dinosaur": "On land",
+    "Volcano": "On land",
+    "Cave": "On land",
+    "Pyramid": "On land",
+    "Castle": "On land",
+    "Hospital": "On land",
+    "School": "On land",
+    "Igloo": "On land",
+    "Stonehenge": "On land",
+    "Fossil": "On land",
+    "Tiger": "On land",
+    "Wolf": "On land",
+    "Koala": "On land",
+    "Bunny": "On land",
+    "Puppy": "On land",
+    "Kitten": "On land",
+    "Ant": "On land",
+    "Spider": "On land",
+    "Rat": "On land",
+    "Mouse": "On land",
+    "Cockroach": "On land",
+    "Frog": "On land",
+    "Snowman": "On land",
+    "Mud": "On land",
+    "Sand": "On land",
+    "Graveyard": "On land",
+    "Haunted House": "On land",
+    "Caveman": "On land",
+    "Flower": "On land",
+    "Grass": "On land",
+    "Sunflower": "On land",
+    "Mushroom": "On land",
+    "Titanic": "In the sea",
+    "Iceberg": "In the sea",
+    "Tsunami": "In the sea",
+    "Poseidon": "In the sea",
+    "Sunken Cathedral": "In the sea",
+    "Ocean": "In the sea",
+    "Fugu": "In the sea",
+    "Owl": "In the sky",
+    "Pegasus": "In the sky",
+    "Phoenix": "In the sky",
+    "Drone": "In the sky",
+    "Rain": "In the sky",
+    "Storm": "In the sky",
+    "Wind": "In the sky",
+    "Universe": "In outer space",
+    "Big Bang": "In outer space"
+   },
+   "accept": {
+    "Penguin": [
+     "On land",
+     "In the sea"
+    ],
+    "Bat": [
+     "In the sky",
+     "On land"
+    ],
+    "Bee": [
+     "In the sky",
+     "On land"
+    ],
+    "Butterfly": [
+     "In the sky",
+     "On land"
+    ],
+    "Dragon": [
+     "In the sky",
+     "On land"
+    ],
+    "Fairy": [
+     "In the sky",
+     "On land"
+    ],
+    "Snow": [
+     "In the sky",
+     "On land"
+    ],
+    "Fog": [
+     "In the sky",
+     "On land"
+    ],
+    "Tornado": [
+     "In the sky",
+     "On land"
+    ],
+    "Hurricane": [
+     "In the sky",
+     "In the sea"
+    ],
+    "Sun": [
+     "In the sky",
+     "In outer space"
+    ],
+    "Star": [
+     "In the sky",
+     "In outer space"
+    ],
+    "UFO": [
+     "In the sky",
+     "In outer space"
+    ],
+    "Rocket": [
+     "In the sky",
+     "In outer space"
+    ],
+    "Feather": [
+     "In the sky",
+     "On land"
+    ],
+    "Beach": [
+     "On land",
+     "In the sea"
+    ],
+    "Lighthouse": [
+     "On land",
+     "In the sea"
+    ],
+    "Glacier": [
+     "On land",
+     "In the sea"
+    ],
+    "Earth": [
+     "On land",
+     "In outer space"
+    ],
+    "Lake": [
+     "On land",
+     "In the sea"
+    ],
+    "Lunar Garden": [
+     "In outer space",
+     "On land"
+    ]
+   }
+  },
+  {
+   "id": "g-fruit-food-plants",
+   "split": "holdout",
+   "category": "groups-overlap",
+   "other": true,
+   "groups": [
+    "Fruit",
+    "Food",
+    "Plants"
+   ],
+   "expected": {
+    "Apple": "Fruit",
+    "Banana": "Fruit",
+    "Strawberry": "Fruit",
+    "Watermelon": "Fruit",
+    "Bread": "Food",
+    "Pizza": "Food",
+    "Cheese": "Food",
+    "Sushi": "Food",
+    "Taco": "Food",
+    "Spaghetti": "Food",
+    "Hamburger": "Food",
+    "Soup": "Food",
+    "Cake": "Food",
+    "Butter": "Food",
+    "Rice": "Food",
+    "Chocolate": "Food",
+    "Cupcake": "Food",
+    "Tree": "Plants",
+    "Flower": "Plants",
+    "Cactus": "Plants",
+    "Sunflower": "Plants",
+    "Grass": "Plants",
+    "Brick": "Other",
+    "Sword": "Other",
+    "Car": "Other",
+    "Galaxy": "Other",
+    "Shark": "Other",
+    "Puppy": "Other",
+    "Democracy": "Other",
+    "Smartphone": "Other",
+    "Rain": "Other",
+    "Lava": "Other",
+    "Computer": "Other",
+    "Mountain": "Other",
+    "Robot": "Other",
+    "Zeus": "Other",
+    "Headlights Car Vehicle": "Other",
+    "Spoon": "Other",
+    "Taxes": "Other",
+    "Egg": "Food",
+    "Honey": "Food",
+    "Flour": "Food",
+    "Ice Cream": "Food",
+    "Fugu": "Food",
+    "Cow": "Other",
+    "Bee": "Other",
+    "Kitchen": "Other",
+    "Frying Pan": "Other",
+    "Oven": "Other",
+    "Refrigerator": "Other",
+    "Kitchen Knife": "Other",
+    "Toaster": "Other",
+    "Mud": "Other",
+    "Earth": "Other",
+    "Bunny": "Other",
+    "Love": "Other",
+    "Book": "Other",
+    "Snowman": "Other",
+    "Candle": "Other",
+    "Steam": "Other"
+   },
+   "accept": {
+    "Poison Apple": [
+     "Fruit",
+     "Other"
+    ],
+    "Sugar": [
+     "Food",
+     "Other"
+    ],
+    "Salt": [
+     "Food",
+     "Other"
+    ],
+    "Milk": [
+     "Food",
+     "Other"
+    ],
+    "Coffee": [
+     "Food",
+     "Other"
+    ],
+    "Wine": [
+     "Food",
+     "Other"
+    ],
+    "Coca-Cola": [
+     "Food",
+     "Other"
+    ],
+    "Seaweed": [
+     "Plants",
+     "Food"
+    ],
+    "Mushroom": [
+     "Plants",
+     "Food"
+    ],
+    "Seed": [
+     "Plants",
+     "Food"
+    ],
+    "Lunar Garden": [
+     "Plants",
+     "Other"
+    ],
+    "Chicken": [
+     "Other",
+     "Food"
+    ],
+    "Pufferfish": [
+     "Other",
+     "Food"
+    ],
+    "Coral Reef": [
+     "Other",
+     "Plants"
+    ],
+    "Water": [
+     "Other",
+     "Food"
+    ]
+   }
+  },
+  {
+   "id": "g-eight",
+   "split": "tune",
+   "category": "groups-8",
+   "other": true,
+   "groups": [
+    "Animals",
+    "Food & drink",
+    "Weather",
+    "Space",
+    "Technology",
+    "Famous people",
+    "Mythical creatures",
+    "Buildings & places"
+   ],
+   "expected": {
+    "Puppy": "Animals",
+    "Kitten": "Animals",
+    "Shark": "Animals",
+    "Whale": "Animals",
+    "Elephant": "Animals",
+    "Bee": "Animals",
+    "Frog": "Animals",
+    "Penguin": "Animals",
+    "Lion": "Animals",
+    "Cow": "Animals",
+    "Bread": "Food & drink",
+    "Pizza": "Food & drink",
+    "Cheese": "Food & drink",
+    "Coffee": "Food & drink",
+    "Sushi": "Food & drink",
+    "Cake": "Food & drink",
+    "Taco": "Food & drink",
+    "Wine": "Food & drink",
+    "Banana": "Food & drink",
+    "Rain": "Weather",
+    "Storm": "Weather",
+    "Snow": "Weather",
+    "Tornado": "Weather",
+    "Hurricane": "Weather",
+    "Fog": "Weather",
+    "Blizzard": "Weather",
+    "Wind": "Weather",
+    "Galaxy": "Space",
+    "Planet": "Space",
+    "Mars": "Space",
+    "Comet": "Space",
+    "Asteroid": "Space",
+    "Black Hole": "Space",
+    "Supernova": "Space",
+    "Nebula": "Space",
+    "Computer": "Technology",
+    "Smartphone": "Technology",
+    "Robot": "Technology",
+    "Internet": "Technology",
+    "Wi-Fi": "Technology",
+    "Microchip": "Technology",
+    "Drone": "Technology",
+    "Bitcoin": "Technology",
+    "Light Bulb": "Technology",
+    "Isaac Newton": "Famous people",
+    "Albert Einstein": "Famous people",
+    "Elvis Presley": "Famous people",
+    "Leonardo da Vinci": "Famous people",
+    "William Shakespeare": "Famous people",
+    "Cleopatra": "Famous people",
+    "Dragon": "Mythical creatures",
+    "Unicorn": "Mythical creatures",
+    "Phoenix": "Mythical creatures",
+    "Mermaid": "Mythical creatures",
+    "Kraken": "Mythical creatures",
+    "Pegasus": "Mythical creatures",
+    "Minotaur": "Mythical creatures",
+    "Cyclops": "Mythical creatures",
+    "Werewolf": "Mythical creatures",
+    "House": "Buildings & places",
+    "Castle": "Buildings & places",
+    "Skyscraper": "Buildings & places",
+    "Hospital": "Buildings & places",
+    "School": "Buildings & places",
+    "City": "Buildings & places",
+    "Pyramid": "Buildings & places",
+    "Lighthouse": "Buildings & places",
+    "Igloo": "Buildings & places",
+    "Graveyard": "Buildings & places",
+    "Love": "Other",
+    "Democracy": "Other",
+    "Taxes": "Other",
+    "Spoon": "Other",
+    "Sword": "Other",
+    "Glass": "Other",
+    "Mud": "Other",
+    "Book": "Other",
+    "Joy": "Other",
+    "Monday": "Other",
+    "Pillow": "Other",
+    "Sparkleglop": "Other",
+    "Timetimetime": "Other",
+    "Tiger": "Animals",
+    "Dolphin": "Animals",
+    "Octopus": "Animals",
+    "Eagle": "Animals",
+    "Owl": "Animals",
+    "Koala": "Animals",
+    "Bunny": "Animals",
+    "Wolf": "Animals",
+    "Camel": "Animals",
+    "Ant": "Animals",
+    "Butterfly": "Animals",
+    "Spider": "Animals",
+    "Chicken": "Animals",
+    "Bat": "Animals",
+    "Pufferfish": "Animals",
+    "Jellyfish": "Animals",
+    "Honey": "Food & drink",
+    "Egg": "Food & drink",
+    "Milk": "Food & drink",
+    "Ice Cream": "Food & drink",
+    "Chocolate": "Food & drink",
+    "Apple": "Food & drink",
+    "Spaghetti": "Food & drink",
+    "Hamburger": "Food & drink",
+    "Soup": "Food & drink",
+    "Rice": "Food & drink",
+    "Coca-Cola": "Food & drink",
+    "Butter": "Food & drink",
+    "Sugar": "Food & drink",
+    "Strawberry": "Food & drink",
+    "Cupcake": "Food & drink",
+    "Lightning": "Weather",
+    "Cloud": "Weather",
+    "Sun": "Space",
+    "Star": "Space",
+    "Universe": "Space",
+    "Spreadsheet": "Technology",
+    "Fairy": "Mythical creatures",
+    "Vampire": "Mythical creatures",
+    "Zombie": "Mythical creatures",
+    "Medusa": "Mythical creatures",
+    "Haunted House": "Buildings & places",
+    "Stonehenge": "Buildings & places",
+    "Hogwarts": "Buildings & places",
+    "Sunken Cathedral": "Buildings & places",
+    "Paper": "Other",
+    "Nail": "Other",
+    "Stone": "Other",
+    "Time": "Other",
+    "Teddy Bear": "Other",
+    "Candle": "Other",
+    "Kite": "Other",
+    "Magic Wand": "Other",
+    "Voodoo Doll": "Other",
+    "Skull": "Other",
+    "Nightmare": "Other",
+    "Lava": "Other",
+    "Fire": "Other",
+    "Sand": "Other",
+    "Dust": "Other",
+    "Bubble": "Other",
+    "Frozen Lantern": "Other"
+   },
+   "accept": {
+    "Rainbow": [
+     "Weather",
+     "Other"
+    ],
+    "Moon Base": [
+     "Space",
+     "Buildings & places"
+    ],
+    "Space Station": [
+     "Space",
+     "Technology",
+     "Buildings & places"
+    ],
+    "Astronaut": [
+     "Space",
+     "Other"
+    ],
+    "Big Bang": [
+     "Space",
+     "Other"
+    ],
+    "Rocket": [
+     "Space",
+     "Technology"
+    ],
+    "Car": [
+     "Technology",
+     "Other"
+    ],
+    "Airplane": [
+     "Technology",
+     "Other"
+    ],
+    "Toaster": [
+     "Technology",
+     "Other"
+    ],
+    "Atom Bomb": [
+     "Technology",
+     "Other"
+    ],
+    "Selfie": [
+     "Technology",
+     "Other"
+    ],
+    "Emoji": [
+     "Technology",
+     "Other"
+    ],
+    "Meme": [
+     "Technology",
+     "Other"
+    ],
+    "Pharaoh": [
+     "Famous people",
+     "Other"
+    ],
+    "Harry Potter": [
+     "Famous people",
+     "Other"
+    ],
+    "Superman": [
+     "Famous people",
+     "Other"
+    ],
+    "Mario": [
+     "Famous people",
+     "Other"
+    ],
+    "Witch": [
+     "Mythical creatures",
+     "Other"
+    ],
+    "Wizard": [
+     "Mythical creatures",
+     "Other"
+    ],
+    "Hercules": [
+     "Mythical creatures",
+     "Famous people"
+    ],
+    "Ghost": [
+     "Mythical creatures",
+     "Other"
+    ],
+    "Grim Reaper": [
+     "Mythical creatures",
+     "Other"
+    ],
+    "Mummy": [
+     "Mythical creatures",
+     "Other"
+    ],
+    "Super Mega Ultra Dragon": [
+     "Mythical creatures",
+     "Other"
+    ],
+    "Glowing Golem": [
+     "Mythical creatures",
+     "Other"
+    ],
+    "Kitchen": [
+     "Buildings & places",
+     "Other"
+    ],
+    "Road": [
+     "Buildings & places",
+     "Other"
+    ],
+    "Atlantis": [
+     "Buildings & places",
+     "Mythical creatures"
+    ],
+    "Desert": [
+     "Buildings & places",
+     "Other"
+    ],
+    "Beach": [
+     "Buildings & places",
+     "Other"
+    ],
+    "Cave": [
+     "Buildings & places",
+     "Other"
+    ],
+    "Mountain": [
+     "Buildings & places",
+     "Other"
+    ],
+    "Brick": [
+     "Other",
+     "Buildings & places"
+    ],
+    "Potion": [
+     "Other",
+     "Food & drink"
+    ],
+    "Poké Ball": [
+     "Other",
+     "Technology"
+    ],
+    "Snowman": [
+     "Other",
+     "Weather"
+    ],
+    "Ice": [
+     "Weather",
+     "Other"
+    ],
+    "Water": [
+     "Other",
+     "Food & drink"
+    ],
+    "Earth": [
+     "Space",
+     "Other"
+    ],
+    "Air": [
+     "Other",
+     "Weather"
+    ],
+    "Human": [
+     "Other",
+     "Animals"
+    ],
+    "Dinosaur": [
+     "Animals",
+     "Other"
+    ],
+    "Clockwork Owl": [
+     "Technology",
+     "Other",
+     "Animals"
+    ],
+    "Zeus": [
+     "Mythical creatures",
+     "Famous people",
+     "Other"
+    ],
+    "Lunar Garden": [
+     "Space",
+     "Buildings & places",
+     "Other"
+    ]
+   }
+  },
+  {
+   "id": "gp-animals-pets-birds",
+   "split": "tune",
+   "category": "groups-overlap",
+   "other": true,
+   "groups": [
+    "Animals",
+    "Pets",
+    "Birds"
+   ],
+   "expected": {
+    "Puppy": "Pets",
+    "Kitten": "Pets",
+    "Eagle": "Birds",
+    "Owl": "Birds",
+    "Penguin": "Birds",
+    "Bird": "Birds",
+    "Lion": "Animals",
+    "Tiger": "Animals",
+    "Elephant": "Animals",
+    "Whale": "Animals",
+    "Shark": "Animals",
+    "Dolphin": "Animals",
+    "Octopus": "Animals",
+    "Camel": "Animals",
+    "Wolf": "Animals",
+    "Frog": "Animals",
+    "Koala": "Animals",
+    "Cow": "Animals",
+    "Bee": "Animals",
+    "Ant": "Animals",
+    "Spider": "Animals",
+    "Butterfly": "Animals",
+    "Bat": "Animals",
+    "Jellyfish": "Animals",
+    "Pufferfish": "Animals",
+    "Cockroach": "Animals",
+    "Brick": "Other",
+    "Sword": "Other",
+    "Car": "Other",
+    "Galaxy": "Other",
+    "Bread": "Other",
+    "Democracy": "Other",
+    "Computer": "Other",
+    "Mountain": "Other",
+    "Rain": "Other",
+    "Teddy Bear": "Other",
+    "Poké Ball": "Other",
+    "Balloon": "Other",
+    "Kite": "Other",
+    "Airplane": "Other",
+    "Helicopter": "Other",
+    "Drone": "Other",
+    "Virus": "Other",
+    "Spoon": "Other",
+    "Pizza": "Other",
+    "Tree": "Other",
+    "Flower": "Other",
+    "Love": "Other",
+    "Taxes": "Other",
+    "Book": "Other",
+    "Sparkleglop": "Other",
+    "Timetimetime": "Other",
+    "Cloud": "Other"
+   },
+   "accept": {
+    "Chicken": [
+     "Birds",
+     "Animals"
+    ],
+    "Rat": [
+     "Animals",
+     "Pets"
+    ],
+    "Mouse": [
+     "Animals",
+     "Pets"
+    ],
+    "Bunny": [
+     "Pets",
+     "Animals"
+    ],
+    "Black Cat": [
+     "Pets",
+     "Animals"
+    ],
+    "Dinosaur": [
+     "Animals",
+     "Other"
+    ],
+    "Clockwork Owl": [
+     "Other",
+     "Birds"
+    ],
+    "Feather": [
+     "Other",
+     "Birds"
+    ],
+    "Phoenix": [
+     "Other",
+     "Birds"
+    ],
+    "Pegasus": [
+     "Other",
+     "Animals"
+    ],
+    "Unicorn": [
+     "Other",
+     "Animals"
+    ],
+    "Dragon": [
+     "Other",
+     "Animals"
+    ],
+    "Werewolf": [
+     "Other",
+     "Animals"
+    ],
+    "Bacteria": [
+     "Other",
+     "Animals"
+    ],
+    "Human": [
+     "Other",
+     "Animals"
+    ],
+    "Caveman": [
+     "Other",
+     "Animals"
+    ],
+    "Fugu": [
+     "Other",
+     "Animals"
+    ],
+    "Kraken": [
+     "Other",
+     "Animals"
+    ]
+   }
+  },
+  {
+   "id": "gp-food-drinks-desserts",
+   "split": "tune",
+   "category": "groups-overlap",
+   "other": true,
+   "groups": [
+    "Food",
+    "Drinks",
+    "Desserts"
+   ],
+   "expected": {
+    "Coffee": "Drinks",
+    "Wine": "Drinks",
+    "Milk": "Drinks",
+    "Coca-Cola": "Drinks",
+    "Cake": "Desserts",
+    "Cupcake": "Desserts",
+    "Ice Cream": "Desserts",
+    "Bread": "Food",
+    "Pizza": "Food",
+    "Sushi": "Food",
+    "Taco": "Food",
+    "Spaghetti": "Food",
+    "Hamburger": "Food",
+    "Soup": "Food",
+    "Rice": "Food",
+    "Cheese": "Food",
+    "Egg": "Food",
+    "Banana": "Food",
+    "Apple": "Food",
+    "Butter": "Food",
+    "Flour": "Food",
+    "Ghost Pepper": "Food",
+    "Fugu": "Food",
+    "Brick": "Other",
+    "Sword": "Other",
+    "Car": "Other",
+    "Galaxy": "Other",
+    "Puppy": "Other",
+    "Democracy": "Other",
+    "Smartphone": "Other",
+    "Rain": "Other",
+    "Lava": "Other",
+    "Robot": "Other",
+    "Kitchen": "Other",
+    "Frying Pan": "Other",
+    "Oven": "Other",
+    "Refrigerator": "Other",
+    "Spoon": "Other",
+    "Kitchen Knife": "Other",
+    "Toaster": "Other",
+    "Cow": "Other",
+    "Steam": "Other",
+    "Glass": "Other",
+    "Love": "Other",
+    "Book": "Other",
+    "Tree": "Other",
+    "Sparkleglop": "Other",
+    "Mud": "Other",
+    "Snowman": "Other",
+    "Bubble": "Other",
+    "Candle": "Other"
+   },
+   "accept": {
+    "Water": [
+     "Drinks",
+     "Other"
+    ],
+    "Potion": [
+     "Drinks",
+     "Other"
+    ],
+    "Chocolate": [
+     "Desserts",
+     "Food"
+    ],
+    "Strawberry": [
+     "Food",
+     "Desserts"
+    ],
+    "Honey": [
+     "Food",
+     "Desserts"
+    ],
+    "Sugar": [
+     "Food",
+     "Desserts"
+    ],
+    "Watermelon": [
+     "Food",
+     "Desserts"
+    ],
+    "Salt": [
+     "Food",
+     "Other"
+    ],
+    "Poison Apple": [
+     "Food",
+     "Other"
+    ],
+    "Mushroom": [
+     "Food",
+     "Other"
+    ],
+    "Seaweed": [
+     "Food",
+     "Other"
+    ],
+    "Pufferfish": [
+     "Other",
+     "Food"
+    ],
+    "Chicken": [
+     "Other",
+     "Food"
+    ],
+    "Poison Mushroom": [
+     "Other",
+     "Food"
+    ],
+    "Waterwaterwater": [
+     "Other",
+     "Drinks"
+    ]
+   }
+  },
+  {
+   "id": "gp-living-nature-made-ideas",
+   "split": "holdout",
+   "category": "groups-closest",
+   "other": false,
+   "groups": [
+    "Living things",
+    "Nature",
+    "Made by people",
+    "Ideas"
+   ],
+   "expected": {
+    "Puppy": "Living things",
+    "Kitten": "Living things",
+    "Lion": "Living things",
+    "Tiger": "Living things",
+    "Elephant": "Living things",
+    "Whale": "Living things",
+    "Shark": "Living things",
+    "Dolphin": "Living things",
+    "Penguin": "Living things",
+    "Eagle": "Living things",
+    "Owl": "Living things",
+    "Bee": "Living things",
+    "Ant": "Living things",
+    "Frog": "Living things",
+    "Cow": "Living things",
+    "Camel": "Living things",
+    "Wolf": "Living things",
+    "Bacteria": "Living things",
+    "Human": "Living things",
+    "Bird": "Living things",
+    "Mountain": "Nature",
+    "Ocean": "Nature",
+    "Lake": "Nature",
+    "Rain": "Nature",
+    "Storm": "Nature",
+    "Snow": "Nature",
+    "Volcano": "Nature",
+    "Desert": "Nature",
+    "Beach": "Nature",
+    "Cave": "Nature",
+    "Glacier": "Nature",
+    "Iceberg": "Nature",
+    "Lightning": "Nature",
+    "Tornado": "Nature",
+    "Hurricane": "Nature",
+    "Rainbow": "Nature",
+    "Wind": "Nature",
+    "Cloud": "Nature",
+    "Stone": "Nature",
+    "Sand": "Nature",
+    "Lava": "Nature",
+    "Earthquake": "Nature",
+    "Car": "Made by people",
+    "Train": "Made by people",
+    "Airplane": "Made by people",
+    "Bicycle": "Made by people",
+    "Computer": "Made by people",
+    "Smartphone": "Made by people",
+    "Robot": "Made by people",
+    "Brick": "Made by people",
+    "Concrete": "Made by people",
+    "Glass": "Made by people",
+    "Book": "Made by people",
+    "Spoon": "Made by people",
+    "Sword": "Made by people",
+    "House": "Made by people",
+    "Skyscraper": "Made by people",
+    "Castle": "Made by people",
+    "Pyramid": "Made by people",
+    "Road": "Made by people",
+    "Toaster": "Made by people",
+    "Light Bulb": "Made by people",
+    "Pizza": "Made by people",
+    "Bread": "Made by people",
+    "Cake": "Made by people",
+    "Love": "Ideas",
+    "Democracy": "Ideas",
+    "Joy": "Ideas"
+   },
+   "accept": {
+    "Tree": [
+     "Living things",
+     "Nature"
+    ],
+    "Flower": [
+     "Living things",
+     "Nature"
+    ],
+    "Grass": [
+     "Living things",
+     "Nature"
+    ],
+    "Cactus": [
+     "Living things",
+     "Nature"
+    ],
+    "Mushroom": [
+     "Living things",
+     "Nature"
+    ],
+    "Sunflower": [
+     "Living things",
+     "Nature"
+    ],
+    "Internet": [
+     "Made by people",
+     "Ideas"
+    ],
+    "Spreadsheet": [
+     "Made by people",
+     "Ideas"
+    ],
+    "Taxes": [
+     "Ideas",
+     "Made by people"
+    ],
+    "Gravity": [
+     "Ideas",
+     "Nature"
+    ],
+    "Monday": [
+     "Ideas",
+     "Made by people"
+    ],
+    "Life": [
+     "Ideas",
+     "Living things"
+    ],
+    "Meme": [
+     "Ideas",
+     "Made by people"
+    ],
+    "Energy": [
+     "Nature",
+     "Ideas"
+    ],
+    "Time": [
+     "Ideas",
+     "Nature"
+    ],
+    "Mickey Mouse": [
+     "Made by people",
+     "Ideas"
+    ],
+    "Earth": [
+     "Nature"
+    ],
+    "Water": [
+     "Nature"
+    ],
+    "Fire": [
+     "Nature"
+    ]
+   }
+  },
+  {
+   "id": "gp-eight-b",
+   "split": "holdout",
+   "category": "groups-8",
+   "other": true,
+   "groups": [
+    "People",
+    "Animals",
+    "Plants",
+    "Food",
+    "Vehicles",
+    "Weather",
+    "Places",
+    "Magic"
+   ],
+   "expected": {
+    "Isaac Newton": "People",
+    "Albert Einstein": "People",
+    "Leonardo da Vinci": "People",
+    "Elvis Presley": "People",
+    "William Shakespeare": "People",
+    "Cleopatra": "People",
+    "Human": "People",
+    "Caveman": "People",
+    "Astronaut": "People",
+    "Pharaoh": "People",
+    "Puppy": "Animals",
+    "Kitten": "Animals",
+    "Lion": "Animals",
+    "Tiger": "Animals",
+    "Elephant": "Animals",
+    "Whale": "Animals",
+    "Shark": "Animals",
+    "Penguin": "Animals",
+    "Eagle": "Animals",
+    "Bee": "Animals",
+    "Frog": "Animals",
+    "Cow": "Animals",
+    "Camel": "Animals",
+    "Wolf": "Animals",
+    "Spider": "Animals",
+    "Tree": "Plants",
+    "Flower": "Plants",
+    "Sunflower": "Plants",
+    "Grass": "Plants",
+    "Cactus": "Plants",
+    "Seed": "Plants",
+    "Bread": "Food",
+    "Cheese": "Food",
+    "Pizza": "Food",
+    "Cake": "Food",
+    "Sushi": "Food",
+    "Taco": "Food",
+    "Spaghetti": "Food",
+    "Hamburger": "Food",
+    "Soup": "Food",
+    "Chocolate": "Food",
+    "Ice Cream": "Food",
+    "Honey": "Food",
+    "Rice": "Food",
+    "Egg": "Food",
+    "Car": "Vehicles",
+    "Train": "Vehicles",
+    "Airplane": "Vehicles",
+    "Helicopter": "Vehicles",
+    "Bicycle": "Vehicles",
+    "Submarine": "Vehicles",
+    "Titanic": "Vehicles",
+    "Rocket": "Vehicles",
+    "Rain": "Weather",
+    "Storm": "Weather",
+    "Snow": "Weather",
+    "Cloud": "Weather",
+    "Lightning": "Weather",
+    "Tornado": "Weather",
+    "Hurricane": "Weather",
+    "Fog": "Weather",
+    "Blizzard": "Weather",
+    "Wind": "Weather",
+    "House": "Places",
+    "Castle": "Places",
+    "Skyscraper": "Places",
+    "Hospital": "Places",
+    "School": "Places",
+    "City": "Places",
+    "Graveyard": "Places",
+    "Haunted House": "Places",
+    "Pyramid": "Places",
+    "Stonehenge": "Places",
+    "Igloo": "Places",
+    "Lighthouse": "Places",
+    "Desert": "Places",
+    "Beach": "Places",
+    "Cave": "Places",
+    "Magic Wand": "Magic",
+    "Potion": "Magic",
+    "Fairy": "Magic",
+    "Love": "Other",
+    "Democracy": "Other",
+    "Taxes": "Other",
+    "Monday": "Other",
+    "Joy": "Other",
+    "Time": "Other",
+    "Spoon": "Other",
+    "Sword": "Other",
+    "Glass": "Other",
+    "Book": "Other",
+    "Pillow": "Other",
+    "Brick": "Other",
+    "Nail": "Other",
+    "Paper": "Other",
+    "Smartphone": "Other",
+    "Computer": "Other",
+    "Internet": "Other",
+    "Bitcoin": "Other",
+    "Light Bulb": "Other",
+    "Robot": "Other",
+    "Stone": "Other",
+    "Sand": "Other",
+    "Mud": "Other",
+    "Galaxy": "Other",
+    "Planet": "Other",
+    "Mars": "Other",
+    "Black Hole": "Other",
+    "Sparkleglop": "Other",
+    "Timetimetime": "Other",
+    "Blorbo Glorp": "Other"
+   },
+   "accept": {
+    "Wizard": [
+     "People",
+     "Magic"
+    ],
+    "Witch": [
+     "People",
+     "Magic"
+    ],
+    "Harry Potter": [
+     "People",
+     "Magic"
+    ],
+    "Superman": [
+     "People",
+     "Other"
+    ],
+    "Batman": [
+     "People",
+     "Other"
+    ],
+    "Seaweed": [
+     "Plants",
+     "Food"
+    ],
+    "Mushroom": [
+     "Plants",
+     "Food"
+    ],
+    "Apple": [
+     "Food",
+     "Plants"
+    ],
+    "Banana": [
+     "Food",
+     "Plants"
+    ],
+    "Strawberry": [
+     "Food",
+     "Plants"
+    ],
+    "Coffee": [
+     "Food",
+     "Other"
+    ],
+    "Milk": [
+     "Food",
+     "Other"
+    ],
+    "Wine": [
+     "Food",
+     "Other"
+    ],
+    "Coca-Cola": [
+     "Food",
+     "Other"
+    ],
+    "Drone": [
+     "Vehicles",
+     "Other"
+    ],
+    "Rainbow": [
+     "Weather",
+     "Other"
+    ],
+    "Kitchen": [
+     "Places",
+     "Other"
+    ],
+    "Hogwarts": [
+     "Places",
+     "Magic"
+    ],
+    "Atlantis": [
+     "Places",
+     "Magic"
+    ],
+    "Road": [
+     "Places",
+     "Other"
+    ],
+    "Mountain": [
+     "Places",
+     "Other"
+    ],
+    "Ocean": [
+     "Places",
+     "Other"
+    ],
+    "Lake": [
+     "Places",
+     "Other"
+    ],
+    "Dragon": [
+     "Magic",
+     "Animals"
+    ],
+    "Unicorn": [
+     "Magic",
+     "Animals"
+    ],
+    "Phoenix": [
+     "Magic",
+     "Animals"
+    ],
+    "Voodoo Doll": [
+     "Magic",
+     "Other"
+    ],
+    "Ghost": [
+     "Magic",
+     "Other"
+    ],
+    "Sun": [
+     "Other",
+     "Weather"
+    ],
+    "Dinosaur": [
+     "Animals",
+     "Other"
+    ],
+    "Moon Base": [
+     "Places",
+     "Other"
+    ]
+   }
+  }
+ ]
+}

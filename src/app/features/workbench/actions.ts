@@ -29,6 +29,7 @@ import {
   useCanvas,
   type SavedTile,
 } from "../../state/canvas.ts";
+import { customSortForCombine, ingestSortScore } from "../../state/customSort.ts";
 import { applyCombine, openTargetIds, useGame } from "../../state/game.ts";
 import { announce, celebrate, dismissToast, showToast, useUi } from "../../state/ui.ts";
 import { canvasRect, layoutEls, libraryEdge } from "./layout.ts";
@@ -277,7 +278,11 @@ export async function mergeTiles(uids: readonly string[], at: Pt, opts: MergeOpt
     if (local) {
       res = { result: game.elements[cached]!, newForPlayer: false, firstEver: false, recipeNew: false, completed: [] };
     } else {
-      res = await combine({ ids, clientDate: localDay() });
+      // An active custom sort rides along so a new discovery is scored in the same call.
+      const sent = customSortForCombine();
+      res = await combine({ ids, clientDate: localDay(), ...(sent ? { sort: sent.spec } : {}) });
+      // Before applyCombine adds it to `owned`, so the sort engine never asks for it again.
+      if (sent) ingestSortScore(sent.key, res);
     }
   } catch (e) {
     failMerge(pendingUid, saved, at, e, undoEntry);

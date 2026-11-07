@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
+    "eval:sort": "tsx scripts/eval-sort.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:backfill": "tsx scripts/backfill-legacy.ts",
     "db:challenges": "tsx scripts/generate-challenges.ts",

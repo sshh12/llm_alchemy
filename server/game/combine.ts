@@ -1,23 +1,88 @@
 // POST /api/combine: ownership-checked combination. Known recipes answer from the DB;
 // unknown ones (or legacy recipes whose result was quarantined) ask the LLM, then store
-// the element + recipe + discovery atomically.
+// the element + recipe + discovery atomically. With an active custom sort, a new discovery is
+// also scored for it (best-effort, capped at SORT_PIGGYBACK_MS) so the client needs no extra call.
 import type { Context } from "@netlify/functions";
 import type pg from "pg";
 import { z } from "zod";
-import { MAX_INGREDIENTS, MIN_INGREDIENTS, type CombineResponse } from "../../src/shared/api.ts";
+import {
+  MAX_INGREDIENTS,
+  MIN_INGREDIENTS,
+  type CombineResponse,
+  type SortScore,
+  type SortSpec,
+} from "../../src/shared/api.ts";
+import { questionsPer } from "../../src/shared/sortSpec.ts";
 import { q, q1, t, withTx, type Queryable } from "../db.ts";
-import { AiUnavailable, Fizzled, proposeElement, type AvoidResult, type ElementProposal } from "../ai/index.ts";
+import {
+  AiUnavailable,
+  Fizzled,
+  proposeElement,
+  scoreElements,
+  type AvoidResult,
+  type ElementProposal,
+} from "../ai/index.ts";
 import { safetyId } from "../crypto.ts";
 import { BODY_LIMIT_DEFAULT, checkCsrf, clientIp, errors, ipHash, json, readJson } from "../http.ts";
-import { BUDGETS, LIMITS, enforce } from "../ratelimit.ts";
+import { BUDGETS, LIMITS, enforce, hit } from "../ratelimit.ts";
 import { playerForClaims, sessionClaims } from "../session.ts";
 import { completeTiers, resolveDay } from "./challenges.ts";
 import { ELEMENT_COLS, isElementId, sortIds, toElementDTO, type ElementRow } from "./dto.ts";
+import { SortSpecSchema } from "./sortSpec.ts";
 
 export const CombineSchema = z.object({
   ids: z.array(z.string().refine(isElementId, "invalid element id")).min(MIN_INGREDIENTS).max(MAX_INGREDIENTS),
   clientDate: z.string().max(32),
+  // An invalid spec is dropped rather than rejected: a combine must never fail because of sorting.
+  sort: SortSpecSchema.optional().catch(undefined),
 });
+
+/** Most a combine waits for its custom-sort score; past it the client asks /api/sort instead. */
+const SORT_PIGGYBACK_MS = 800;
+
+/**
+ * Score one new discovery for the player's active custom sort, or undefined (budget exhausted,
+ * provider error, too slow). Never throws and never takes longer than SORT_PIGGYBACK_MS, even
+ * with a scorer that ignores its deadline (the mock's "mock slow" hook) or a slow counter write.
+ * Charges only BUDGETS.jev: the combine limits already cap how often this runs.
+ *
+ * The budget is charged first and Jev is called only once it passes (and only inside the cap): a
+ * billed call must never start when JEV_DAILY_CAP is spent or the counter write failed, since a
+ * scripted client could otherwise keep spending past the cap through cheap known-recipe
+ * discoveries. It costs one small upsert, which runs alongside the challenge check anyway.
+ */
+export async function scoreDiscovery(spec: SortSpec, el: { id: string; name: string }): Promise<SortScore | undefined> {
+  const id = String(el.id);
+  const started = Date.now();
+  let timedOut = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const cap = new Promise<"timeout">((resolve) => {
+    timer = setTimeout(() => {
+      timedOut = true;
+      resolve("timeout");
+    }, SORT_PIGGYBACK_MS);
+  });
+  const work = async (): Promise<SortScore | undefined> => {
+    const budget = await hit([{ limit: BUDGETS.jev, subject: "all", cost: questionsPer(spec) }]);
+    if (!budget.ok || timedOut) return undefined; // never start a billed call whose answer can't be used
+    const left = Math.max(0, SORT_PIGGYBACK_MS - (Date.now() - started));
+    const out = await scoreElements(spec, [{ id, name: el.name }], { deadlineMs: left, retries: 0, split: false });
+    return out.scored.get(id);
+  };
+  try {
+    const r = await Promise.race([work(), cap]);
+    if (r === "timeout") {
+      console.warn("[combine] sort score skipped", "timeout");
+      return undefined;
+    }
+    return r;
+  } catch (e) {
+    console.warn("[combine] sort score skipped", e instanceof Error ? e.message : typeof e);
+    return undefined;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 interface ResultRow extends ElementRow {
   discovered_by: string | null;
@@ -331,7 +396,13 @@ export async function combineElements(req: Request, context: Context): Promise<R
     outcome = await invent(player.id, ip, key, owned);
   }
 
-  const completed = await completeTiers(player.id, resolveDay(body.clientDate), outcome.result.id);
+  // The sort score runs alongside the challenge check, so it adds at most SORT_PIGGYBACK_MS.
+  const scoring =
+    body.sort && outcome.discoveredAt ? scoreDiscovery(body.sort, outcome.result) : Promise.resolve(undefined);
+  const [completed, sortScore] = await Promise.all([
+    completeTiers(player.id, resolveDay(body.clientDate), outcome.result.id),
+    scoring,
+  ]);
   const result = toElementDTO(outcome.result);
   const response: CombineResponse = {
     result,
@@ -348,6 +419,7 @@ export async function combineElements(req: Request, context: Context): Promise<R
           },
         }
       : {}),
+    ...(sortScore ? { sortScore } : {}),
   };
   return json(response);
 }

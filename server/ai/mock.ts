@@ -4,19 +4,23 @@
 //
 // Test hooks (mock only): an ingredient named "Mock Fizzle" makes the combine fizzle, and an
 // element named "Mock Blocked" gets its art blocked, so e2e suites can exercise those paths.
+// Custom sorts (scores from src/shared/mockSort.ts) have three, matched case-insensitively in the
+// rank prompt or in any one group: "mock unavailable" throws AiUnavailable (503 ai_unavailable),
+// "mock slow" answers after 2.5 s, and "mock partial" sends every third element to `retry`.
 import { crc32, deflateSync } from "node:zlib";
+import { SORT_RUBRIC, type SortSpec } from "../../src/shared/api.ts";
+import { fnv1a } from "../../src/shared/hash.ts";
+import { mockSortScores } from "../../src/shared/mockSort.ts";
 import { nameKey } from "../../src/shared/names.ts";
-import { Blocked, Fizzled, validateProposal, type ElementProposal, type GeneratedImage } from "./common.ts";
-
-/** FNV-1a over UTF-16 code units: tiny, stable, good enough for picking words. */
-function fnv1a(s: string, seed = 0x811c9dc5): number {
-  let h = seed >>> 0;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h;
-}
+import {
+  AiUnavailable,
+  Blocked,
+  Fizzled,
+  validateProposal,
+  type ElementProposal,
+  type GeneratedImage,
+} from "./common.ts";
+import type { ScoreItem, ScoreOpts, ScoreOutcome } from "./jev.ts";
 
 /** Classic results for the starters so local play feels familiar. Keys: sorted name keys joined by "+". */
 const CLASSICS: Record<string, [string, string, string]> = {
@@ -129,4 +133,28 @@ export function mockPng(name: string): Uint8Array {
 export function mockImage(name: string): GeneratedImage {
   if (nameKey(name) === "mock blocked") throw new Blocked();
   return { bytes: mockPng(name), ext: "png", contentType: "image/png" };
+}
+
+// ---------------------------------------------------------------- custom sort
+
+export const MOCK_SORT_ENGINE = `mock/${SORT_RUBRIC}`;
+const MOCK_SLOW_MS = 2_500;
+
+/**
+ * Offline stand-in for jevScore. It ignores the deadline on purpose ("mock slow" must be slow);
+ * callers that need a hard cap (the combine piggyback) enforce it themselves.
+ */
+export async function mockScore(spec: SortSpec, items: readonly ScoreItem[], _opts: ScoreOpts): Promise<ScoreOutcome> {
+  // "|" so a hook phrase must sit inside one group, not straddle two.
+  const text = (spec.kind === "rank" ? spec.prompt : spec.groups.join("|")).toLowerCase();
+  if (text.includes("mock unavailable")) throw new AiUnavailable("mock unavailable hook");
+  if (text.includes("mock slow")) await new Promise((r) => setTimeout(r, MOCK_SLOW_MS));
+  const partial = text.includes("mock partial");
+  const scores = mockSortScores(spec, items);
+  const outcome: ScoreOutcome = { engine: MOCK_SORT_ENGINE, scored: new Map(), retry: [], tokens: 0 };
+  items.forEach((it, i) => {
+    if (partial && i % 3 === 2) outcome.retry.push(it.id);
+    else outcome.scored.set(it.id, scores[i]!);
+  });
+  return outcome;
 }

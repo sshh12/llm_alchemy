@@ -1,12 +1,15 @@
 // Entry points used by game code; picks the live or mock backend from AI_MODE.
+import type { SortSpec } from "../../src/shared/api.ts";
 import { env } from "../env.ts";
 import type { AvoidResult, ElementProposal, GeneratedImage } from "./common.ts";
 import { generate } from "./image.ts";
+import { engineId, jevScore, type ScoreItem, type ScoreOpts, type ScoreOutcome } from "./jev.ts";
 import { combine } from "./llm.ts";
-import { mockCombine, mockImage } from "./mock.ts";
+import { MOCK_SORT_ENGINE, mockCombine, mockImage, mockScore } from "./mock.ts";
 
 export { AiUnavailable, Blocked, Fizzled } from "./common.ts";
 export type { AvoidResult, ElementProposal, GeneratedImage } from "./common.ts";
+export type { ScoreItem, ScoreOpts, ScoreOutcome } from "./jev.ts";
 
 export async function proposeElement(
   ingredientNames: string[],
@@ -23,3 +26,14 @@ export async function proposeElement(
 export async function paintElement(name: string, hint: string | null, notable: boolean, safetyIdentifier: string): Promise<GeneratedImage> {
   return env.aiMode === "mock" ? mockImage(name) : generate(name, hint, notable, safetyIdentifier);
 }
+
+/**
+ * Custom-sort scores for owned elements. This branch is the only thing keeping e2e (which runs
+ * netlify dev with the repo's .env, real TYPESAFE_API_KEY included) off the live Jev API.
+ */
+export async function scoreElements(spec: SortSpec, items: readonly ScoreItem[], opts: ScoreOpts): Promise<ScoreOutcome> {
+  return env.aiMode === "mock" ? mockScore(spec, items, opts) : jevScore(spec, items, opts);
+}
+
+/** The engine a sort would report right now (for responses that scored nothing). */
+export const sortEngineId = (): string => (env.aiMode === "mock" ? MOCK_SORT_ENGINE : engineId());

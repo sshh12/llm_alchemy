@@ -8,7 +8,10 @@ type EventName =
   | "discovery"
   | "first_discovery"
   | "challenge_complete"
-  | "share";
+  | "share"
+  // Custom library sort applied or activated (kind, group count, source, library size bucket,
+  // cached, outcome). Never the prompt or group text.
+  | "custom_sort";
 
 type Gtag = (command: "event", name: string, params?: Record<string, unknown>) => void;
 

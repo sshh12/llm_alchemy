@@ -4,15 +4,18 @@
 // The handle drags between snaps with velocity projection; height is spring-animated
 // outside React.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { specLabel } from "../../../shared/sortSpec.ts";
 import { safeAreaInsets } from "../../lib/safeArea.ts";
 import { SPRING, SpringValue } from "../../lib/spring.ts";
+import { useCustomSort } from "../../state/customSort.ts";
 import { useGame } from "../../state/game.ts";
 import { useUi, type ShelfSnap } from "../../state/ui.ts";
-import { ChevronDownIcon, ChevronUpIcon } from "../../components/Icons.tsx";
+import { ChevronDownIcon, ChevronUpIcon, SparkleIcon } from "../../components/Icons.tsx";
 import { layoutEls } from "../workbench/layout.ts";
+import { CustomSortBar } from "./CustomSortBar.tsx";
 import { FilterBar, LibraryEmpty, SearchField } from "./LibraryControls.tsx";
 import { LibraryGrid, PeekRow } from "./LibraryGrid.tsx";
-import { useLibraryList } from "./useLibrary.ts";
+import { useLibraryView } from "./useLibrary.ts";
 
 const PEEK = 160;
 const ORDER: ShelfSnap[] = ["peek", "half", "full"];
@@ -30,7 +33,7 @@ export function Shelf() {
   const snap = useUi((s) => s.shelf);
   const drop = useUi((s) => s.shelfDropActive);
   const loading = useGame((s) => s.status !== "ready");
-  const ids = useLibraryList();
+  const { ids, counts } = useLibraryView();
   const [gridMode, setGridMode] = useState(snap !== "peek");
   const height = useRef<SpringValue | null>(null);
 
@@ -121,6 +124,7 @@ export function Shelf() {
       <div className="handle" onPointerDown={onHandleDown} aria-hidden="true" />
       <div className="flex h-12 flex-none items-center gap-2 px-4 pb-1">
         <SearchField onFocus={() => snap === "peek" && useUi.setState({ shelf: "half" })} />
+        {snap === "peek" && <CustomSortPeek />}
         <button
           type="button"
           className="icon-btn"
@@ -134,11 +138,31 @@ export function Shelf() {
       {gridMode ? (
         <>
           <FilterBar />
-          <LibraryGrid ids={ids} mode="shelf-y" phone loading={loading} empty={<LibraryEmpty />} label="Your elements" />
+          <CustomSortBar counts={counts} />
+          <LibraryGrid ids={ids} mode="shelf-y" phone loading={loading} empty={<LibraryEmpty counts={counts} />} label="Your elements" />
         </>
       ) : (
-        <PeekRow ids={ids} loading={loading} empty={<LibraryEmpty compact />} />
+        <PeekRow ids={ids} loading={loading} empty={<LibraryEmpty compact counts={counts} />} />
       )}
     </section>
+  );
+}
+
+/** Peek has no sort controls: a ✦ says a custom order is on (pulsing while it weighs) and opens them. */
+function CustomSortPeek() {
+  const on = useUi((s) => s.sort === "custom");
+  const spec = useCustomSort((s) => s.spec);
+  const busy = useCustomSort((s) => s.status === "scoring");
+  if (!on || !spec) return null;
+  return (
+    <button
+      type="button"
+      className={`icon-btn flex-none text-accent ${busy ? "cs-busy" : ""}`}
+      data-testid="custom-sort-peek"
+      aria-label={`Custom sort “${specLabel(spec)}” is on. Show sort controls`}
+      onClick={() => useUi.setState({ shelf: "half" })}
+    >
+      <SparkleIcon />
+    </button>
   );
 }

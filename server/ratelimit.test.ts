@@ -109,7 +109,25 @@ describe("hit", () => {
   });
 
   it("treats every BUDGETS entry as a global budget", () => {
-    for (const b of [BUDGETS.llm, BUDGETS.image, BUDGETS.imageMonth, BUDGETS.players]) expect(b.name).toMatch(/^budget\./);
+    for (const b of [BUDGETS.llm, BUDGETS.image, BUDGETS.imageMonth, BUDGETS.players, BUDGETS.jev]) {
+      expect(b.name).toMatch(/^budget\./);
+    }
     for (const l of Object.values(LIMITS)) expect(l.name).not.toMatch(/^budget\./);
+  });
+
+  it("charges weighted sort costs, and the Jev budget only after the sort item limits pass", async () => {
+    const cost = 1_500;
+    const sortHits = [
+      { limit: LIMITS.sortItemsPlayerHour, subject: "p9", cost },
+      { limit: LIMITS.sortItemsIpDay, subject: "ip9", cost },
+      { limit: BUDGETS.jev, subject: "all", cost },
+    ];
+    expect(await hit(sortHits, now)).toEqual({ ok: true });
+    expect(db.counts.get(counterKey(BUDGETS.jev, "all", now))).toBe(cost);
+    // 200,000 / 1,500 → the 134th request breaks the hourly item limit and must not reach the budget.
+    for (let i = 1; i < 133; i++) await hit(sortHits, now);
+    expect(await hit(sortHits, now)).toMatchObject({ ok: false, limit: LIMITS.sortItemsPlayerHour });
+    expect(db.counts.get(counterKey(BUDGETS.jev, "all", now))).toBe(133 * cost);
+    expect(BUDGETS.jev).toMatchObject({ limit: 2_500_000, windowMs: 86_400_000 });
   });
 });

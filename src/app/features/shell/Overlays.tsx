@@ -13,6 +13,7 @@ const loaders = {
   stats: () => import("../sheets/StatsSheet.tsx"),
   settings: () => import("../sheets/SettingsSheet.tsx"),
   about: () => import("../sheets/AboutSheet.tsx"),
+  customSort: () => import("../sheets/CustomSortSheet.tsx"),
 } satisfies Record<SheetName, () => Promise<{ default: React.ComponentType<{ open: boolean }> }>>;
 
 const SHEETS = Object.fromEntries(Object.entries(loaders).map(([k, l]) => [k, lazy(l)])) as Record<

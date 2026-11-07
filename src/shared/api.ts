@@ -119,6 +119,8 @@ export interface CombineRequest {
   /** 2–4 ingredient ids the player owns (duplicates allowed, e.g. fire+fire). */
   ids: ElementId[];
   clientDate: string;
+  /** Active custom sort: the server scores the result if it is new for the player (best-effort). */
+  sort?: SortSpec;
 }
 
 export interface CombineResponse {
@@ -133,6 +135,11 @@ export interface CombineResponse {
   completed: Tier[];
   /** Updated library entry when newForPlayer. */
   entry?: LibraryEntry;
+  /**
+   * Present when the request carried `sort`, the result is new for the player, and scoring
+   * finished in time. Clients must work without it (they fall back to POST /api/sort {ids}).
+   */
+  sortScore?: SortScore;
 }
 
 // ---------------------------------------------------------------- POST /api/image
@@ -158,6 +165,75 @@ export type PlayerResponse =
   | { ok: true; action: "reset" }
   | { ok: true; action: "transfer-code"; code: string }
   | { ok: true; action: "redeem" };
+
+// ---------------------------------------------------------------- POST /api/sort
+
+/**
+ * A player-defined library order ("Sort by anything"). The text is plain data: the server
+ * passes it to the scoring model as a JSON field, never as instructions.
+ */
+export type SortSpec =
+  | { kind: "rank"; prompt: string } // "spookiest", "things in a kitchen"
+  | { kind: "groups"; groups: string[] }; // display order; "Other" is implicit and never sent
+
+export interface SortRequest {
+  spec: SortSpec;
+  /** Score only these owned elements (new discoveries, retries). Omit to score the whole library. */
+  ids?: ElementId[];
+}
+
+export interface SortResponse {
+  /** Model + rubric, e.g. "jev-1.14.0/r2" or "mock/r2". Informational (logs, e2e). */
+  engine: string;
+  /** Scored ids; `s`, `g` and `n` are parallel arrays. */
+  ids: ElementId[];
+  /**
+   * 0..1000. rank: match strength. groups: probability of the chosen group, out of the groups
+   * plus "None of these groups".
+   */
+  s: number[];
+  /**
+   * groups only: index into spec.groups of the chosen group; when the model picks "None of these
+   * groups", the most likely real group (never Other).
+   */
+  g?: number[];
+  /**
+   * groups only: 0..1000 fit = "clearly belongs in one of the groups" × (1 − P(None of these
+   * groups)). Below SORT_FIT_THRESHOLD the element goes to Other while the player keeps Other on.
+   */
+  n?: number[];
+  /** Owned and active but not scored this time (provider hiccup, deadline): retry with `ids`. */
+  retry: ElementId[];
+  /** Whole-library runs only: the library exceeded SORT_MAX_ELEMENTS; the oldest were not scored. */
+  truncated?: boolean;
+}
+
+/** One element's score (piggybacked on POST /api/combine). */
+export interface SortScore {
+  s: number;
+  g?: number;
+  n?: number;
+}
+
+// Requested ids that appear in neither `ids` nor `retry` are not owned/active: never retry them.
+/**
+ * Bump when question wording/levels or the score parse change (invalidates client score mirrors).
+ * r2: rank requests carry a goal `state`; groups add a "None of these groups" option that
+ * discounts the fit.
+ */
+export const SORT_RUBRIC = "r2";
+export const SORT_PROMPT_MAX_CHARS = 80;
+export const SORT_GROUPS_MIN = 2;
+export const SORT_GROUPS_MAX = 8;
+export const SORT_GROUP_MAX_CHARS = 32;
+/** Max ids in one incremental SortRequest. */
+export const SORT_IDS_MAX = 1_000;
+/** Max elements one whole-library run scores (a legacy import alone can be MAX_LEGACY_IDS). */
+export const SORT_MAX_ELEMENTS = 25_000;
+/** rank: scores at or above this are in the "Matches" bucket (≈ level 2.4 of 0..4). */
+export const SORT_MATCH_THRESHOLD = 600;
+/** groups: fit (`n`) below this → Other. */
+export const SORT_FIT_THRESHOLD = 500;
 
 // ---------------------------------------------------------------- errors
 

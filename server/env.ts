@@ -20,6 +20,10 @@ export const env = {
   get openaiKey() {
     return req("OPENAI_API_KEY");
   },
+  /** TypeSafe Jev (custom library sort). Read inside the client's try so a missing key is a 503, not a 500. */
+  get typesafeKey() {
+    return req("TYPESAFE_API_KEY");
+  },
   get sessionSecret() {
     const s = req("SESSION_SECRET");
     if (s.length < 32) throw new Error("SESSION_SECRET must be at least 32 characters");
@@ -43,6 +47,10 @@ export const env = {
   },
   get llmDailyCap() {
     return int("LLM_DAILY_CAP", 100_000);
+  },
+  /** Jev questions per UTC day across all players (rank = 1 per element, groups = 2): ≈ $10-13. */
+  get jevDailyCap() {
+    return int("JEV_DAILY_CAP", 2_500_000);
   },
   get imageDailyCap() {
     return int("IMAGE_DAILY_CAP", 17_000);

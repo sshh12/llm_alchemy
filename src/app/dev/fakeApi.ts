@@ -6,8 +6,14 @@
 //   ?fake=rich     seeded mid-game player (library, firsts, pins, history, streak)
 //   ?fake=huge     ~4,000 elements (virtualization / perf)
 //   ?fake=pow      bootstrap demands proof-of-work first (exercises the worker)
-//   ?fake=slow     combines take ~2.5 s (pending crucible state)
-//   ?fake=errors   some combines fail (rate_limited / fizzled / budget_exhausted)
+//   ?fake=slow     combines and custom sorts take ~2.5 s (pending crucible, "Weighing…")
+//   ?fake=errors   some combines fail (rate_limited / fizzled / budget_exhausted), and custom
+//                  sorts rotate: 1st rate_limited (8 s), 2nd ai_unavailable, 3rd
+//                  budget_exhausted (60 s), 4th succeeds, and so on
+//
+// Custom sort (/api/sort, and `sortScore` on a combine that carries `sort`) uses the same
+// deterministic toy scorer as the server's AI_MODE=mock (src/shared/mockSort.ts): e.g. under
+// ?fake=rich, "weather" puts Lightning, Mist, Cloud and Rainbow first.
 //
 // Art: elements whose name has a sample image return img "/dev-art/<slug>.webp"; the
 // Playwright screenshot script serves those paths (plain vite dev just shows placeholders).
@@ -23,10 +29,15 @@ import type {
   LibraryEntry,
   PlayerAction,
   PlayerResponse,
+  SortRequest,
+  SortResponse,
   Tier,
 } from "../../shared/api.ts";
+import { SORT_RUBRIC } from "../../shared/api.ts";
 import { addDays, localDay } from "../../shared/dates.ts";
+import { mockSortScores } from "../../shared/mockSort.ts";
 import { rarityForDepth } from "../../shared/rarity.ts";
+import { normalizeSpec } from "../../shared/sortSpec.ts";
 import { setTransport } from "../lib/api.ts";
 import { recipeKey } from "../lib/ids.ts";
 
@@ -310,6 +321,9 @@ function combine(req: CombineRequest): Response {
       done.push(tier);
     }
   }
+  // Like the server: an active custom sort scores a discovery that is new for the player.
+  const spec = req.sort ? normalizeSpec(req.sort) : null;
+  const sortScore = spec?.ok && newForPlayer ? mockSortScores(spec.spec, [{ id: el.id, name: el.name }])[0] : undefined;
   const res: CombineResponse = {
     result: dto(el),
     newForPlayer,
@@ -317,6 +331,36 @@ function combine(req: CombineRequest): Response {
     recipeNew,
     completed: done,
     ...(newForPlayer ? { entry: entry(el) } : {}),
+    ...(sortScore ? { sortScore } : {}),
+  };
+  return json(res);
+}
+
+let sortCount = 0;
+
+function sort(req: SortRequest): Response {
+  sortCount++;
+  if (mode === "errors") {
+    const roll = sortCount % 4;
+    if (roll === 1) return fail("rate_limited", 429, { retryAfterMs: 8_000 });
+    if (roll === 2) return fail("ai_unavailable", 503);
+    if (roll === 3) return fail("budget_exhausted", 503, { retryAfterMs: 60_000 });
+  }
+  const n = normalizeSpec(req.spec);
+  if (!n.ok) return fail("bad_request", 400);
+  // Unowned ids are dropped silently (the client then never asks for them again).
+  const ids = req.ids ? [...new Set(req.ids)].filter((id) => owned.has(id)) : [...owned.keys()];
+  const scores = mockSortScores(
+    n.spec,
+    ids.map((id) => ({ id, name: els.get(id)!.name })),
+  );
+  const res: SortResponse = {
+    // Same rubric as the real engine, so the client's score mirrors treat it alike.
+    engine: `fake/${SORT_RUBRIC}`,
+    ids,
+    s: scores.map((x) => x.s),
+    ...(n.spec.kind === "groups" ? { g: scores.map((x) => x.g ?? 0), n: scores.map((x) => x.n ?? 0) } : {}),
+    retry: [],
   };
   return json(res);
 }
@@ -352,7 +396,8 @@ export function installFakeApi(): void {
   setTransport(async (path, init) => {
     const body = JSON.parse(String(init.body ?? "{}")) as unknown;
     calls.push({ path, body });
-    const latency = path === "/api/combine" ? (mode === "slow" ? 2_500 : 350) : path === "/api/image" ? 500 : 250;
+    const latency =
+      path === "/api/combine" ? (mode === "slow" ? 2_500 : 350) : path === "/api/sort" ? (mode === "slow" ? 2_500 : 600) : path === "/api/image" ? 500 : 250;
     await sleep(latency, init.signal);
     switch (path) {
       case "/api/bootstrap":
@@ -363,6 +408,8 @@ export function installFakeApi(): void {
         return image((body as { id: string }).id);
       case "/api/player":
         return player(body as PlayerAction);
+      case "/api/sort":
+        return sort(body as SortRequest);
       default:
         return fail("not_found", 404);
     }

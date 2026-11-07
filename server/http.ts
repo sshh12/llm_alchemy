@@ -6,8 +6,12 @@ import type { z } from "zod";
 import { API_HEADER, type ApiError as ApiErrorBody, type ApiErrorCode, type PowChallenge } from "../src/shared/api.ts";
 import { sign } from "./crypto.ts";
 
-/** Body caps. Bootstrap carries a legacy inventory (up to 20k ids); everything else is tiny. */
+/**
+ * Body caps. Bootstrap carries a legacy inventory (up to 20k ids) and a sort up to
+ * SORT_IDS_MAX ids (1,000 × ~22 B plus the spec); everything else is tiny.
+ */
 export const BODY_LIMIT_BOOTSTRAP = 1_048_576;
+export const BODY_LIMIT_SORT = 32_768;
 export const BODY_LIMIT_DEFAULT = 8_192;
 
 export class ApiError extends Error {
@@ -35,6 +39,11 @@ export const errors = {
     new ApiError(429, "rate_limited", "Easy there, alchemist. Try again in a moment.", { retryAfterMs }),
   budgetExhausted: (retryAfterMs?: number) =>
     new ApiError(503, "budget_exhausted", "The lab is out of fresh ideas for today. Known recipes still work.", {
+      retryAfterMs,
+    }),
+  /** BUDGETS.jev ran out: only custom sorting stops (the combine copy would be wrong here). */
+  sortBudget: (retryAfterMs?: number) =>
+    new ApiError(503, "budget_exhausted", "Custom sorting is resting until tomorrow. Your other sorts still work.", {
       retryAfterMs,
     }),
   fizzled: () => new ApiError(422, "fizzled", "That mix fizzled. Try again."),

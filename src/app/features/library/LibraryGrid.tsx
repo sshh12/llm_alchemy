@@ -3,8 +3,9 @@
 // PageUp/PageDown move focus, Enter/Space spawns onto the workbench, the context-menu key
 // (or Shift+F10) opens quick actions.
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import type { ElementId } from "../../../shared/api.ts";
+import { useCustomSort, type SortStatus } from "../../state/customSort.ts";
 import { openDetails, useUi } from "../../state/ui.ts";
 import { SkeletonTile } from "../../components/Tile.tsx";
 import { spawnElement } from "../workbench/actions.ts";
@@ -31,18 +32,19 @@ type EnterMode = "stagger" | "fade";
 
 /**
  * Entrance choreography for the visible tiles: a staggered rise when the list first appears
- * (or the filter/sort changes, or a search starts/ends), a quick fade while typing. `key`
- * remounts the tiles so their CSS animation replays; the mode clears shortly after, so rows
- * that scroll into view later never animate.
+ * (or the filter/sort changes, a search starts/ends, or a custom order lands: `epoch`), a quick
+ * fade while typing. `key` remounts the tiles so their CSS animation replays; the mode clears
+ * shortly after, so rows that scroll into view later never animate.
  */
-function useEnter(loading: boolean | undefined): { key: number; mode: EnterMode | undefined } {
+function useEnter(loading: boolean | undefined, epoch: number): { key: number; mode: EnterMode | undefined } {
   const filter = useUi((s) => s.filter);
   const sort = useUi((s) => s.sort);
   const query = useUi((s) => s.query.trim());
-  const [anim, setAnim] = useState({ filter, sort, query, loading, key: 0, mode: "stagger" as EnterMode | undefined });
-  if (anim.filter !== filter || anim.sort !== sort || anim.query !== query || anim.loading !== loading) {
-    const typing = anim.filter === filter && anim.sort === sort && anim.loading === loading && !!anim.query === !!query;
-    setAnim({ filter, sort, query, loading, key: anim.key + 1, mode: typing ? "fade" : "stagger" });
+  const [anim, setAnim] = useState({ filter, sort, query, loading, epoch, key: 0, mode: "stagger" as EnterMode | undefined });
+  if (anim.filter !== filter || anim.sort !== sort || anim.query !== query || anim.loading !== loading || anim.epoch !== epoch) {
+    const typing =
+      anim.filter === filter && anim.sort === sort && anim.loading === loading && anim.epoch === epoch && !!anim.query === !!query;
+    setAnim({ filter, sort, query, loading, epoch, key: anim.key + 1, mode: typing ? "fade" : "stagger" });
   }
   useEffect(() => {
     if (!anim.mode) return;
@@ -50,6 +52,59 @@ function useEnter(loading: boolean | undefined): { key: number; mode: EnterMode 
     return () => clearTimeout(t);
   }, [anim.key, anim.mode]);
   return { key: anim.key, mode: anim.mode };
+}
+
+/**
+ * Custom sort hooks shared by both views: `epoch` (a new custom order, or reverse/Other toggled)
+ * and the `data-sort-state` value (the 150 ms delayed dim while a new spec weighs).
+ */
+function useSortView(): { epoch: number; sortState: SortStatus | undefined } {
+  const custom = useUi((s) => s.sort === "custom");
+  const status = useCustomSort((s) => s.status);
+  const epoch = useCustomSort((s) => s.epoch);
+  return { epoch, sortState: custom ? status : undefined };
+}
+
+/** A new custom order starts from its head: back to the start on an epoch change (not on mount). */
+function useScrollHomeOnEpoch(ref: React.RefObject<HTMLElement | null>, epoch: number, axis: "top" | "left"): void {
+  const seen = useRef(epoch);
+  useEffect(() => {
+    if (seen.current === epoch) return;
+    seen.current = epoch;
+    const el = ref.current;
+    if (!el) return;
+    if (axis === "top") el.scrollTop = 0;
+    else el.scrollLeft = 0;
+  }, [ref, epoch, axis]);
+}
+
+/**
+ * The same head for keyboard focus. An epoch (a custom order landing, often seconds after the
+ * apply) remounts every tile, so a tile focused at that moment would drop focus to <body>. Then
+ * the new order's first tile takes it; either way index 0 becomes the grid's tab stop, since the
+ * old index now names some other element and has just scrolled away.
+ */
+function useFocusHomeOnEpoch(ref: React.RefObject<HTMLElement | null>, epoch: number, setFocusIndex: (i: number) => void): void {
+  const seen = useRef(epoch);
+  const hadFocus = useRef(false);
+  // Read during render, before the remount commits: the old tiles are still in the document.
+  if (seen.current !== epoch) hadFocus.current = !!ref.current?.contains(document.activeElement);
+  useLayoutEffect(() => {
+    if (seen.current === epoch) return;
+    seen.current = epoch;
+    setFocusIndex(0);
+    if (!hadFocus.current) return;
+    hadFocus.current = false;
+    let raf = 0;
+    // A few frames at most: the virtualizer re-renders row 0 after the scroll home.
+    const focusHead = (tries: number) => {
+      const head = ref.current?.querySelector<HTMLElement>('[data-index="0"]');
+      if (head) head.focus({ preventScroll: true });
+      else if (tries > 0) raf = requestAnimationFrame(() => focusHead(tries - 1));
+    };
+    raf = requestAnimationFrame(() => focusHead(3));
+    return () => cancelAnimationFrame(raf);
+  }, [ref, epoch, setFocusIndex]);
 }
 
 function useRovingKeys(ids: ElementId[], cols: number, pageSize: number, scrollTo: (i: number) => void, container: React.RefObject<HTMLElement | null>) {
@@ -88,7 +143,7 @@ function useRovingKeys(ids: ElementId[], cols: number, pageSize: number, scrollT
       openDetails({ elementId: id, source: "library", anchor: { x: r.left, y: r.top, w: r.width, h: r.height } });
     }
   };
-  return { index, onKeyDown, onFocusCapture: (e: React.FocusEvent) => {
+  return { index, setFocusIndex, onKeyDown, onFocusCapture: (e: React.FocusEvent) => {
     const i = (e.target as HTMLElement).dataset.index;
     if (i !== undefined) setFocusIndex(Number(i));
   } };
@@ -121,10 +176,13 @@ export function LibraryGrid({ ids, mode, phone, loading, empty, label }: GridPro
     paddingEnd: 24,
   });
   useEffect(() => virtualizer.measure(), [rowH, virtualizer]);
-  const enter = useEnter(loading);
+  const { epoch, sortState } = useSortView();
+  const enter = useEnter(loading, epoch);
+  useScrollHomeOnEpoch(scrollRef, epoch, "top");
   const firstRow = Math.floor((virtualizer.scrollOffset ?? 0) / rowH);
   const visibleRows = Math.max(1, Math.floor((scrollRef.current?.clientHeight ?? 400) / rowH));
   const roving = useRovingKeys(ids, cols, visibleRows * cols, (i) => virtualizer.scrollToIndex(Math.floor(i / cols)), scrollRef);
+  useFocusHomeOnEpoch(scrollRef, epoch, roving.setFocusIndex);
 
   return (
     <div
@@ -138,6 +196,7 @@ export function LibraryGrid({ ids, mode, phone, loading, empty, label }: GridPro
       onKeyDown={roving.onKeyDown}
       onFocus={roving.onFocusCapture}
       data-enter={enter.mode}
+      data-sort-state={sortState}
     >
       {loading ? (
         <div className="flex flex-wrap gap-2 px-4 pt-1">
@@ -194,7 +253,10 @@ export function PeekRow({ ids, loading, empty }: { ids: ElementId[]; loading?: b
     paddingEnd: PAD,
   });
   const roving = useRovingKeys(ids, 1, 4, (i) => virtualizer.scrollToIndex(i), scrollRef);
-  const enter = useEnter(loading);
+  const { epoch, sortState } = useSortView();
+  const enter = useEnter(loading, epoch);
+  useScrollHomeOnEpoch(scrollRef, epoch, "left");
+  useFocusHomeOnEpoch(scrollRef, epoch, roving.setFocusIndex);
   const firstCol = Math.floor(Math.max(0, (virtualizer.scrollOffset ?? 0) - PAD) / (size + GAP));
   return (
     <div
@@ -207,6 +269,7 @@ export function PeekRow({ ids, loading, empty }: { ids: ElementId[]; loading?: b
       onKeyDown={roving.onKeyDown}
       onFocus={roving.onFocusCapture}
       data-enter={enter.mode}
+      data-sort-state={sortState}
     >
       {loading ? (
         <div className="flex gap-2 px-4 py-1">

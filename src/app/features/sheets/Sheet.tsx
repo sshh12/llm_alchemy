@@ -13,11 +13,18 @@ interface SheetProps {
   headerExtra?: ReactNode;
   /** data-testid for the dialog (e2e contract). */
   testId?: string;
+  /**
+   * On close, put focus back on the control that had it when the sheet opened. Radix only does
+   * that for a Dialog.Trigger, and these sheets open from the store, so focus otherwise drops to
+   * <body>. Fine pointers only: on touch, focusing a field or select can pop its keyboard/picker.
+   */
+  returnFocus?: boolean;
   children: ReactNode;
 }
 
-export function Sheet({ open, onOpenChange, title, description, headerExtra, testId, children }: SheetProps) {
+export function Sheet({ open, onOpenChange, title, description, headerExtra, testId, returnFocus, children }: SheetProps) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const returnTo = useRef<HTMLElement | null>(null);
 
   const onHandleDown = (e: React.PointerEvent<HTMLDivElement>) => {
     const el = contentRef.current;
@@ -57,9 +64,19 @@ export function Sheet({ open, onOpenChange, title, description, headerExtra, tes
           className="sheet"
           data-testid={testId}
           onOpenAutoFocus={(e) => {
+            // Still the opener's focus here: Radix moves it only after this event.
+            const was = document.activeElement;
+            returnTo.current = returnFocus && was instanceof HTMLElement && was !== document.body && matchMedia("(pointer: fine)").matches ? was : null;
             // Focus the sheet itself (not the close button) so no focus ring flashes on open.
             e.preventDefault();
             contentRef.current?.focus({ preventScroll: true });
+          }}
+          onCloseAutoFocus={(e) => {
+            const el = returnTo.current;
+            returnTo.current = null;
+            if (!el?.isConnected) return; // Radix's default (a trigger, if any)
+            e.preventDefault();
+            el.focus({ preventScroll: true });
           }}
         >
           <div className="flex-none touch-none px-5 pb-2 pt-2 min-[640px]:pt-4" onPointerDown={onHandleDown}>

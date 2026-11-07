@@ -6,38 +6,47 @@
 // round trip, retried server-side by CockroachDB). Rejected attempts still count toward the
 // per-player/per-IP limits, which is intentional: hammering keeps you limited. Global budgets
 // are charged only once those pass (a second round trip, only where a request carries both:
-// new recipes and image generations), so a request the local limits reject never spends
-// budget. Rows expire via row-level TTL.
+// new recipes, image generations and sorts), so a request the local limits reject never
+// spends budget. Rows expire via row-level TTL.
 //
 // Limits (subject = player id or keyed hash of the client /64 or IPv4 address):
 //
-// | Rule                 | Subject | Limit  | Window | Rationale                                                   |
-// |----------------------|---------|--------|--------|-------------------------------------------------------------|
-// | bootstrap.ip         | ip      | 600    | 1 h    | one call per page load; a 30-seat classroom behind one NAT |
-// | create.ip            | ip      | 60     | 1 h    | new players (also PoW-gated); a classroom twice over        |
-// | create.ip.day        | ip      | 300    | 1 d    |                                                             |
-// | adopt.ip             | ip      | 10     | 1 h    | legacy adoption: ids were public (2023 creator ids), so     |
-// |                      |         |        |        | adopt-once is the defense; this only slows mass claiming    |
-// | combine.player       | player  | 60     | 1 min  | humans manage ~10-30/min; bots go much faster              |
-// | combine.player.hour  | player  | 1,500  | 1 h    |                                                             |
-// | combine.ip.hour      | ip      | 20,000 | 1 h    | backstop if the platform rule is missing                    |
-// | llm.player           | player  | 20     | 1 min  | brand-new recipes only (each one is an LLM call)            |
-// | llm.player.hour      | player  | 300    | 1 h    |                                                             |
-// | llm.player.day       | player  | 1,500  | 1 d    |                                                             |
-// | llm.ip.hour          | ip      | 1,500  | 1 h    | classroom: 30 players x 50 new recipes/h                    |
-// | llm.ip.day           | ip      | 6,000  | 1 d    |                                                             |
-// | image.player.hour    | player  | 60     | 1 h    | generations actually started (not polls, not ready art)     |
-// | image.player.day     | player  | 200    | 1 d    |                                                             |
-// | image.ip.hour        | ip      | 300    | 1 h    |                                                             |
-// | image.ip.day         | ip      | 1,000  | 1 d    |                                                             |
-// | reset.player         | player  | 10     | 1 h    |                                                             |
-// | transfer.player      | player  | 30     | 1 h    |                                                             |
-// | redeem.ip            | ip      | 30     | 1 h    | codes are HMAC-signed; this only caps lookups               |
+// | Rule                   | Subject | Limit     | Window | Rationale                                                  |
+// |------------------------|---------|-----------|--------|------------------------------------------------------------|
+// | bootstrap.ip           | ip      | 600       | 1 h    | one call per page load; a 30-seat classroom behind one NAT |
+// | create.ip              | ip      | 60        | 1 h    | new players (also PoW-gated); a classroom twice over       |
+// | create.ip.day          | ip      | 300       | 1 d    |                                                            |
+// | adopt.ip               | ip      | 10        | 1 h    | legacy adoption: ids were public (2023 creator ids), so    |
+// |                        |         |           |        | adopt-once is the defense; this only slows mass claiming   |
+// | combine.player         | player  | 60        | 1 min  | humans manage ~10-30/min; bots go much faster              |
+// | combine.player.hour    | player  | 1,500     | 1 h    |                                                            |
+// | combine.ip.hour        | ip      | 20,000    | 1 h    | backstop if the platform rule is missing                   |
+// | llm.player             | player  | 20        | 1 min  | brand-new recipes only (each one is an LLM call)           |
+// | llm.player.hour        | player  | 300       | 1 h    |                                                            |
+// | llm.player.day         | player  | 1,500     | 1 d    |                                                            |
+// | llm.ip.hour            | ip      | 1,500     | 1 h    | classroom: 30 players x 50 new recipes/h                   |
+// | llm.ip.day             | ip      | 6,000     | 1 d    |                                                            |
+// | image.player.hour      | player  | 60        | 1 h    | generations actually started (not polls, not ready art)    |
+// | image.player.day       | player  | 200       | 1 d    |                                                            |
+// | image.ip.hour          | ip      | 300       | 1 h    |                                                            |
+// | image.ip.day           | ip      | 1,000     | 1 d    |                                                            |
+// | reset.player           | player  | 10        | 1 h    |                                                            |
+// | transfer.player        | player  | 30        | 1 h    |                                                            |
+// | redeem.ip              | ip      | 30        | 1 h    | codes are HMAC-signed; this only caps lookups              |
+// | sort.player            | player  | 40        | 1 min  | /api/sort requests; has no platform rule (both are used),  |
+// | sort.player.hour       | player  | 400       | 1 h    | so these are the only gate; the client batches discoveries |
+// | sort.ip.hour           | ip      | 4,000     | 1 h    | classroom backstop                                         |
+// | sort.items.player.hour | player  | 200,000   | 1 h    | cost = Jev questions (rank 1, groups 2 per element):       |
+// | sort.items.player.day  | player  | 600,000   | 1 d    | ~8 full re-sorts of a 25k library per hour                 |
+// | sort.items.ip.hour     | ip      | 400,000   | 1 h    |                                                            |
+// | sort.items.ip.day      | ip      | 1,000,000 | 1 d    |                                                            |
 //
 // Global budgets (all players): new recipes LLM_DAILY_CAP (100,000/UTC day ≈ $10), images
 // IMAGE_DAILY_CAP (17,000/UTC day ≈ $90), new players PLAYER_DAILY_CAP (20,000/UTC day), and
 // IMAGE_MONTHLY_CAP (20,000 per 30-day window) which keeps image generation inside the Netlify
-// Starter plan's 100 function-hours/month.
+// Starter plan's 100 function-hours/month. Custom-sort scoring JEV_DAILY_CAP (2,500,000 Jev
+// questions/UTC day ≈ $10-13), charged by /api/sort and by the sort score /api/combine
+// piggybacks on a discovery; when it runs out only custom sorting stops.
 import { q, t } from "./db.ts";
 import { env } from "./env.ts";
 import { errors } from "./http.ts";
@@ -75,6 +84,15 @@ export const LIMITS = {
   resetPlayer: rule("reset.player", 10, HOUR),
   transferPlayer: rule("transfer.player", 30, HOUR),
   redeemIp: rule("redeem.ip", 30, HOUR),
+  // Custom library sort. Request counts are charged up front; the items limits are charged
+  // with cost = Jev questions once the owned elements are loaded.
+  sortPlayer: rule("sort.player", 40, MIN),
+  sortPlayerHour: rule("sort.player.hour", 400, HOUR),
+  sortIpHour: rule("sort.ip.hour", 4_000, HOUR),
+  sortItemsPlayerHour: rule("sort.items.player.hour", 200_000, HOUR),
+  sortItemsPlayerDay: rule("sort.items.player.day", 600_000, DAY),
+  sortItemsIpHour: rule("sort.items.ip.hour", 400_000, HOUR),
+  sortItemsIpDay: rule("sort.items.ip.day", 1_000_000, DAY),
 } satisfies Record<string, Limit>;
 
 /** Global daily budgets, read lazily so env overrides apply. Subject is always "all". */
@@ -90,6 +108,10 @@ export const BUDGETS = {
   },
   get imageMonth() {
     return rule("budget.image.month", env.imageMonthlyCap, 30 * DAY);
+  },
+  /** Jev questions (custom library sort), charged with `cost`. */
+  get jev() {
+    return rule("budget.jev", env.jevDailyCap, DAY);
   },
 };
 

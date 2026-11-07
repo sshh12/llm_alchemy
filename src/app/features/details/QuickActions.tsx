@@ -1,6 +1,7 @@
 // Quick actions / details for an element (long-press, right-click, context-menu key, or a
-// tapped toast/feed item): description, rarity, how you made it, Add / Pin / Share /
-// Put away. Anchored next to the tile (Radix Popover with a virtual anchor).
+// tapped toast/feed item): description, rarity (and its place in an active custom sort),
+// how you made it, Add / Pin / Share / Put away. Anchored next to the tile (Radix Popover
+// with a virtual anchor).
 import { Popover } from "radix-ui";
 import { useMemo, useRef, useState } from "react";
 import { RARITY_LABEL } from "../../../shared/rarity.ts";
@@ -11,6 +12,7 @@ import { useGame } from "../../state/game.ts";
 import { openDetails, showToast, togglePin, useUi } from "../../state/ui.ts";
 import { CloseIcon, PinIcon, PlusIcon, ShareIcon } from "../../components/Icons.tsx";
 import { Tile } from "../../components/Tile.tsx";
+import { CustomSortLine } from "../library/CustomSortBar.tsx";
 import { clearSelection, recipeLabel, removeTile, spawnElement } from "../workbench/actions.ts";
 
 export default function QuickActions() {
@@ -67,6 +69,7 @@ export default function QuickActions() {
                 {el.depth != null && ` · depth ${el.depth}`}
                 {el.notable && " · ✦ notable"}
               </p>
+              <CustomSortLine id={el.id} />
               {owned?.first && (
                 <p className="mt-1 text-[12.5px] font-semibold leading-snug text-gold">
                   First discovered by you

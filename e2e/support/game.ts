@@ -1,7 +1,7 @@
 // Page object for the game. All selectors live here so the specs read like the journeys
 // they describe, and the data-testid contract (e2e/README.md) has one home.
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
-import type { BootstrapResponse, CombineResponse } from "../../src/shared/api.ts";
+import type { BootstrapResponse, CombineResponse, SortRequest, SortResponse } from "../../src/shared/api.ts";
 import { center, drag, pressAndHold, tap, touchLongPress, type Point } from "./gestures.ts";
 
 export interface Device {
@@ -20,6 +20,9 @@ function cssEscape(s: string): string {
   return s.replace(/["\\]/g, "\\$&");
 }
 
+/** What to sort by: a rank prompt, or groups (blank rows are dropped; `other` sets the switch). */
+export type CustomSortInput = string | { groups: string[]; other?: boolean };
+
 export class Game {
   readonly app: Locator;
   readonly onboarding: Locator;
@@ -31,6 +34,7 @@ export class Game {
   readonly challengeComplete: Locator;
   readonly challengesSheet: Locator;
   readonly settingsSheet: Locator;
+  readonly customSortSheet: Locator;
 
   constructor(
     readonly page: Page,
@@ -46,6 +50,7 @@ export class Game {
     this.challengeComplete = page.getByTestId("challenge-complete");
     this.challengesSheet = page.getByTestId("challenges-sheet");
     this.settingsSheet = page.getByTestId("settings-sheet");
+    this.customSortSheet = page.getByTestId("custom-sort-sheet");
   }
 
   // ------------------------------------------------------------------ locators
@@ -162,6 +167,114 @@ export class Game {
     const menu = this.page.getByTestId("quick-actions");
     await expect(menu).toBeVisible();
     return menu;
+  }
+
+  /** Names of the rendered library tiles, in display order. */
+  async libraryNames(): Promise<string[]> {
+    return this.libraryTiles().evaluateAll((els) => els.map((e) => e.getAttribute("data-name") ?? ""));
+  }
+
+  // ------------------------------------------------------------------ custom sort
+
+  sortSelect(): Locator {
+    return this.page.getByTestId("sort-select");
+  }
+
+  customSortBar(): Locator {
+    return this.page.getByTestId("custom-sort-bar");
+  }
+
+  /** Phones keep the sort controls in the expanded shelf (not in peek); the rail always shows them. */
+  async openSortControls(): Promise<void> {
+    const expand = this.page.getByRole("button", { name: "Expand library" });
+    if (await expand.isVisible()) await tap(expand, this.device.touch);
+    await expect(this.sortSelect()).toBeVisible();
+  }
+
+  /** Back to the phone shelf's peek row, so the canvas is free to play on (no-op on the rail). */
+  async collapseLibrary(): Promise<void> {
+    const collapse = this.page.getByRole("button", { name: "Collapse library" });
+    if (!(await collapse.isVisible())) return;
+    await tap(collapse, this.device.touch);
+    // The peek row replaces the grid once the shelf has finished settling.
+    await expect(this.libraryPeekRow()).toBeVisible();
+  }
+
+  /** The phone shelf's one-row library (peek); absent on the rail and while the shelf is open. */
+  libraryPeekRow(): Locator {
+    return this.page.locator('.peek-row[data-testid="library"]');
+  }
+
+  /** "Custom…" in the sort select opens "Sort by anything". */
+  async openCustomSort(): Promise<Locator> {
+    await this.openSortControls();
+    await this.sortSelect().selectOption("__edit");
+    await expect(this.customSortSheet).toBeVisible();
+    await this.entranceDone(this.customSortSheet);
+    return this.customSortSheet;
+  }
+
+  /** The element's own enter animation (a sheet sliding or scaling in) has finished. */
+  async entranceDone(el: Locator): Promise<void> {
+    await el.evaluate((node) => Promise.all(node.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  }
+
+  /** Fill the sheet (opening it unless it already is) without applying. */
+  async fillCustomSort(input: CustomSortInput): Promise<Locator> {
+    const sheet = (await this.customSortSheet.isVisible()) ? this.customSortSheet : await this.openCustomSort();
+    const mode = (m: string) => sheet.locator(`${byTestId("custom-sort-mode")} [data-mode="${m}"]`);
+    if (typeof input === "string") {
+      await tap(mode("rank"), this.device.touch);
+      await sheet.getByTestId("custom-sort-input").fill(input);
+      return sheet;
+    }
+    await tap(mode("groups"), this.device.touch);
+    const fields = sheet.getByTestId("custom-sort-group");
+    while ((await fields.count()) < input.groups.length) await tap(sheet.getByTestId("custom-sort-add-group"), this.device.touch);
+    const rows = await fields.count();
+    for (let i = 0; i < rows; i++) await fields.nth(i).fill(input.groups[i] ?? "");
+    if (input.other !== undefined) {
+      const sw = sheet.getByTestId("custom-sort-other");
+      if ((await sw.getAttribute("aria-checked")) !== String(input.other)) await tap(sw, this.device.touch);
+      await expect(sw).toHaveAttribute("aria-checked", String(input.other));
+    }
+    return sheet;
+  }
+
+  /** Fill and press Apply (or Done); the sheet closes. Waits for no request. */
+  async submitCustomSort(input: CustomSortInput): Promise<void> {
+    const sheet = await this.fillCustomSort(input);
+    const apply = sheet.getByTestId("custom-sort-apply");
+    await expect(apply).toBeEnabled();
+    await tap(apply, this.device.touch);
+    await expect(this.customSortSheet).toBeHidden();
+  }
+
+  /** Apply a custom sort that needs a full run; resolves with its /api/sort answer once it is on screen. */
+  async applyCustomSort(input: CustomSortInput): Promise<SortResponse> {
+    const sorted = this.nextSort();
+    await this.submitCustomSort(input);
+    const res = await sorted;
+    const body = (await res.json()) as SortResponse;
+    expect(res.status(), `sort failed: ${JSON.stringify(body)}`).toBe(200);
+    await expect(this.customSortBar()).toHaveAttribute("data-status", "ready");
+    return body;
+  }
+
+  /** The next /api/sort response (register before triggering it). */
+  nextSort(): Promise<Response> {
+    return this.page.waitForResponse((r) => r.url().endsWith("/api/sort") && r.request().method() === "POST", {
+      timeout: 30_000,
+    });
+  }
+
+  /** Every /api/sort request body sent from now on (keeps recording across reloads of this page). */
+  recordSorts(): SortRequest[] {
+    const sent: SortRequest[] = [];
+    this.page.on("request", (r) => {
+      if (r.url().endsWith("/api/sort") && r.method() === "POST") sent.push(r.postDataJSON() as SortRequest);
+    });
+    return sent;
   }
 
   // ------------------------------------------------------------------ canvas

@@ -1,0 +1,1915 @@
+{
+ "tool": "eval-sort",
+ "version": 1,
+ "engine": "jev-1.14.0/r2",
+ "model": "jev-1.14.0",
+ "rubric": "r2",
+ "thresholds": {
+  "match": 600,
+  "fit": 500
+ },
+ "ts": "2026-11-07T20:36:31.601Z",
+ "split": "holdout",
+ "cases": null,
+ "repeat": 1,
+ "elements": 286,
+ "summary": {
+  "holdout": {
+   "rank": {
+    "cases": 23,
+    "auc": 0.9973,
+    "minAuc": 0.9375,
+    "p10": 0.6223,
+    "tier": 0.9618,
+    "low10": 0,
+    "matchP": 1,
+    "matchR": 0.9421,
+    "matchF1": 0.9546,
+    "matches": 89.1304,
+    "weak": 0,
+    "junkMatches": 66,
+    "partial": 0,
+    "rho": -0.8491,
+    "revAuc": 1,
+    "compAuc": 1,
+    "tokPerEl": 92.2537,
+    "unparsed": 0,
+    "tokens": 606845,
+    "instMean": null,
+    "instP95": null,
+    "instMax": null,
+    "instCross": null
+   },
+   "families": {
+    "plain": {
+     "cases": 8,
+     "auc": 0.9922,
+     "minAuc": 0.9375,
+     "p10": 0.7629,
+     "tier": 0.9445,
+     "low10": 0,
+     "matchP": 1,
+     "matchR": 0.9531,
+     "matchF1": 0.9738,
+     "matches": 39.875,
+     "weak": 0,
+     "junkMatches": 10,
+     "partial": 0,
+     "rho": null,
+     "revAuc": null,
+     "compAuc": null,
+     "tokPerEl": 91.9222,
+     "unparsed": 0,
+     "tokens": 210318,
+     "instMean": null,
+     "instP95": null,
+     "instMax": null,
+     "instCross": null
+    },
+    "negation": {
+     "cases": 10,
+     "auc": 1,
+     "minAuc": 1,
+     "p10": 0.5189,
+     "tier": 0.8438,
+     "low10": 0,
+     "matchP": 1,
+     "matchR": 0.9933,
+     "matchF1": 0.9966,
+     "matches": 164.8,
+     "weak": 0,
+     "junkMatches": 54,
+     "partial": 0,
+     "rho": -0.8491,
+     "revAuc": 1,
+     "compAuc": null,
+     "tokPerEl": 92.1972,
+     "unparsed": 0,
+     "tokens": 263684,
+     "instMean": null,
+     "instP95": null,
+     "instMax": null,
+     "instCross": null
+    },
+    "compound": {
+     "cases": 4,
+     "auc": 1,
+     "minAuc": 1,
+     "p10": 0.7,
+     "tier": 1,
+     "low10": 0,
+     "matchP": 1,
+     "matchR": 1,
+     "matchF1": 1,
+     "matches": 20.5,
+     "weak": 0,
+     "junkMatches": 2,
+     "partial": 0,
+     "rho": null,
+     "revAuc": null,
+     "compAuc": 1,
+     "tokPerEl": 93.0472,
+     "unparsed": 0,
+     "tokens": 106446,
+     "instMean": null,
+     "instP95": null,
+     "instMax": null,
+     "instCross": null
+    },
+    "union": {
+     "cases": 1,
+     "auc": 1,
+     "minAuc": 1,
+     "p10": 0.2222,
+     "tier": null,
+     "low10": 0,
+     "matchP": 1,
+     "matchR": 0.1111,
+     "matchF1": 0.2,
+     "matches": 1,
+     "weak": 0,
+     "junkMatches": 0,
+     "partial": 0,
+     "rho": null,
+     "revAuc": null,
+     "compAuc": null,
+     "tokPerEl": 92.2972,
+     "unparsed": 0,
+     "tokens": 26397,
+     "instMean": null,
+     "instP95": null,
+     "instMax": null,
+     "instCross": null
+    },
+    "probe": {
+     "cases": 1,
+     "auc": 1,
+     "minAuc": 1,
+     "p10": 0.7778,
+     "tier": null,
+     "low10": 0,
+     "matchP": 1,
+     "matchR": 1,
+     "matchF1": 1,
+     "matches": 27,
+     "weak": 0,
+     "junkMatches": 1,
+     "partial": 0,
+     "rho": null,
+     "revAuc": null,
+     "compAuc": null,
+     "tokPerEl": 92.2972,
+     "unparsed": 0,
+     "tokens": 26397,
+     "instMean": null,
+     "instP95": null,
+     "instMax": null,
+     "instCross": null
+    }
+   },
+   "groups": {
+    "cases": 5,
+    "labels": 485,
+    "errors": 9,
+    "accAll": 0.9818,
+    "accOn": 0.977,
+    "accOff": 0.989,
+    "choiceAcc": 0.9806,
+    "choiceSoft": 0.9728,
+    "otherP": 0.9532,
+    "otherR": 1,
+    "otherF1": 0.9758,
+    "fitAuc": 0.9982,
+    "sinkS": 1,
+    "sinkSN": 1,
+    "firstPick": 0.2874,
+    "tokPerEl": 171.7636,
+    "tokPerElSmall": 155.6136,
+    "tokPerEl8": 236.3636,
+    "unparsed": 0,
+    "tokens": 245622,
+    "choiceFlip": null,
+    "bucketFlip": null
+   },
+   "missing": []
+  }
+ },
+ "perCase": [
+  {
+   "id": "cutest",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "quality",
+   "family": "plain",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.875,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 34,
+    "weak": 0,
+    "distinct": 171,
+    "junkMax": 628,
+    "junkMatches": 1,
+    "partial": 0,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Kitten 940",
+     "Bunny 928",
+     "Unicorn 903",
+     "Jigglypuff 898",
+     "Pikachu 888",
+     "Penguin 885",
+     "Koala 883",
+     "Puppy 883",
+     "Bulbasaur 870",
+     "Mickey Mouse 870"
+    ],
+    "bottom": [
+     "Taxes 30",
+     "Nightmare 28",
+     "Voldemort 25",
+     "Atom Bomb 23",
+     "Grim Reaper 23"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Unicorn 903",
+     "Bulbasaur 870",
+     "Mickey Mouse 870"
+    ]
+   }
+  },
+  {
+   "id": "most-magical",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "quality",
+   "family": "plain",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.7778,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 39,
+    "weak": 0,
+    "distinct": 177,
+    "junkMax": 670,
+    "junkMatches": 2,
+    "partial": 0,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Magic Wand 913",
+     "Unicorn 848",
+     "Fairy 843",
+     "Poltergeist 843",
+     "Phoenix 798",
+     "Potion 795",
+     "Harry Potter 780",
+     "Ghost 778",
+     "Witch 775",
+     "Time 765"
+    ],
+    "bottom": [
+     "Bicycle 20",
+     "Headlights Car Vehicle 18",
+     "Kitchen Knife 18",
+     "Concrete 15",
+     "Hamburger 15"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Poltergeist 843",
+     "Ghost 778",
+     "Time 765"
+    ]
+   }
+  },
+  {
+   "id": "hottest",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "scale",
+   "family": "plain",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.7,
+    "low10": 0,
+    "tier": 1,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 26,
+    "weak": 0,
+    "distinct": 137,
+    "junkMax": 895,
+    "junkMatches": 1,
+    "partial": 0,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Fire 968",
+     "Plasma 960",
+     "Inferno 935",
+     "Supernova 933",
+     "Sun 930",
+     "Lava 928",
+     "Atom Bomb 920",
+     "Big Bang 908",
+     "Volcano 908",
+     "Firefirefire 895"
+    ],
+    "bottom": [
+     "Winter 8",
+     "Glacier 5",
+     "Ice Cream 5",
+     "Snow 5",
+     "Ice 3"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Atom Bomb 920",
+     "Big Bang 908",
+     "Firefirefire 895"
+    ]
+   }
+  },
+  {
+   "id": "oldest",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "scale",
+   "family": "plain",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.5,
+    "low10": 0,
+    "tier": 0.8889,
+    "matchP": 1,
+    "matchR": 0.75,
+    "matchF1": 0.8571,
+    "matches": 29,
+    "weak": 0,
+    "distinct": 169,
+    "junkMax": 518,
+    "junkMatches": 0,
+    "partial": 0,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Big Bang 880",
+     "Universe 825",
+     "Fossil 823",
+     "Time 808",
+     "Bacteria 750",
+     "Stonehenge 718",
+     "Cockroach 713",
+     "Stone 710",
+     "Mountain 690",
+     "Mummy 690"
+    ],
+    "bottom": [
+     "Smartphone 60",
+     "Microchip 55",
+     "Emoji 53",
+     "Blorbo Glorp 43",
+     "Selfie 30"
+    ],
+    "lowsHigh": [],
+    "highsLow": [
+     "Dinosaur 583",
+     "Pyramid 575",
+     "Star 568"
+    ],
+    "unlabeledTop": [
+     "Time 808",
+     "Bacteria 750",
+     "Cockroach 713",
+     "Stone 710",
+     "Mountain 690"
+    ]
+   }
+  },
+  {
+   "id": "ocean",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "membership",
+   "family": "plain",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 1,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 26,
+    "weak": 0,
+    "distinct": 115,
+    "junkMax": 798,
+    "junkMatches": 1,
+    "partial": 0,
+    "tokens": 26683,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 93.2972
+   },
+   "detail": {
+    "top": [
+     "Ocean 990",
+     "Tsunami 983",
+     "Seaweed 980",
+     "Poseidon 975",
+     "Coral Reef 958",
+     "Kraken 958",
+     "Jellyfish 943",
+     "Octopus 940",
+     "Shark 930",
+     "Dolphin 923"
+    ],
+    "bottom": [
+     "Phoenix 15",
+     "Clockwork Owl 13",
+     "Inferno 13",
+     "Firefirefire 10",
+     "Toaster 10"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": []
+   }
+  },
+  {
+   "id": "alive",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "membership",
+   "family": "plain",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.6,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 74,
+    "weak": 0,
+    "distinct": 152,
+    "junkMax": 823,
+    "junkMatches": 1,
+    "partial": 0,
+    "tokens": 25825,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 90.2972
+   },
+   "detail": {
+    "top": [
+     "Puppy 980",
+     "Frog 975",
+     "Lion 975",
+     "Elephant 973",
+     "Koala 973",
+     "Cow 970",
+     "Bee 968",
+     "Dolphin 968",
+     "Tiger 968",
+     "Whale 968"
+    ],
+    "bottom": [
+     "Kitchen Knife 8",
+     "Pebble 8",
+     "Skyscraper 8",
+     "Spoon 8",
+     "Stone 8"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Lion 975",
+     "Koala 973",
+     "Dolphin 968",
+     "Tiger 968"
+    ]
+   }
+  },
+  {
+   "id": "edible",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "membership",
+   "family": "plain",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.9,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 40,
+    "weak": 0,
+    "distinct": 117,
+    "junkMax": 530,
+    "junkMatches": 0,
+    "partial": 0,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Banana 988",
+     "Strawberry 985",
+     "Apple 983",
+     "Bread 983",
+     "Watermelon 983",
+     "Sugar 978",
+     "Honey 975",
+     "Rice 973",
+     "Cheese 968",
+     "Butter 965"
+    ],
+    "bottom": [
+     "Headlights Car Vehicle 5",
+     "Lava 5",
+     "Lighthouse 5",
+     "Wi-Fi 5",
+     "Smartphone 3"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Sugar 978"
+    ]
+   }
+  },
+  {
+   "id": "pokemon",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "niche",
+   "family": "plain",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 0.9375,
+    "p10": 0.75,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 0.875,
+    "matchF1": 0.9333,
+    "matches": 51,
+    "weak": 0,
+    "distinct": 185,
+    "junkMax": 698,
+    "junkMatches": 4,
+    "partial": 0,
+    "tokens": 27255,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 95.2972
+   },
+   "detail": {
+    "top": [
+     "Bulbasaur 960",
+     "Charizard 948",
+     "Pikachu 935",
+     "Jigglypuff 928",
+     "Mewtwo 910",
+     "Dragon 898",
+     "Poké Ball 878",
+     "Fairy 870",
+     "Ghost 853",
+     "Fire 830"
+    ],
+    "bottom": [
+     "Albert Einstein 105",
+     "Elvis Presley 100",
+     "Taxes 100",
+     "Spreadsheet 83",
+     "William Shakespeare 78"
+    ],
+    "lowsHigh": [],
+    "highsLow": [
+     "Bicycle 148"
+    ],
+    "unlabeledTop": [
+     "Dragon 898",
+     "Fairy 870",
+     "Ghost 853",
+     "Fire 830"
+    ]
+   }
+  },
+  {
+   "id": "coldest",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "negation",
+   "family": "negation",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.8889,
+    "low10": 0,
+    "tier": 0.8438,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 17,
+    "weak": 0,
+    "distinct": 127,
+    "junkMax": 440,
+    "junkMatches": 0,
+    "partial": 0,
+    "rho": -0.4546,
+    "revAuc": 1,
+    "revP10": 0.8889,
+    "revTier": 1,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Ice 930",
+     "Blizzard 900",
+     "Glacier 893",
+     "Iceberg 878",
+     "Snow 835",
+     "Winter 833",
+     "Snowman 753",
+     "Frozen Lantern 738",
+     "Igloo 728",
+     "Refrigerator 710"
+    ],
+    "bottom": [
+     "Volcano 8",
+     "Fire 5",
+     "Inferno 5",
+     "Lava 5",
+     "Sun 5"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Frozen Lantern 738",
+     "Refrigerator 710"
+    ]
+   }
+  },
+  {
+   "id": "not-edible",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "negation",
+   "family": "negation",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.3,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 184,
+    "weak": 0,
+    "distinct": 164,
+    "junkMax": 955,
+    "junkMatches": 8,
+    "partial": 0,
+    "rho": -0.9145,
+    "revAuc": 1,
+    "revP10": 0.3,
+    "revTier": null,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Boulder 963",
+     "Microchip 960",
+     "Light Bulb 958",
+     "Airplane 955",
+     "Atom Bomb 955",
+     "Coffin 955",
+     "Headlights Car Vehicle 955",
+     "Brick 953",
+     "Lava 953",
+     "Pottery 953"
+    ],
+    "bottom": [
+     "Hamburger 8",
+     "Honey 8",
+     "Ice Cream 8",
+     "Taco 8",
+     "Bread 5"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Boulder 963",
+     "Microchip 960",
+     "Light Bulb 958",
+     "Airplane 955",
+     "Coffin 955",
+     "Headlights Car Vehicle 955",
+     "Pottery 953"
+    ]
+   }
+  },
+  {
+   "id": "edible-but-dangerous",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "compound",
+   "family": "compound",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.8,
+    "low10": 0,
+    "tier": 1,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 9,
+    "weak": 0,
+    "distinct": 129,
+    "junkMax": 280,
+    "junkMatches": 0,
+    "partial": 0,
+    "compAuc": 1,
+    "compP10": 0.4,
+    "compTier": 1,
+    "tokens": 26683,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 93.2972
+   },
+   "detail": {
+    "top": [
+     "Fugu 983",
+     "Poison Apple 920",
+     "Pufferfish 908",
+     "Ghost Pepper 850",
+     "Mushroom 705",
+     "Wine 685",
+     "Poison Mushroom 683",
+     "Jellyfish 648",
+     "Shark 620",
+     "Rat 593"
+    ],
+    "bottom": [
+     "Headlights Car Vehicle 13",
+     "Selfie 13",
+     "Spreadsheet 13",
+     "Skyscraper 10",
+     "Monday 8"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Mushroom 705",
+     "Wine 685",
+     "Jellyfish 648",
+     "Shark 620",
+     "Rat 593"
+    ]
+   }
+  },
+  {
+   "id": "ng-not-alive",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "negation",
+   "family": "negation",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.5,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 172,
+    "weak": 0,
+    "distinct": 156,
+    "junkMax": 963,
+    "junkMatches": 8,
+    "partial": 0,
+    "rho": -0.9621,
+    "revAuc": 1,
+    "revP10": 0.4,
+    "revTier": null,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Boulder 988",
+     "Pebble 985",
+     "Stone 985",
+     "Brick 983",
+     "Kitchen Knife 983",
+     "Salt 983",
+     "Frying Pan 980",
+     "Glass 980",
+     "Light Bulb 980",
+     "Nail 980"
+    ],
+    "bottom": [
+     "Dolphin 5",
+     "Elephant 5",
+     "Kitten 5",
+     "Koala 5",
+     "Puppy 5"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Boulder 988",
+     "Kitchen Knife 983",
+     "Salt 983",
+     "Frying Pan 980",
+     "Light Bulb 980"
+    ]
+   }
+  },
+  {
+   "id": "ng-least-magical",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "negation",
+   "family": "negation",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.6,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 178,
+    "weak": 0,
+    "distinct": 179,
+    "junkMax": 895,
+    "junkMatches": 5,
+    "partial": 0,
+    "rho": -0.9327,
+    "revAuc": 1,
+    "revP10": 0.7,
+    "revTier": null,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Concrete 935",
+     "Pebble 933",
+     "Kitchen Knife 928",
+     "Nail 920",
+     "Brick 918",
+     "Road 915",
+     "Spoon 915",
+     "Frying Pan 913",
+     "Bicycle 905",
+     "Boulder 905"
+    ],
+    "bottom": [
+     "Ghost 23",
+     "Phoenix 23",
+     "Super Mega Ultra Dragon 18",
+     "Poltergeist 15",
+     "Magic Wand 10"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Pebble 933",
+     "Kitchen Knife 928",
+     "Frying Pan 913",
+     "Boulder 905"
+    ]
+   }
+  },
+  {
+   "id": "ng-least-cute",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "negation",
+   "family": "negation",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.6,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 0.9333,
+    "matchF1": 0.9655,
+    "matches": 79,
+    "weak": 0,
+    "distinct": 176,
+    "junkMax": 613,
+    "junkMatches": 1,
+    "partial": 0,
+    "rho": -0.8275,
+    "revAuc": 1,
+    "revP10": 0.5,
+    "revTier": null,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Cockroach 910",
+     "Atom Bomb 870",
+     "Grim Reaper 860",
+     "Shrunken Head 853",
+     "Coffin 845",
+     "Black Hole 830",
+     "Darth Vader 820",
+     "Voldemort 820",
+     "Skull 815",
+     "Nightmare 800"
+    ],
+    "bottom": [
+     "Bunny 23",
+     "Pikachu 20",
+     "Puppy 18",
+     "Kitten 15",
+     "Unicorn 15"
+    ],
+    "lowsHigh": [],
+    "highsLow": [
+     "Monday 520"
+    ],
+    "unlabeledTop": [
+     "Shrunken Head 853",
+     "Coffin 845",
+     "Darth Vader 820",
+     "Nightmare 800"
+    ]
+   }
+  },
+  {
+   "id": "ng-inedible",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "negation",
+   "family": "negation",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.4,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 170,
+    "weak": 0,
+    "distinct": 172,
+    "junkMax": 945,
+    "junkMatches": 8,
+    "partial": 0,
+    "rho": -0.9086,
+    "revAuc": 1,
+    "revP10": 0.3,
+    "revTier": null,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Microchip 953",
+     "Boulder 950",
+     "Headlights Car Vehicle 945",
+     "Airplane 943",
+     "Stone 940",
+     "Toaster 940",
+     "Brick 938",
+     "Plasma 935",
+     "Light Bulb 933",
+     "Glass 928"
+    ],
+    "bottom": [
+     "Banana 8",
+     "Chocolate 8",
+     "Honey 8",
+     "Ice Cream 8",
+     "Strawberry 8"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Microchip 953",
+     "Boulder 950",
+     "Headlights Car Vehicle 945",
+     "Airplane 943",
+     "Plasma 935",
+     "Light Bulb 933"
+    ]
+   }
+  },
+  {
+   "id": "ng-not-in-kitchen",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "negation",
+   "family": "negation",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.3,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 220,
+    "weak": 0,
+    "distinct": 140,
+    "junkMax": 935,
+    "junkMatches": 7,
+    "partial": 0,
+    "rho": -0.8729,
+    "revAuc": 1,
+    "revP10": 0.2,
+    "revTier": null,
+    "tokens": 27255,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 95.2972
+   },
+   "detail": {
+    "top": [
+     "Nebula 973",
+     "Galaxy 968",
+     "Asteroid 965",
+     "Black Hole 965",
+     "Comet 965",
+     "Supernova 965",
+     "Big Bang 958",
+     "Pegasus 955",
+     "Space Station 955",
+     "UFO 955"
+    ],
+    "bottom": [
+     "Butter 13",
+     "Cheese 13",
+     "Flour 13",
+     "Frying Pan 13",
+     "Kitchen Knife 8"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Nebula 973",
+     "Comet 965",
+     "Supernova 965",
+     "Big Bang 958",
+     "Pegasus 955",
+     "Space Station 955",
+     "UFO 955"
+    ]
+   }
+  },
+  {
+   "id": "ng-not-greek",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "negation",
+   "family": "negation",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.2,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 244,
+    "weak": 0,
+    "distinct": 133,
+    "junkMax": 945,
+    "junkMatches": 9,
+    "partial": 0,
+    "rho": -0.8796,
+    "revAuc": 1,
+    "revP10": 0.3,
+    "revTier": null,
+    "tokens": 26683,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 93.2972
+   },
+   "detail": {
+    "top": [
+     "Toaster 960",
+     "Koala 958",
+     "Microchip 958",
+     "Bitcoin 953",
+     "Train 953",
+     "Light Bulb 948",
+     "Airplane 945",
+     "Black Hole 945",
+     "Headlights Car Vehicle 945",
+     "Rice 945"
+    ],
+    "bottom": [
+     "Minotaur 10",
+     "Athena 8",
+     "Hades 8",
+     "Poseidon 8",
+     "Zeus 5"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Koala 958",
+     "Microchip 958",
+     "Train 953",
+     "Light Bulb 948",
+     "Airplane 945",
+     "Black Hole 945",
+     "Headlights Car Vehicle 945",
+     "Rice 945"
+    ]
+   }
+  },
+  {
+   "id": "ng-big-and-alive",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "compound",
+   "family": "compound",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.5,
+    "low10": 0,
+    "tier": 1,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 36,
+    "weak": 0,
+    "distinct": 181,
+    "junkMax": 930,
+    "junkMatches": 1,
+    "partial": 0,
+    "tokens": 26397,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 92.2972
+   },
+   "detail": {
+    "top": [
+     "Elephant 980",
+     "Whale 975",
+     "Dragon 965",
+     "Super Mega Ultra Dragon 930",
+     "Kraken 915",
+     "Tiger 893",
+     "Minotaur 880",
+     "Lion 875",
+     "Cow 870",
+     "Tree 860"
+    ],
+    "bottom": [
+     "Microchip 23",
+     "Salt 18",
+     "Wi-Fi 18",
+     "Atom 10",
+     "Electron 10"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Dragon 965",
+     "Super Mega Ultra Dragon 930",
+     "Kraken 915",
+     "Minotaur 880"
+    ]
+   }
+  },
+  {
+   "id": "ng-alive-in-sea",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "compound",
+   "family": "compound",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.75,
+    "low10": 0,
+    "tier": 1,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 13,
+    "weak": 0,
+    "distinct": 98,
+    "junkMax": 265,
+    "junkMatches": 0,
+    "partial": 0,
+    "tokens": 26969,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 94.2972
+   },
+   "detail": {
+    "top": [
+     "Octopus 980",
+     "Dolphin 975",
+     "Shark 973",
+     "Whale 973",
+     "Jellyfish 968",
+     "Pufferfish 968",
+     "Fugu 948",
+     "Kraken 893",
+     "Mermaid 853",
+     "Coral Reef 708"
+    ],
+    "bottom": [
+     "Refrigerator 5",
+     "Road 5",
+     "Train 5",
+     "Wi-Fi 5",
+     "Toaster 3"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Fugu 948",
+     "Kraken 893",
+     "Mermaid 853"
+    ]
+   }
+  },
+  {
+   "id": "ng-fire-and-ice",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "compound-union",
+   "family": "union",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.2222,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 0.1111,
+    "matchF1": 0.2,
+    "matches": 1,
+    "weak": 0,
+    "distinct": 126,
+    "junkMax": 430,
+    "junkMatches": 0,
+    "partial": 0,
+    "tokens": 26397,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 92.2972
+   },
+   "detail": {
+    "top": [
+     "Fire 608",
+     "Ice 593",
+     "Comet 555",
+     "Dragon 493",
+     "Pikachu 468",
+     "Superman 468",
+     "Supernova 458",
+     "Geyser 448",
+     "Steam Steam Steam 430",
+     "Steam 428"
+    ],
+    "bottom": [
+     "Teddy Bear 40",
+     "Spoon 38",
+     "Meme 35",
+     "Democracy 28",
+     "Selfie 28"
+    ],
+    "lowsHigh": [],
+    "highsLow": [
+     "Ice 593",
+     "Inferno 400",
+     "Glacier 350",
+     "Iceberg 345",
+     "Snow 375",
+     "Blizzard 398",
+     "Campfire 348",
+     "Ember 415"
+    ],
+    "unlabeledTop": [
+     "Comet 555",
+     "Dragon 493",
+     "Pikachu 468",
+     "Superman 468",
+     "Supernova 458",
+     "Geyser 448",
+     "Steam Steam Steam 430",
+     "Steam 428"
+    ]
+   }
+  },
+  {
+   "id": "ng-p-least-ocean",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "negation-phrasing",
+   "family": "negation",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.4,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 223,
+    "weak": 0,
+    "distinct": 134,
+    "junkMax": 848,
+    "junkMatches": 6,
+    "partial": 0,
+    "rho": -0.8776,
+    "revAuc": 1,
+    "revP10": 0.2,
+    "revTier": null,
+    "tokens": 26969,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 94.2972
+   },
+   "detail": {
+    "top": [
+     "Desert 905",
+     "Inferno 888",
+     "Moon Base 888",
+     "Asteroid 870",
+     "Bat 855",
+     "Star 853",
+     "Supernova 853",
+     "Camel 850",
+     "Mars 850",
+     "Firefirefire 848"
+    ],
+    "bottom": [
+     "Seaweed 18",
+     "Shark 18",
+     "Mermaid 15",
+     "Ocean 15",
+     "Tsunami 15"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Inferno 888",
+     "Asteroid 870",
+     "Bat 855",
+     "Star 853",
+     "Supernova 853",
+     "Firefirefire 848"
+    ]
+   }
+  },
+  {
+   "id": "ng-p-not-hot",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "negation-phrasing",
+   "family": "negation",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 1,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 161,
+    "weak": 0,
+    "distinct": 174,
+    "junkMax": 878,
+    "junkMatches": 2,
+    "partial": 0,
+    "rho": -0.8612,
+    "revAuc": 1,
+    "revP10": 0.8889,
+    "revTier": null,
+    "tokens": 26111,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 91.2972
+   },
+   "detail": {
+    "top": [
+     "Snow 980",
+     "Ice 978",
+     "Glacier 973",
+     "Iceberg 970",
+     "Ice Cream 943",
+     "Blizzard 940",
+     "Igloo 935",
+     "Winter 933",
+     "Snowman 930",
+     "Refrigerator 910"
+    ],
+    "bottom": [
+     "Sun 5",
+     "Supernova 5",
+     "Volcano 5",
+     "Inferno 3",
+     "Lava 3"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Refrigerator 910"
+    ]
+   }
+  },
+  {
+   "id": "ng-p-cute-and-small",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "compound-phrasing",
+   "family": "compound",
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.75,
+    "low10": 0,
+    "tier": 1,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 24,
+    "weak": 0,
+    "distinct": 172,
+    "junkMax": 603,
+    "junkMatches": 1,
+    "partial": 0,
+    "tokens": 26397,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 92.2972
+   },
+   "detail": {
+    "top": [
+     "Kitten 958",
+     "Bunny 935",
+     "Puppy 920",
+     "Pikachu 918",
+     "Cupcake 865",
+     "Jigglypuff 840",
+     "Fairy 825",
+     "Teddy Bear 795",
+     "Bulbasaur 775",
+     "Butterfly 765"
+    ],
+    "bottom": [
+     "Skyscraper 15",
+     "Stonehenge 15",
+     "Titanic 13",
+     "Tsunami 13",
+     "Earthquake 10"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Cupcake 865",
+     "Fairy 825",
+     "Bulbasaur 775"
+    ]
+   }
+  },
+  {
+   "id": "ng-probe-fire-or-ice",
+   "split": "holdout",
+   "kind": "rank",
+   "category": "probe-union-or",
+   "family": "probe",
+   "informational": true,
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "auc": 1,
+    "p10": 0.7778,
+    "low10": 0,
+    "tier": null,
+    "matchP": 1,
+    "matchR": 1,
+    "matchF1": 1,
+    "matches": 27,
+    "weak": 0,
+    "distinct": 136,
+    "junkMax": 950,
+    "junkMatches": 1,
+    "partial": 0,
+    "tokens": 26397,
+    "requests": 1,
+    "unparsed": 0,
+    "tokPerEl": 92.2972
+   },
+   "detail": {
+    "top": [
+     "Fire 993",
+     "Ice 993",
+     "Firefirefire 950",
+     "Inferno 948",
+     "Glacier 945",
+     "Lava 943",
+     "Blizzard 935",
+     "Snow 923",
+     "Iceberg 920",
+     "Campfire 900"
+    ],
+    "bottom": [
+     "Spoon 28",
+     "Gravity 23",
+     "Selfie 20",
+     "Spreadsheet 20",
+     "Democracy 18"
+    ],
+    "lowsHigh": [],
+    "highsLow": [],
+    "unlabeledTop": [
+     "Firefirefire 950",
+     "Lava 943"
+    ]
+   }
+  },
+  {
+   "id": "g-fire-water-earth-air",
+   "split": "holdout",
+   "kind": "groups",
+   "category": "groups-closest",
+   "k": 4,
+   "other": false,
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "labels": 94,
+    "labeled": 94,
+    "correct": 93,
+    "errors": 1,
+    "accAll": 0.9894,
+    "accStrict": 0.9865,
+    "accSoft": 1,
+    "choiceAcc": 0.9865,
+    "choiceSoft": 1,
+    "otherRate": null,
+    "firstPick": 0.1993,
+    "tokens": 47008,
+    "requests": 2,
+    "unparsed": 0,
+    "tokPerEl": 164.3636
+   },
+   "detail": {
+    "counts": {
+     "Earth": 134,
+     "Water": 52,
+     "Air": 64,
+     "Fire": 36
+    },
+    "top": [
+     "Fire → Fire (Fire s=1000 n=960)",
+     "Inferno → Fire (Fire s=1000 n=910)",
+     "Ember → Fire (Fire s=1000 n=900)",
+     "Campfire → Fire (Fire s=980 n=812)",
+     "Firefirefire → Fire (Fire s=970 n=805)",
+     "Ghost Pepper → Fire (Fire s=970 n=515)",
+     "Charizard → Fire (Fire s=960 n=572)",
+     "Molten Forge → Fire (Fire s=950 n=743)",
+     "Phoenix → Fire (Fire s=950 n=624)",
+     "Mars → Fire (Fire s=950 n=320)"
+    ],
+    "wrong": [
+     "Titanic → Earth (Earth s=530 n=124) want Water"
+    ]
+   }
+  },
+  {
+   "id": "g-heroes-villains",
+   "split": "holdout",
+   "kind": "groups",
+   "category": "groups-other",
+   "k": 2,
+   "other": true,
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "labels": 87,
+    "labeled": 87,
+    "correct": 84,
+    "errors": 3,
+    "accAll": 0.9655,
+    "accStrict": 0.9841,
+    "accSoft": 0.9167,
+    "choiceAcc": 0.9286,
+    "choiceSoft": 0.9167,
+    "otherRate": 0.9091,
+    "otherP": 0.98,
+    "otherR": 1,
+    "otherF1": 0.9899,
+    "fitAuc": 1,
+    "sinkS": 1,
+    "sinkSN": 1,
+    "firstPick": 0.514,
+    "tokens": 38428,
+    "requests": 2,
+    "unparsed": 0,
+    "tokPerEl": 134.3636
+   },
+   "detail": {
+    "counts": {
+     "Other": 260,
+     "Villains": 11,
+     "Heroes": 15
+    },
+    "top": [
+     "Athena → Heroes (Heroes s=970 n=766)",
+     "Robin Hood → Heroes (Heroes s=970 n=757)",
+     "Superman → Heroes (Heroes s=950 n=836)",
+     "Achilles → Heroes (Heroes s=940 n=827)",
+     "Hercules → Heroes (Heroes s=930 n=865)",
+     "Batman → Heroes (Heroes s=930 n=799)",
+     "Wizard → Heroes (Heroes s=930 n=545)",
+     "Harry Potter → Heroes (Heroes s=900 n=693)",
+     "Mario → Heroes (Heroes s=890 n=756)",
+     "Thor → Heroes (Heroes s=870 n=711)"
+    ],
+    "wrong": [
+     "Joker → Other (Heroes s=230 n=312) want Villains",
+     "Witch → Heroes (Heroes s=540 n=580) want Villains|Other",
+     "Cyclops → Heroes (Heroes s=580 n=531) want Villains|Other"
+    ]
+   }
+  },
+  {
+   "id": "g-fruit-food-plants",
+   "split": "holdout",
+   "kind": "groups",
+   "category": "groups-overlap",
+   "k": 3,
+   "other": true,
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "labels": 75,
+    "labeled": 75,
+    "correct": 74,
+    "errors": 1,
+    "accAll": 0.9867,
+    "accStrict": 0.9833,
+    "accSoft": 1,
+    "choiceAcc": 1,
+    "choiceSoft": 1,
+    "otherRate": 0.8776,
+    "otherP": 0.9706,
+    "otherR": 1,
+    "otherF1": 0.9851,
+    "fitAuc": 1,
+    "sinkS": 1,
+    "sinkSN": 1,
+    "firstPick": 0.3077,
+    "tokens": 43290,
+    "requests": 2,
+    "unparsed": 0,
+    "tokPerEl": 151.3636
+   },
+   "detail": {
+    "counts": {
+     "Other": 251,
+     "Plants": 9,
+     "Food": 20,
+     "Fruit": 6
+    },
+    "top": [
+     "Strawberry → Fruit (Fruit s=940 n=950)",
+     "Apple → Fruit (Fruit s=910 n=950)",
+     "Banana → Fruit (Fruit s=890 n=940)",
+     "Poison Apple → Fruit (Fruit s=850 n=784)",
+     "Watermelon → Fruit (Fruit s=830 n=921)",
+     "Ghost Pepper → Fruit (Fruit s=430 n=762)",
+     "Bread → Food (Food s=1000 n=850)",
+     "Cheese → Food (Food s=990 n=762)",
+     "Sushi → Food (Food s=990 n=762)",
+     "Cake → Food (Food s=990 n=752)"
+    ],
+    "wrong": [
+     "Egg → Other (Food s=900 n=405) want Food"
+    ]
+   }
+  },
+  {
+   "id": "gp-living-nature-made-ideas",
+   "split": "holdout",
+   "kind": "groups",
+   "category": "groups-closest",
+   "k": 4,
+   "other": false,
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "labels": 87,
+    "labeled": 87,
+    "correct": 86,
+    "errors": 1,
+    "accAll": 0.9885,
+    "accStrict": 1,
+    "accSoft": 0.9474,
+    "choiceAcc": 1,
+    "choiceSoft": 0.9474,
+    "otherRate": null,
+    "firstPick": 0.2692,
+    "tokens": 49296,
+    "requests": 2,
+    "unparsed": 0,
+    "tokPerEl": 172.3636
+   },
+   "detail": {
+    "counts": {
+     "Nature": 88,
+     "Ideas": 24,
+     "Made by people": 99,
+     "Living things": 75
+    },
+    "top": [
+     "Human → Living things (Living things s=970 n=921)",
+     "Puppy → Living things (Living things s=950 n=931)",
+     "Chicken → Living things (Living things s=950 n=930)",
+     "Bunny → Living things (Living things s=950 n=920)",
+     "Kitten → Living things (Living things s=950 n=911)",
+     "Elephant → Living things (Living things s=940 n=930)",
+     "Bat → Living things (Living things s=930 n=880)",
+     "Bacteria → Living things (Living things s=930 n=861)",
+     "Cow → Living things (Living things s=920 n=950)",
+     "Ant → Living things (Living things s=920 n=930)"
+    ],
+    "wrong": [
+     "Monday → Nature (Nature s=310 n=422) want Ideas|Made by people"
+    ]
+   }
+  },
+  {
+   "id": "gp-eight-b",
+   "split": "holdout",
+   "kind": "groups",
+   "category": "groups-8",
+   "k": 8,
+   "other": true,
+   "status": "ok",
+   "metrics": {
+    "scored": 286,
+    "labels": 142,
+    "labeled": 142,
+    "correct": 139,
+    "errors": 3,
+    "accAll": 0.9789,
+    "accStrict": 0.973,
+    "accSoft": 1,
+    "choiceAcc": 0.9877,
+    "choiceSoft": 1,
+    "otherRate": 0.3217,
+    "otherP": 0.9091,
+    "otherR": 1,
+    "otherF1": 0.9524,
+    "fitAuc": 0.9947,
+    "sinkS": 1,
+    "sinkSN": 1,
+    "firstPick": 0.1469,
+    "tokens": 67600,
+    "requests": 2,
+    "unparsed": 0,
+    "tokPerEl": 236.3636
+   },
+   "detail": {
+    "counts": {
+     "Other": 92,
+     "Weather": 28,
+     "Animals": 47,
+     "People": 36,
+     "Magic": 11,
+     "Places": 26,
+     "Plants": 9,
+     "Food": 29,
+     "Vehicles": 8
+    },
+    "top": [
+     "Caveman → People (People s=990 n=792)",
+     "Isaac Newton → People (People s=990 n=653)",
+     "Human → People (People s=980 n=920)",
+     "Elvis Presley → People (People s=980 n=843)",
+     "William Shakespeare → People (People s=980 n=833)",
+     "Albert Einstein → People (People s=980 n=823)",
+     "Leonardo da Vinci → People (People s=970 n=804)",
+     "Robin Hood → People (People s=970 n=745)",
+     "Astronaut → People (People s=970 n=696)",
+     "Cleopatra → People (People s=960 n=813)"
+    ],
+    "wrong": [
+     "Titanic → Other (Animals s=270 n=252) want Vehicles",
+     "Skyscraper → Other (Places s=890 n=468) want Places",
+     "Pyramid → Other (Places s=680 n=332) want Places"
+    ]
+   }
+  }
+ ],
+ "cost": {
+  "requests": 37,
+  "tokens": 878864,
+  "usd": 0.0369,
+  "fresh": 37,
+  "freshTokens": 958341,
+  "freshUsd": 0.0403,
+  "failed": 0,
+  "overBudget": 0
+ }
+}

@@ -15,6 +15,8 @@ import {
   type PlayerAction,
   type PlayerResponse,
   type PowChallenge,
+  type SortRequest,
+  type SortResponse,
 } from "../../shared/api.ts";
 
 export type FailureCode = ApiErrorCode | "network" | "timeout";
@@ -159,6 +161,10 @@ export function bootstrap(req: BootstrapRequest, onPow?: () => void): Promise<Bo
 
 export const combine = (req: CombineRequest, signal?: AbortSignal) =>
   post<CombineResponse>("/api/combine", req, { signal, timeoutMs: 15_000 });
+
+/** POST /api/sort. A whole-library run can take several seconds server-side (20 s deadline). */
+export const scoreLibrary = (req: SortRequest, signal?: AbortSignal) =>
+  post<SortResponse>("/api/sort", req, { signal, timeoutMs: 30_000 });
 
 export const requestImage = (req: ImageRequest) => post<ImageResponse>("/api/image", req, { timeoutMs: 40_000 });
 

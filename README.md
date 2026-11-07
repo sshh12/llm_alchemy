@@ -23,6 +23,9 @@ and everyone's progress carried over.
   specific combinations can land on famous people, places, myths, characters and brands.
 - **Daily challenges:** three targets every day (easy, hard, expert), always solvable with
   2-element combinations that already exist. Keep a streak going.
+- **Sort by anything:** order your library in your own words ("spookiest", "things in a
+  kitchen") or sort it into groups (Animals · Food · Weather). Pick **Custom…** in the sort menu,
+  or press **S**.
 
 ## What's in v2
 
@@ -44,12 +47,14 @@ and everyone's progress carried over.
 | Frontend | Vite + React 19 SPA, Tailwind CSS v4, `motion`, a hand-rolled pointer drag engine |
 | Backend | Netlify Functions v2 (`netlify/functions`) with shared modules in `server/` |
 | Database | CockroachDB (schema `alchemy`), raw SQL via `pg` |
-| AI | OpenAI `gpt-6-luna` (recipes, strict JSON schema) and `gpt-image-2.5-flare` (tile art) |
+| AI | OpenAI `gpt-6-luna` (recipes, strict JSON schema) and `gpt-image-2.5-flare` (tile art); TypeSafe Jev `jev-1.14.0` (custom library sort: scores only, never text) |
 | Art storage | Netlify Blobs, resized by Netlify Image CDN |
 
-Abuse and cost controls: Netlify platform rate limits in front of the AI endpoints, per-player
-and per-IP limits, daily and monthly global budgets, proof-of-work on new players, and
-ingredient ownership checks (you can only combine what you've discovered).
+Abuse and cost controls: Netlify platform rate limits in front of the combine and image
+endpoints, per-player and per-IP limits (custom sort counts every element it weighs), daily and
+monthly global budgets (custom sort has its own, `JEV_DAILY_CAP`; when it runs out only custom
+sorting stops), proof-of-work on new players, and ownership checks (you can only combine, or
+sort, what you've discovered).
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data model, API, and design decisions.
 
@@ -60,8 +65,12 @@ Requires Node 22.12+ and a `.env` with:
 ```
 DATABASE_URL=postgresql://...      # CockroachDB
 OPENAI_API_KEY=sk-...
+TYPESAFE_API_KEY=...               # Jev, for custom library sort
 SESSION_SECRET=<64 hex chars>      # node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
+
+Production needs the same keys in the Netlify site environment (Functions scope), including
+`TYPESAFE_API_KEY`.
 
 ```bash
 npm install
@@ -70,7 +79,11 @@ AI_MODE=mock DB_SCHEMA=alchemy_e2e npm run db:seed-e2e # a small local world
 AI_MODE=mock DB_SCHEMA=alchemy_e2e npm run dev       # app + functions at http://localhost:8888
 ```
 
-`AI_MODE=mock` swaps in a deterministic, offline AI so local play and tests cost nothing.
+`AI_MODE=mock` swaps in a deterministic, offline AI (recipes, art and custom sorting) so local
+play and tests cost nothing. `npx tsx scripts/jev-smoke.ts` is a manual, live check of the Jev
+client (a fraction of a cent). Before changing any custom-sort question, the Jev model pin or
+`SORT_RUBRIC`, run `npm run eval:sort` (live, labelled cases; cached reruns are free, a full
+uncached run is about $0.08).
 
 | Command | |
 |---|---|
@@ -78,6 +91,7 @@ AI_MODE=mock DB_SCHEMA=alchemy_e2e npm run dev       # app + functions at http:/
 | `npm test` | Unit tests (Vitest) |
 | `npm run e2e` | Playwright across desktop, Pixel, iPhone, iPad and WebKit, including a returning-player journey from the 2023 app ([e2e/README.md](e2e/README.md)) |
 | `npm run build` | Production build |
+| `npm run eval:sort` | Custom-sort quality eval against live Jev (`--split tune\|holdout`, `--offline`, `--budget-usd`) |
 
 ### Migrating from the 2023 version
 

@@ -65,4 +65,8 @@ export const KEYS = {
   merged: "ia:hasMerged",
   undo: "ia:undo",
   libraryView: "ia:libraryView",
+  /** Custom library sort preferences: spec, view toggles, recents (~1 KB; never scores). */
+  customSort: "ia:customSort",
+  /** sessionStorage: the active custom sort's scores, tagged with player id, spec key and rubric. */
+  customSortScores: "ia:customSortScores",
 } as const;

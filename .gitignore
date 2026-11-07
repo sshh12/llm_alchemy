@@ -17,6 +17,7 @@ coverage/
 .env*.local
 
 # misc
+.cache/
 .DS_Store
 npm-debug.log*
 *.dump.json
