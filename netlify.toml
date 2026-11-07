@@ -36,6 +36,54 @@
     X-Frame-Options = "DENY"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
+# Agent discovery: advertise the plain-text guide and sitemap on the homepage.
+[[headers]]
+  for = "/"
+  [headers.values]
+    Link = '</llms.txt>; rel="llms-txt", </sitemap.xml>; rel="sitemap"'
+
+[[headers]]
+  for = "/llms.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+    Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/.well-known/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+
+# Icons and manifest of the 2023 app, still referenced by old installs and caches.
+[[redirects]]
+  from = "/manifest.json"
+  to = "/manifest.webmanifest"
+  status = 301
+
+[[redirects]]
+  from = "/logo192.png"
+  to = "/icon-192.png"
+  status = 301
+
+[[redirects]]
+  from = "/logo512.png"
+  to = "/icon-512.png"
+  status = 301
+
+[[redirects]]
+  from = "/logo192_mask.png"
+  to = "/maskable-512.png"
+  status = 301
+
+[[redirects]]
+  from = "/logo512_mask.png"
+  to = "/maskable-512.png"
+  status = 301
+
 # SPA fallback (functions and static files take precedence).
 [[redirects]]
   from = "/*"

@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Infinite Alchemy",
+  "short_name": "Alchemy",
+  "description": "Combine elements, discover anything. A free AI alchemy game: every new element is invented and painted by AI.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F6F1E7",
+  "theme_color": "#EFE7D9",
+  "categories": ["games"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

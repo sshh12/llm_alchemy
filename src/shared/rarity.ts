@@ -3,12 +3,14 @@ import type { Rarity } from "./api.ts";
 // Rarity is earned: it comes from an element's depth (generations of combining
 // needed from the starters). Thresholds are tuned from the real depth distribution
 // (see scripts/backfill-legacy.ts output) and can change without a migration.
+// Legacy world (46,312 reachable active elements): common 36.7%, uncommon 33.5%,
+// rare 15.8%, epic 10.6%, legendary 3.4% (target ≈ 40/30/18/9/3).
 export const RARITY_MIN_DEPTH: Record<Rarity, number> = {
   common: 0,
-  uncommon: 3,
-  rare: 5,
-  epic: 8,
-  legendary: 12,
+  uncommon: 6,
+  rare: 8,
+  epic: 10,
+  legendary: 14,
 };
 
 export const RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];

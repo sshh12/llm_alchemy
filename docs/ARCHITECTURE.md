@@ -12,7 +12,7 @@ v2 is a ground-up rewrite. This document is the source of truth for how it fits 
 | Backend | Netlify Functions v2 (`netlify/functions/*.mts`, web-standard `Request`/`Response`, path routing, `config.rateLimit`) | Small per-endpoint bundles, fast cold starts, and native platform rate limiting (Next.js route handlers can't declare Netlify rate limits and run as one large function). |
 | DB | Existing CockroachDB Cloud (Basic, us-east1) via `pg` + raw SQL | New tables live in SQL schema `alchemy` next to the untouched legacy `public."Alchemy*"` tables. |
 | Image storage | Netlify Blobs store `element-art`, served by `/img/:id/:key.webp` with immutable CDN caching; resized through Netlify Image CDN | No native deps; one function call per image per CDN, then free. |
-| LLM | OpenAI `gpt-6-luna`, Responses API, strict JSON schema, `reasoning.effort: "none"` | ~1.2 s, ~$0.00004 per new recipe. |
+| LLM | OpenAI `gpt-6-luna`, Responses API, strict JSON schema, `reasoning.effort: "none"`, temperature 0, prompt in `server/ai/prompts.ts` | ~1.5 s, ~$0.0001 per new recipe. |
 | Images | OpenAI `gpt-image-2.5-flare-2026-09-08`, 816×816, `quality: "low"`, transparent webp | ~$0.005 and ~8 s per image; generated lazily on first need. |
 
 Hosting constraints that shape the design (Netlify legacy **Starter** plan): 125k function
@@ -60,6 +60,7 @@ See `db/migrations/0001_init.sql`. Key rules:
 - **Challenges**: one row per day with easy/hard/expert targets. Days before
   `CHALLENGE_CUTOVER_DAY` (2026-11-06) are legacy history; days from the cutover for 5 years
   are produced by `scripts/generate-challenges.ts`.
+- **Recognizable targets**: `elements.recognizable` (set by `npm run db:classify` with gpt-6-luna, run before `db:challenges`) marks real, widely known names; each generated tier draws only recognizable candidates ("Geyser", not "Temporaplasm"), falling back to all eligible ones, recognizable first, if fewer than 40 exist.
 - **Counters** power rate limits, global daily budgets and PoW replay protection
   (single-statement UPSERT increments; row-level TTL cleans up).
 
@@ -117,8 +118,10 @@ Errors use `ApiError` with the right HTTP status (400/401/403/404/429/503/422).
    requests never invoke a function.
 2. App-level fixed-window limits (counters): per player and per IP for bootstrap, player
    creation, combine, new recipes (LLM), images, reset, transfer.
-3. Global daily budgets: `LLM_DAILY_CAP` (default 40,000 new recipes ≈ $1.70),
-   `IMAGE_DAILY_CAP` (default 1,500 images ≈ $8). Over budget → combine of *known*
+3. Global budgets: `LLM_DAILY_CAP` (default 100,000 new recipes/day ≈ $10),
+   `IMAGE_DAILY_CAP` (default 17,000 images/day ≈ $90), and `IMAGE_MONTHLY_CAP` (default 20,000
+   generations per 30 days, which keeps image work inside the Netlify Starter plan's 100
+   function-hours/month; raise it after a plan upgrade). Over budget → combine of *known*
    recipes still works; new recipes return `budget_exhausted`; images return `deferred`.
 4. PoW on player creation; per-IP creation limits; global daily player cap.
 5. Ingredient ownership is enforced, so automation must play legitimately to reach new recipes.
@@ -173,4 +176,4 @@ fades it in. Tiles use `/.netlify/images?url=<img>&w=192&h=192&fit=contain` and 
 | `SESSION_SECRET` | ≥32 random bytes (hex/base64) for cookies, PoW salts, transfer codes, IP hashing. |
 | `DB_SCHEMA` | `alchemy` (default) or `alchemy_e2e`. |
 | `AI_MODE` | `live` (default) or `mock` (forbidden in production). |
-| `LLM_DAILY_CAP`, `IMAGE_DAILY_CAP`, `POW_BITS` | Optional overrides. |
+| `LLM_DAILY_CAP`, `IMAGE_DAILY_CAP`, `IMAGE_MONTHLY_CAP`, `PLAYER_DAILY_CAP`, `POW_BITS` | Optional overrides. |

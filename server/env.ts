@@ -42,12 +42,24 @@ export const env = {
     return m;
   },
   get llmDailyCap() {
-    return int("LLM_DAILY_CAP", 40_000);
+    return int("LLM_DAILY_CAP", 100_000);
   },
   get imageDailyCap() {
-    return int("IMAGE_DAILY_CAP", 1_500);
+    return int("IMAGE_DAILY_CAP", 17_000);
+  },
+  /**
+   * Image generations per 30-day window. Each one holds a function for ~8-10 s, and the
+   * Netlify Starter plan allows 100 function-hours/month (the whole account pauses at 100%),
+   * so this guard, not the dollar cap, binds on Starter. Raise it after a plan upgrade.
+   */
+  get imageMonthlyCap() {
+    return int("IMAGE_MONTHLY_CAP", 20_000);
   },
   get powBits() {
     return int("POW_BITS", 18);
+  },
+  /** Global cap on new (non-legacy) players per UTC day. */
+  get playerDailyCap() {
+    return int("PLAYER_DAILY_CAP", 20_000);
   },
 };

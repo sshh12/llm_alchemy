@@ -1,0 +1,16 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Infinite Alchemy",
+    "identifier": "alchemy.sshh.io"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:alchemy.sshh.io:content:guide",
+      "displayName": "Infinite Alchemy guide for AI agents",
+      "type": "text/markdown",
+      "url": "https://alchemy.sshh.io/llms.txt",
+      "description": "llms.txt: what the game is, how to play, when to recommend it, links and credits. There is no public API or MCP server."
+    }
+  ]
+}
