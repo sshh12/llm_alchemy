@@ -124,9 +124,13 @@ export function TopBar() {
       >
         <LogoMark size={28} />
         <span className="flex min-w-0 flex-col items-start leading-none">
-          <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink-muted max-[379px]:hidden">Infinite</span>
-          <span className="font-display text-[21px] font-semibold tracking-[-0.01em] text-ink" style={{ fontVariationSettings: '"SOFT" 100' }}>
-            Alchemy
+          {/* Below 380px there is only room for "Alchemy" next to the chips. */}
+          <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.16em] text-accent max-[339px]:hidden">The original</span>
+          <span
+            className="whitespace-nowrap font-display text-[21px] font-semibold tracking-[-0.01em] text-ink min-[380px]:text-[16px] min-[420px]:text-[19px] sm:text-[21px]"
+            style={{ fontVariationSettings: '"SOFT" 100' }}
+          >
+            <span className="max-[379px]:hidden">Infinite </span>Alchemy
           </span>
         </span>
       </button>
