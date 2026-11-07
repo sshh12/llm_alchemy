@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sanitizeDescription, sanitizeEmoji, validateProposal } from "./common.ts";
-import { buildCombineInput, buildImagePrompt } from "./prompts.ts";
+import { buildCombineInput, buildImagePrompt, buildImagePromptFromHint, genericImageHint } from "./prompts.ts";
 
 const ok = (raw: unknown, ingredients = ["Fire", "Water"]) => {
   const r = validateProposal(raw, ingredients);
@@ -69,6 +69,13 @@ describe("prompts", () => {
     expect(buildCombineInput(["Water", "fire", "Fire"])).toBe('["Fire","fire","Water"]\nRepeated: "Fire" x2');
     expect(buildImagePrompt("Steam", "Hot vapor.")).toContain("miniature of Steam");
     expect(buildImagePrompt("Steam", "Hot vapor.")).toContain("It is Hot vapor.");
+  });
+
+  it("has a generic fallback hint for refused names without a hint (legacy rows)", () => {
+    const prompt = buildImagePromptFromHint(genericImageHint("Storm"));
+    expect(prompt).toContain("stylized storm");
+    expect(prompt).toContain("natural phenomenon");
+    expect(prompt).not.toContain("${");
   });
 
   it("rejects results that only restate ingredients or ignore one", () => {

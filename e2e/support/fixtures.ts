@@ -49,6 +49,8 @@ const fixturesSchema = z.object({
     easyPath: z.array(recipe).min(1),
   }),
   legacyUsers: z.array(legacyUser).min(1),
+  /** A purge-quarantined ('review') element in the adopt-once user's inventory (legacy-claim.spec.ts). */
+  reviewQuarantined: z.object({ legacyId: z.string().regex(/^\d+$/), elementId: z.string().regex(/^\d+$/), name }).optional(),
 });
 
 export type Recipe = z.infer<typeof recipe>;

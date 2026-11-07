@@ -1,5 +1,6 @@
 // POST /api/bootstrap: resolve (or create / adopt) the player, optionally import a legacy
 // inventory, and return everything the client needs for a session in one response.
+import crypto from "node:crypto";
 import type { Context } from "@netlify/functions";
 import { z } from "zod";
 import type { BootstrapResponse, PowSolution } from "../../src/shared/api.ts";
@@ -10,10 +11,10 @@ import { encodeSession, sessionCookie, sessionPlayer, type PlayerRow } from "../
 import { challengeStats, dailyChallenge, resolveDay } from "./challenges.ts";
 import { toElementDTO, toLibraryEntry } from "./dto.ts";
 import {
+  claimLegacyPlayer,
   countFirsts,
   createPlayer,
   ensureStarters,
-  findLegacyPlayer,
   importLegacy,
   isLegacyUserId,
   knownCount,
@@ -30,6 +31,8 @@ export const BootstrapSchema = z.object({
       userId: z.string().max(200).nullable(),
       // Truncated to MAX_LEGACY_IDS during import; the 1 MB body cap bounds the array.
       elementIds: z.array(z.string().max(32)),
+      // This browser's claim token (src/app/lib/legacy.ts): binds the legacy player on first adoption.
+      claim: z.string().regex(/^[0-9a-f]{32}$/).optional(),
     })
     .optional(),
 });
@@ -68,22 +71,28 @@ export async function bootstrap(req: Request, context: Context): Promise<Respons
 
   let [player] = await Promise.all([sessionPlayer(req), enforce([{ limit: LIMITS.bootstrapIp, subject: ip }])]);
   let adopted = false;
+  let claimed = false;
   const legacyUserId = body.legacy?.userId;
   if (!player && isLegacyUserId(legacyUserId)) {
     await enforce([{ limit: LIMITS.adoptIp, subject: ip }]);
-    const found = await findLegacyPlayer(legacyUserId);
-    if (found) {
-      await ensureStarters(found.id);
-      player = found;
+    const claimHash = body.legacy?.claim ? crypto.createHash("sha256").update(body.legacy.claim).digest("hex") : null;
+    const claim = await claimLegacyPlayer(legacyUserId, claimHash);
+    if (claim.player) {
+      await ensureStarters(claim.player.id);
+      player = claim.player;
       adopted = true;
     }
+    // Bound to another browser: this one becomes a new player (PoW-gated; the check above is
+    // stateless, so the 401 pow_required retry lands here again) and only gets a copy of the
+    // inventory below. Firsts and challenge history stay with the bound player.
+    claimed = claim.claimed;
   }
   player ??= await createWithPow(body.pow, ip);
 
   let legacyImport: BootstrapResponse["legacyImport"];
   if (body.legacy) {
     const r = await importLegacy(player.id, body.legacy.elementIds);
-    legacyImport = { ...r, adopted };
+    legacyImport = { ...r, adopted, claimed };
   }
 
   const playerId = player.id;

@@ -24,7 +24,7 @@ session, client-side recipe cache, CDN-cached images, and rate limits in front o
 
 ```
 db/migrations/*.sql          versioned idempotent SQL ({{schema}} placeholder)          (db)
-scripts/                     migrate, backfill-legacy, generate-challenges, enrich-elements, classify-recognizable, purge-elements, seed-e2e (db)
+scripts/                     migrate, backfill-legacy, repair-legacy, generate-challenges, enrich-elements, classify-recognizable, purge-elements, recompute-depth, seed-e2e (db)
 server/                      backend modules shared by functions                       (server)
   env.ts db.ts http.ts session.ts ratelimit.ts pow.ts blobs.ts
   ai/llm.ts ai/image.ts ai/mock.ts ai/prompts.ts
@@ -56,6 +56,9 @@ See `db/migrations/0001_init.sql`. Key rules:
 - `depth` = generations from the starters (min over recipes of 1 + max ingredient depth);
   `steps` = min number of combinations (min over recipes of 1 + Σ steps of distinct
   ingredients). Both are only ever lowered; new recipes update them incrementally.
+  Combine lowers only the result's row, so descendants drift high: run `npm run db:depth`
+  (`scripts/recompute-depth.ts`, dry run unless `--run`; lowers only, never while `db:purge`
+  apply/restore runs) periodically. Increases (after a purge) belong to `db:purge`.
   Rarity is derived from depth at read time (`src/shared/rarity.ts`).
 - **Discoveries** = a player's library (`player_id, element_id`). Starters are inserted on
   player creation.
@@ -111,6 +114,22 @@ Errors use `ApiError` with the right HTTP status (400/401/403/404/429/503/422).
   sends `legacy` in bootstrap; the server adopts that player (sets the cookie), then imports
   the element ids (mapped via `legacy_element_map`, capped at 20k, max 3 imports per player).
   The client remembers `ia:legacyImported` and never deletes the legacy keys.
+- **Adopt-once** (migration 0005): legacy user ids are not secret (the 2023 API returned every
+  element's creator id), so a legacy player is adopted by the first browser only. With a user id
+  the client sends `legacy.claim`, a random 32-hex token it keeps in `ia:legacyClaim` and writes
+  *before* the request; the server stores `sha256(claim)` in `players.legacy_claim_hash` and sets
+  `legacy_claimed_at` in one atomic UPDATE (`claimLegacyPlayer`). Only a request carrying the same
+  token adopts that player again (a lost response, or the same browser after its cookie was
+  cleared). A player that is already claimed, or already played v2 (`last_seen_at`), is never
+  adopted by anyone else: that browser falls through to normal PoW player creation and only gets
+  a copy of the inventory (no firsts, no challenge history); the response says
+  `legacyImport.claimed`, and the app shows a notice pointing at transfer codes from the bound
+  device. `adopt.ip` (10/h) only slows mass claiming.
+- Imported rows are dated when the element was made (for a legacy player: no earlier than the
+  player's `created_at`), starters added on adoption at `created_at`, never `now()`. Elements a
+  purge quarantined (`review`) or cut off (`orphaned`) are imported too, hidden like every
+  non-active element, so a purge restore or a revival brings them back; `legacy-filter` spam is
+  skipped. `imported`/`skipped` count active elements only.
 - Transfer codes = signed `{p, v}`; redeem switches this browser to that player.
   Bumping `session_version` revokes all cookies/codes for a player.
   Settings also shows the code as a QR deep link `/#transfer=<code>` (`src/app/lib/transferLink.ts`):
@@ -145,7 +164,9 @@ Errors use `ApiError` with the right HTTP status (400/401/403/404/429/503/422).
 (`UPDATE … SET image_status='pending', image_lease_until=now()+'45s', image_attempts=image_attempts+1
 WHERE id=$1 AND (image_status IN ('none','failed') OR (image_status='pending' AND image_lease_until<now())) AND image_attempts<3`).
 The winner calls the image model, stores `el/<id>/<key>.webp` in Blobs, and marks `ready`.
-Others get `pending` with a retry hint. `moderation_blocked` → `blocked` permanently.
+Others get `pending` with a retry hint. `moderation_blocked` → one retry without the name (the
+element's hint, or for hint-less legacy rows a generic "a stylized <name>, the everyday thing …"
+phrase); a second refusal → `blocked` permanently.
 The client shows the procedural placeholder (emoji on a name-hashed gradient) until art is ready, then
 fades it in. Tiles use `/.netlify/images?url=<img>&w=192&h=192&fit=contain` and fall back to the raw path.
 
@@ -155,13 +176,19 @@ fades it in. Tiles use `/.netlify/images?url=<img>&w=192&h=192&fit=contain` and 
 
 - Reads legacy tables read-only (`AS OF SYSTEM TIME follower_read_timestamp()`), keyset-paged.
 - Elements: apply `checkName` (+ protection for challenge targets and their shortest paths)
-  → active or quarantined; whitespace twins alias to the active row. Every legacy id lands in
-  `legacy_element_map`. Legacy image URLs are ignored (all art is regenerated lazily).
+  → active or quarantined; whitespace twins alias to the active row, which takes its date and
+  first-discovery credit from the group's earliest spelling (an anonymous earliest spelling: no
+  credit). Every legacy id lands in `legacy_element_map`. Legacy image URLs are ignored (all art
+  is regenerated lazily).
 - Recipes: ingredient list parsed from the legacy recipe `name` (authoritative, multiset),
   mapped through the element map, re-sorted numerically. Collisions: protected first, then
   oldest legacy id. Recipes referencing purged elements are dropped.
-- Players: one per valid legacy user id (`^alchemy:<uuid v4 shape>$`), `legacy_user_id` set.
-  Starters + elements they discovered first are seeded into their library.
+- Players: one per valid legacy user id (`^alchemy:<uuid v4 shape>$`), `legacy_user_id` set,
+  `created_at` = the earlier of their credits row and their first element (only ever lowered on a
+  re-run). Starters + elements they discovered first are seeded into their library.
+- `npm run db:repair-legacy` (`scripts/repair-legacy.ts`; dry run unless `--run`) brings rows
+  written before those fixes to the same state (player and twin dates, twin credit where it still
+  equals what the backfill wrote, starter/import dates, one image retry); a re-run is a no-op.
 - Challenge completions: OR-merged per (user, day), only rows with a completion.
 - Challenges: legacy days before the cutover copied as-is.
 - Emails, credits, and visit-only rows are not migrated.
@@ -199,7 +226,9 @@ name still fizzles.
   (seeded by `scripts/seed-e2e.ts`; never the production schema). Projects: desktop Chrome,
   Pixel 7, iPhone 15 and iPad (Chromium device emulation with real CDP touch drags), plus
   WebKit iPhone for layout screenshots. Includes a returning-legacy-player journey that
-  first installs a CRA-style service worker and legacy localStorage on the same origin.
+  first installs a CRA-style service worker and legacy localStorage on the same origin. The
+  adopt-once journey (`e2e/legacy-claim.spec.ts`) binds a legacy player in one browser, gets a
+  copy of the elements only in another, and re-adopts with the first browser's claim token.
 
 ## Environment
 

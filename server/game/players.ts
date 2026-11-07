@@ -33,15 +33,48 @@ export async function createPlayer(ipHash: string): Promise<PlayerRow> {
   return row;
 }
 
-export async function findLegacyPlayer(legacyUserId: string): Promise<PlayerRow | undefined> {
-  return q1<PlayerRow>(`SELECT ${PLAYER_COLS} FROM ${t("players")} WHERE legacy_user_id = $1`, [legacyUserId]);
+export interface LegacyClaim {
+  /** The legacy player, when this request bound it (first claim) or re-presented its claim token. */
+  player?: PlayerRow;
+  /** True when the legacy player exists but is bound to another browser (or was adopted before claims). */
+  claimed: boolean;
 }
 
-/** Legacy players are backfilled without starter rows; add them on adoption (idempotent). */
+/**
+ * Adopt-once. The 2023 app published every element's creator id, so a legacy user id is not a
+ * secret: the first browser to present it binds the player (storing the sha256 of its claim
+ * token), and afterwards only a request carrying that same token adopts it again (a retry whose
+ * response was lost, or the same browser after its cookie was cleared). Players that already
+ * played v2 (last_seen_at set; e.g. adopted by the earlier code) are never adopted again. One
+ * atomic statement, so two racing browsers cannot both win.
+ */
+export async function claimLegacyPlayer(legacyUserId: string, claimHash: string | null): Promise<LegacyClaim> {
+  const player = await q1<PlayerRow>(
+    `UPDATE ${t("players")}
+        SET legacy_claimed_at = COALESCE(legacy_claimed_at, now()),
+            legacy_claim_hash = COALESCE(legacy_claim_hash, $2::STRING),
+            last_seen_at = now()
+      WHERE legacy_user_id = $1
+        AND ((legacy_claimed_at IS NULL AND last_seen_at IS NULL)
+          OR (legacy_claim_hash IS NOT NULL AND legacy_claim_hash = $2::STRING))
+      RETURNING ${PLAYER_COLS}`,
+    [legacyUserId, claimHash],
+  );
+  if (player) return { player, claimed: false };
+  const exists = await q1(`SELECT 1 FROM ${t("players")} WHERE legacy_user_id = $1`, [legacyUserId]);
+  return { claimed: exists !== undefined };
+}
+
+/**
+ * Legacy players are backfilled without starter rows; add them on adoption (idempotent). They
+ * are dated at the player's creation, not now(), so they never show up as "new".
+ */
 export async function ensureStarters(playerId: string): Promise<void> {
   await q(
-    `INSERT INTO ${t("discoveries")} (player_id, element_id, source)
-     SELECT $1, e.id, 'starter' FROM ${t("elements")} e WHERE e.is_starter
+    `INSERT INTO ${t("discoveries")} (player_id, element_id, source, discovered_at)
+     SELECT p.id, e.id, 'starter', p.created_at
+       FROM ${t("elements")} e, ${t("players")} p
+      WHERE e.is_starter AND p.id = $1
      ON CONFLICT DO NOTHING`,
     [playerId],
   );
@@ -60,9 +93,19 @@ export interface LegacyImportResult {
 
 /**
  * Import a 2023-app inventory (legacy element ids) into the library. Ids map through
- * legacy_element_map (aliases resolve to their active twin); quarantined or unknown ids are
- * skipped. At most MAX_LEGACY_IDS ids and MAX_LEGACY_IMPORTS imports per player; the count
- * check and increment are atomic with the insert.
+ * legacy_element_map (aliases resolve to their active twin); unknown ids are skipped. At most
+ * MAX_LEGACY_IDS ids and MAX_LEGACY_IMPORTS imports per player; the count check and increment
+ * are atomic with the insert.
+ *
+ * Elements a purge quarantined ('review', restorable) or cut off ('orphaned', revived by combine)
+ * are imported too, because the client sends its inventory only once: every reader of
+ * discoveries filters on active elements, so they stay hidden until they come back. The counts
+ * cover active elements only, matching what the player sees. 'legacy-filter' spam never returns
+ * and is skipped.
+ *
+ * Rows are dated when the element was made (for a legacy player, no earlier than the player's
+ * own creation), never now(): an old library must not show up as "new". Rows the backfill
+ * already wrote keep their (older) date.
  */
 export async function importLegacy(playerId: string, legacyIds: readonly unknown[]): Promise<LegacyImportResult> {
   const ids = [...new Set(legacyIds.filter(isElementId))].slice(0, MAX_LEGACY_IDS);
@@ -80,18 +123,22 @@ export async function importLegacy(playerId: string, legacyIds: readonly unknown
     if (claimed.length === 0) return { imported: 0, skipped: requested };
     const row = await q1<{ mapped_ids: string; elements: string }>(
       `WITH mapped AS (
-         SELECT m.legacy_id, m.element_id, e.is_starter
+         SELECT m.legacy_id, m.element_id, e.is_starter, e.created_at, e.status = 'active' AS active
            FROM ${t("legacy_element_map")} m
-           JOIN ${t("elements")} e ON e.id = m.element_id AND e.status = 'active'
+           JOIN ${t("elements")} e
+             ON e.id = m.element_id AND (e.status = 'active' OR e.quarantine_reason IN ('review', 'orphaned'))
           WHERE m.legacy_id = ANY($2::INT8[])
        ), ins AS (
-         INSERT INTO ${t("discoveries")} (player_id, element_id, source)
-         SELECT DISTINCT $1::INT8, element_id, 'legacy' FROM mapped
+         INSERT INTO ${t("discoveries")} (player_id, element_id, source, discovered_at)
+         SELECT p.id, u.element_id, 'legacy',
+                LEAST(now(), CASE WHEN p.legacy_user_id IS NOT NULL THEN GREATEST(p.created_at, u.created_at) ELSE u.created_at END)
+           FROM (SELECT DISTINCT element_id, created_at FROM mapped) AS u, ${t("players")} p
+          WHERE p.id = $1::INT8
          ON CONFLICT DO NOTHING
          RETURNING element_id
        )
-       SELECT (SELECT count(*) FROM mapped) AS mapped_ids,
-              (SELECT count(DISTINCT element_id) FROM mapped WHERE NOT is_starter) AS elements,
+       SELECT (SELECT count(*) FROM mapped WHERE active) AS mapped_ids,
+              (SELECT count(DISTINCT element_id) FROM mapped WHERE active AND NOT is_starter) AS elements,
               (SELECT count(*) FROM ins) AS inserted -- reading ins keeps the insert explicit`,
       [playerId, ids],
       c,

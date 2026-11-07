@@ -49,6 +49,7 @@ E2E_REUSE_SERVER=1 npm run e2e
 | `canvas` | clear, undo from the snackbar and the toolbar, tiles back in the same places |
 | `reset-progress` | a quick tap does nothing; a 2 s hold resets to the starters; firsts and challenge history kept |
 | `legacy-player` | the returning 2023 player (below) |
+| `legacy-claim` | (desktop-chrome only; its own seeded legacy user) adopt-once: browser A adopts the legacy player and keeps its claim token (`ia:legacyClaim`, sent before the response); browser B with the same id and inventory gets a new player with a copy of the elements only (no firsts, no history, one `legacy-claimed` notice, no onboarding, nothing dated `now()`); a purge-quarantined (`review`) inventory element stays hidden but is kept in the library (read-only DB check); A with its cookie cleared re-adopts the same player with its token |
 | `resilience` | injected `rate_limited` / `budget_exhausted` combines and a rate-limited bootstrap: friendly copy, nothing lost, game recovers |
 | `layout` | no horizontal scroll, finger-sized key controls (44 px touch, 24 px mouse), canvas tiles in bounds and uncovered after rotate/resize |
 | `transfer-qr` | (desktop-chrome + iphone-15) Settings shows the code as a QR `/#transfer=<code>` link (~200 px, whole-pixel modules) and Copy link copies it; a fresh device opening it bootstraps, sees the confirm (no onboarding), switches and has player A's library; the hash is gone at once; Cancel keeps the device's player; garbage gets the friendly error with no request; a forged code is refused after Switch; your own link only says you're already that player |
@@ -101,7 +102,11 @@ e2e/.artifacts/               screens/<project>/<test>--<step>.png, test-results
 - Each test is a fresh browser context, i.e. a fresh anonymous player (~47 players per full run,
   under the server's 60/hour per-IP creation limit; the reseed also clears the e2e counters).
 - Tests that need a "first discovery" claim a distinct `unknownCombos` entry per project, so projects
-  never race. Retries are off: a retried first discovery would no longer be first.
+  never race. Retries are off: a retried first discovery would no longer be first. The same goes
+  for legacy players: one can be adopted once per reseed (adopt-once), so a rerun of
+  `legacy-player` or `legacy-claim` needs a reseed. Adoption attempts are limited to 10/hour per IP
+  (`adopt.ip`); a run uses 8 (one per project in `legacy-player`, four in `legacy-claim`, whose
+  second browser also creates one player).
 
 ## Contract with the app: `data-testid`s
 
@@ -112,6 +117,7 @@ Implemented by the frontend; `e2e/support/game.ts` is the single place that uses
 | `app` | app root | `data-ready="true"` once bootstrap succeeded |
 | `onboarding` | first-run onboarding | dismiss button `onboarding-dismiss`; never again after dismissal |
 | `welcome-back` | one-time notice after a legacy import | non-blocking |
+| `legacy-claimed` | one-time notice: the legacy player is bound to another browser, elements were copied | non-blocking toast |
 | `toast` | each toast | `data-kind` = `new` \| `error` \| `undo` \| `info`; actions are buttons ("Undo") |
 | `discovery-card` | first-ever discovery card (dialog) | element name + "first" wording |
 | `challenge-complete` | challenge-completed card (dialog) | `data-tier` |
@@ -134,4 +140,5 @@ Validated by `e2e/support/fixtures.ts` (the schema there is authoritative): `sta
 (pairs, incl. Water + Fire = Steam), `unknownCombos` (no recipe yet, distinct mock answers),
 `challenge` (`easy`/`hard`/`expert` for local today ±3, `easyPath`), and `legacyUsers` (one per
 Chromium project: `userId`, legacy-shaped `elements`, `expectPresent`, `expectAbsent`,
-`firstDiscovery`, `history`).
+`firstDiscovery`, `history`; a sixth entry is the adopt-once user of `legacy-claim`), plus
+`reviewQuarantined` (a purge-quarantined element that only that sixth user's inventory holds).

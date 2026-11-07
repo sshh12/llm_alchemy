@@ -230,7 +230,8 @@ const cmpId = (a: string, b: string) => {
  *
  * Elements: grouped by nameKey (whitespace twins share a key). A group is active if any member
  * is a starter, protected, or passes checkName(); its canonical row (starter > protected >
- * checkName-ok > clean raw name > oldest id) keeps its legacy id as the v2 id, the rest alias it.
+ * checkName-ok > clean raw name > oldest id) keeps its legacy id as the v2 id, the rest alias it;
+ * the row's date and discoverer come from the group's earliest spelling.
  * Protected = targets of legacy challenge days before the cutover, plus (only for targets that
  * would otherwise be unreachable) the elements on their shortest derivation in the full graph.
  */
@@ -397,15 +398,20 @@ export function buildPlan(snap: LegacySnapshot): Plan {
     .sort((a, b) => cmpId(a.id, b.id));
   stats["recipes.protected"] = protectedRecipeIds.size;
 
-  // ---- element rows + id map
+  // ---- element rows + id map. The canonical spelling gives the id and name; the date and the
+  // first-discovery credit come from the EARLIEST spelling of the group (createdAt, then id), so
+  // a later whitespace twin never takes a first away. An anonymous earliest spelling means no credit.
   const elements: PlanElement[] = [];
   const map: PlanMapRow[] = [];
+  const earliestOf = (key: string) =>
+    groups.get(key)!.reduce((a, b) => (b.createdAt < a.createdAt || (+b.createdAt === +a.createdAt && cmpId(b.id, a.id) < 0) ? b : a));
   for (const e of snap.elements) {
     const canon = canonOf.get(e.id)!;
     const st = status.get(canon)!;
     if (canon === e.id) {
       const key = keyOf.get(e.id)!;
       const real = !key.startsWith("~");
+      const first = earliestOf(key);
       elements.push({
         id: e.id,
         name: real ? titleCase(key) : e.name,
@@ -414,8 +420,8 @@ export function buildPlan(snap: LegacySnapshot): Plan {
         status: st,
         isStarter: e.starter,
         emoji: e.starter ? STARTER_EMOJI[key]! : null,
-        createdAt: e.createdAt,
-        creator: LEGACY_USER_RE.test(e.creator) ? e.creator : null,
+        createdAt: first.createdAt,
+        creator: LEGACY_USER_RE.test(first.creator) ? first.creator : null,
       });
       map.push({ legacyId: e.id, elementId: e.id, disposition: st });
       bump(`elements.${st}`);
@@ -429,14 +435,18 @@ export function buildPlan(snap: LegacySnapshot): Plan {
   map.sort((a, b) => cmpId(a.legacyId, b.legacyId));
   stats["elements.active.reachable"] = elements.filter((e) => e.status === "active" && depth.value.has(e.id)).length;
 
-  // ---- players: valid ids from credits ∪ element creators (completion owners ⊂ credits)
+  // ---- players: valid ids from credits ∪ element creators (completion owners ⊂ credits).
+  // created_at = the earlier of the credits row and the first element they made: the earliest
+  // (bare-uuid) players got their credits row long after they started (some only in 2026-10).
   const playerCreated = new Map<string, Date>();
   for (const c of snap.credits) {
     if (!LEGACY_USER_RE.test(c.userId)) {
       bump("players.skipped.junk_credit_user");
       continue;
     }
-    playerCreated.set(c.userId, uniqueRowidTime(c.id));
+    const at = uniqueRowidTime(c.id);
+    const prev = playerCreated.get(c.userId);
+    if (!prev || at < prev) playerCreated.set(c.userId, at);
   }
   stats["players.from_credits"] = playerCreated.size;
   const fromCredits = new Set(playerCreated.keys());
@@ -447,8 +457,7 @@ export function buildPlan(snap: LegacySnapshot): Plan {
       bump("elements.creator_junk");
       continue;
     }
-    if (fromCredits.has(e.creator)) continue;
-    creatorOnly.add(e.creator);
+    if (!fromCredits.has(e.creator)) creatorOnly.add(e.creator);
     const prev = playerCreated.get(e.creator);
     if (!prev || e.createdAt < prev) playerCreated.set(e.creator, e.createdAt);
   }

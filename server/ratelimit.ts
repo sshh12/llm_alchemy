@@ -13,7 +13,8 @@
 // | bootstrap.ip         | ip      | 600    | 1 h    | one call per page load; a 30-seat classroom behind one NAT |
 // | create.ip            | ip      | 60     | 1 h    | new players (also PoW-gated); a classroom twice over        |
 // | create.ip.day        | ip      | 300    | 1 d    |                                                             |
-// | adopt.ip             | ip      | 60     | 1 h    | legacy adoption; ids are unguessable, this caps scanning    |
+// | adopt.ip             | ip      | 10     | 1 h    | legacy adoption: ids were public (2023 creator ids), so     |
+// |                      |         |        |        | adopt-once is the defense; this only slows mass claiming    |
 // | combine.player       | player  | 60     | 1 min  | humans manage ~10-30/min; bots go much faster              |
 // | combine.player.hour  | player  | 1,500  | 1 h    |                                                             |
 // | combine.ip.hour      | ip      | 20,000 | 1 h    | backstop if the platform rule is missing                    |
@@ -54,7 +55,7 @@ export const LIMITS = {
   bootstrapIp: rule("bootstrap.ip", 600, HOUR),
   createIp: rule("create.ip", 60, HOUR),
   createIpDay: rule("create.ip.day", 300, DAY),
-  adoptIp: rule("adopt.ip", 60, HOUR),
+  adoptIp: rule("adopt.ip", 10, HOUR),
   combinePlayer: rule("combine.player", 60, MIN),
   combinePlayerHour: rule("combine.player.hour", 1_500, HOUR),
   combineIpHour: rule("combine.ip.hour", 20_000, HOUR),

@@ -53,7 +53,18 @@ function useFirstRun(): void {
   const welcome = useGame((s) => s.legacyWelcome);
   useEffect(() => {
     if (!ready) return;
-    if (welcome) {
+    if (welcome?.claimedElsewhere) {
+      // The 2023 player is already linked to another browser: this one only got a copy.
+      showToast({
+        kind: "info",
+        testId: "legacy-claimed",
+        text:
+          "Your 2023 progress is already linked to another browser. We copied your elements here. " +
+          "To continue with your firsts and challenge history, use a transfer code from that device (Settings → Play on another device).",
+        duration: 12_000,
+      });
+      writeString(KEYS.onboarded, "1");
+    } else if (welcome) {
       // Returning 2023 players already know the game: a single notice, no onboarding.
       const n = welcome.restored;
       showToast({

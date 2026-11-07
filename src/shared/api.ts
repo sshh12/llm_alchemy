@@ -84,6 +84,11 @@ export interface LegacyPayload {
   userId: string | null;
   /** Element ids from localStorage['elements'] of the 2023 app (legacy INT8 ids as strings). */
   elementIds: string[];
+  /**
+   * This browser's claim token (32 hex chars, localStorage 'ia:legacyClaim'), sent with a userId.
+   * The first adoption binds the legacy player to it; only the same token adopts it again.
+   */
+  claim?: string;
 }
 
 export interface BootstrapRequest {
@@ -101,8 +106,11 @@ export interface BootstrapResponse {
   history: ChallengeHistoryDay[]; // only days with ≥1 completion, newest first
   /** A few elements recently discovered by anyone (for the "fresh from the lab" feed). */
   recent: ElementDTO[];
-  /** Present when this request imported legacy progress. */
-  legacyImport?: { imported: number; skipped: number; adopted: boolean };
+  /**
+   * Present when this request imported legacy progress. `claimed`: the legacy player is already
+   * bound to another browser, so this one got a new player with a copy of the elements only.
+   */
+  legacyImport?: { imported: number; skipped: number; adopted: boolean; claimed?: boolean };
 }
 
 // ---------------------------------------------------------------- POST /api/combine

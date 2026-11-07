@@ -96,6 +96,22 @@ async function writePlan(pool: pg.Pool, schema: string, plan: Plan, sample: numb
   }
   written.push({ table: "players", planned: players.length, existing: players.length - newPlayers.length, inserted: insertedPlayers });
 
+  // created_at is only ever lowered: earlier runs dated the earliest (bare-uuid) players by a
+  // credits row written long after their first element (some only in 2026-10).
+  let redated = 0;
+  for (const batch of chunk(players, 5_000)) {
+    const res = await retrying("players.created_at", () =>
+      pool.query(
+        `UPDATE ${S}.players AS p SET created_at = u.at
+           FROM unnest($1::STRING[], $2::TIMESTAMPTZ[]) AS u(uid, at)
+          WHERE p.legacy_user_id = u.uid AND p.created_at > u.at`,
+        [batch.map((p) => p.legacyUserId), batch.map((p) => iso(p.createdAt))],
+      ),
+    );
+    redated += res.rowCount ?? 0;
+  }
+  written.push({ table: "players.created_at", planned: players.length, existing: players.length - redated, inserted: redated });
+
   // ---- elements
   step("elements");
   const existingElements = new Set(

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { MAX_LEGACY_IDS } from "../../shared/api.ts";
 import { compareIds, isCanonicalId, recipeKey, sortIds } from "./ids.ts";
 import { formatCountdown, formatPercent, labelLength, msUntilLocalMidnight } from "./format.ts";
-import { LEGACY_ELEMENTS_KEY, LEGACY_IMPORTED_KEY, LEGACY_USER_KEY, readLegacy } from "./legacy.ts";
+import { LEGACY_CLAIM_KEY, LEGACY_ELEMENTS_KEY, LEGACY_IMPORTED_KEY, LEGACY_USER_KEY, readLegacy } from "./legacy.ts";
 import { fnv1a, placeholderFor } from "./placeholder.ts";
 
 describe("ids", () => {
@@ -29,6 +29,21 @@ describe("ids", () => {
 
 const store = (entries: Record<string, string>) => (k: string) => entries[k] ?? null;
 const UID = "alchemy:2f1c3b9a-1234-4abc-8def-0123456789ab";
+const CLAIM = "0123456789abcdef0123456789abcdef";
+
+/** A writable fake localStorage that records the order of writes. */
+function memory(entries: Record<string, string> = {}) {
+  const writes: string[] = [];
+  return {
+    entries,
+    writes,
+    get: (k: string) => entries[k] ?? null,
+    set: (k: string, v: string) => {
+      writes.push(k);
+      entries[k] = v;
+    },
+  };
+}
 
 describe("readLegacy", () => {
   it("returns null without legacy data", () => {
@@ -41,7 +56,7 @@ describe("readLegacy", () => {
         [LEGACY_ELEMENTS_KEY]: JSON.stringify([{ id: "1000000000000000001", name: "fire" }, { id: "42" }, { id: "42" }]),
       }),
     );
-    expect(legacy).toEqual({ payload: { userId: UID, elementIds: ["1000000000000000001", "42"] }, marker: UID });
+    expect(legacy).toEqual({ payload: { userId: UID, elementIds: ["1000000000000000001", "42"], claim: expect.stringMatching(/^[0-9a-f]{32}$/) }, marker: UID });
   });
   it("is defensive about garbage", () => {
     const legacy = readLegacy(
@@ -61,6 +76,35 @@ describe("readLegacy", () => {
     expect(readLegacy(store({ [LEGACY_USER_KEY]: JSON.stringify({ value: UID }), [LEGACY_IMPORTED_KEY]: UID }))).toBeNull();
     // A different legacy user on this browser is imported again.
     expect(readLegacy(store({ [LEGACY_USER_KEY]: JSON.stringify({ value: UID }), [LEGACY_IMPORTED_KEY]: "alchemy:other" }))).not.toBeNull();
+  });
+  it("creates this browser's claim token once, stores it before returning, and reuses it", () => {
+    const ls = memory({ [LEGACY_USER_KEY]: JSON.stringify({ value: UID }) });
+    const first = readLegacy(ls.get, ls.set)?.payload.claim;
+    expect(first).toMatch(/^[0-9a-f]{32}$/);
+    expect(ls.entries[LEGACY_CLAIM_KEY]).toBe(first);
+    expect(readLegacy(ls.get, ls.set)?.payload.claim).toBe(first);
+    expect(ls.writes).toEqual([LEGACY_CLAIM_KEY]);
+    // Never touches the 2023 app's keys.
+    expect(ls.entries[LEGACY_USER_KEY]).toBe(JSON.stringify({ value: UID }));
+    // Two browsers get different tokens.
+    const other = memory({ [LEGACY_USER_KEY]: JSON.stringify({ value: UID }) });
+    expect(readLegacy(other.get, other.set)?.payload.claim).not.toBe(first);
+  });
+  it("keeps a stored claim token and replaces a malformed one", () => {
+    const kept = memory({ [LEGACY_USER_KEY]: JSON.stringify({ value: UID }), [LEGACY_CLAIM_KEY]: CLAIM });
+    expect(readLegacy(kept.get, kept.set)?.payload.claim).toBe(CLAIM);
+    expect(kept.writes).toEqual([]);
+    const bad = memory({ [LEGACY_USER_KEY]: JSON.stringify({ value: UID }), [LEGACY_CLAIM_KEY]: "XYZ" });
+    const claim = readLegacy(bad.get, bad.set)?.payload.claim;
+    expect(claim).toMatch(/^[0-9a-f]{32}$/);
+    expect(bad.entries[LEGACY_CLAIM_KEY]).toBe(claim);
+  });
+  it("sends no claim token without a legacy user id or once imported", () => {
+    const anon = memory({ [LEGACY_ELEMENTS_KEY]: JSON.stringify([{ id: "42" }]) });
+    expect(readLegacy(anon.get, anon.set)?.payload).toEqual({ userId: null, elementIds: ["42"] });
+    const done = memory({ [LEGACY_USER_KEY]: JSON.stringify({ value: UID }), [LEGACY_IMPORTED_KEY]: UID });
+    expect(readLegacy(done.get, done.set)).toBeNull();
+    expect(anon.writes.concat(done.writes)).toEqual([]);
   });
 });
 

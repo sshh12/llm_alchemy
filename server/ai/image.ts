@@ -4,7 +4,7 @@
 import OpenAI from "openai";
 import { env } from "../env.ts";
 import { AiUnavailable, Blocked, type GeneratedImage } from "./common.ts";
-import { buildImagePrompt, buildImagePromptFromHint } from "./prompts.ts";
+import { buildImagePrompt, buildImagePromptFromHint, genericImageHint } from "./prompts.ts";
 
 export const IMAGE_MODEL = "gpt-image-2.5-flare-2026-09-08";
 
@@ -48,13 +48,15 @@ async function render(prompt: string, safetyIdentifier: string): Promise<Generat
 
 /**
  * Paint an element. If the safety system refuses the named subject (some trademarked
- * characters are refused by name), try once more drawing only the visual hint.
+ * characters are refused by name), try once more drawing only the visual hint, or, without a
+ * hint (legacy rows), a generic everyday-meaning phrase. A second refusal propagates as
+ * Blocked, and only then is the element marked blocked.
  */
 export async function generate(name: string, hint: string | null, safetyIdentifier: string): Promise<GeneratedImage> {
   try {
     return await render(buildImagePrompt(name, hint), safetyIdentifier);
   } catch (e) {
-    if (!(e instanceof Blocked) || !hint) throw e;
-    return render(buildImagePromptFromHint(hint), safetyIdentifier);
+    if (!(e instanceof Blocked)) throw e;
+    return render(buildImagePromptFromHint(hint ?? genericImageHint(name)), safetyIdentifier);
   }
 }

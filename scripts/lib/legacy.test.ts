@@ -137,3 +137,58 @@ describe("buildPlan", () => {
     expect(disc).toEqual(["U1:10", "U1:13", "U1:15", "U2:10", "U2:14"]);
   });
 });
+
+describe("buildPlan: twins and player dates", () => {
+  const t = (iso: string) => new Date(iso);
+  const BARE = "33333333-3333-4333-8333-333333333333";
+  const el = (id: number, name: string, createdAt: Date, creator = "", starter = false) => ({ id: String(id), name, starter, createdAt, creator });
+  const starters = ["earth", "water", "air", "fire", "time"].map((n, i) => el(i + 1, n, at, "", true));
+  const plan = buildPlan({
+    asOf: "0",
+    elements: [
+      ...starters,
+      // 'babies' is canonical (clean spelling), but ' babies' came first: its date and creator win.
+      el(20, "babies", t("2023-06-26T07:47:58Z"), U1),
+      el(21, " babies", t("2023-05-24T20:52:51Z"), U2),
+      // The first spelling was anonymous: no credit, even though a later twin has a creator.
+      el(22, "dragon", t("2023-07-01T00:00:00Z"), U1),
+      el(23, "dragon ", t("2023-05-21T00:00:00Z")),
+      // Same instant: the lower id is the earliest.
+      el(24, "jar ", t("2023-08-01T00:00:00Z"), U1),
+      el(25, "jar", t("2023-08-01T00:00:00Z"), U2),
+      // A bare-uuid player made something in May 2023; their credits row is from 2026-10.
+      el(26, "pebble", t("2023-05-22T10:00:00Z"), BARE),
+    ],
+    recipes: [],
+    challenges: [],
+    completions: [],
+    credits: [
+      { id: "1220000000000000000", userId: BARE }, // a 2026-10 unique_rowid
+      { id: "866674527284625410", userId: U2 }, // 2023-05-20, before U2's first element
+    ],
+  });
+  const byId = new Map(plan.elements.map((e) => [e.id, e]));
+  const created = new Map(plan.players.map((p) => [p.legacyUserId, p.createdAt.toISOString()]));
+
+  it("dates and credits a twin group by its earliest spelling", () => {
+    expect(byId.get("20")).toMatchObject({ name: "Babies", creator: U2 });
+    expect(byId.get("20")!.createdAt.toISOString()).toBe("2023-05-24T20:52:51.000Z");
+    expect(byId.has("21")).toBe(false);
+    expect(byId.get("22")).toMatchObject({ name: "Dragon", creator: null });
+    expect(byId.get("22")!.createdAt.toISOString()).toBe("2023-05-21T00:00:00.000Z");
+    expect(byId.get("25")).toMatchObject({ name: "Jar", creator: U1 });
+  });
+
+  it("keeps each creator's own discovery of their spelling", () => {
+    const disc = plan.discoveries.filter((d) => d.elementId === "20").map((d) => d.legacyUserId).sort();
+    expect(disc).toEqual([U1, U2].sort());
+  });
+
+  it("dates a player by their first element when the credits row is later", () => {
+    expect(uniqueRowidTime("1220000000000000000").toISOString().slice(0, 7)).toBe("2026-10");
+    expect(created.get(BARE)).toBe("2023-05-22T10:00:00.000Z");
+    // An earlier credits row still wins.
+    expect(created.get(U2)!.slice(0, 10)).toBe("2023-05-20");
+    expect(plan.stats["players.creators_without_credits"]).toBe(1); // U1 only
+  });
+});

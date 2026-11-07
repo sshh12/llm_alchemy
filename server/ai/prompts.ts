@@ -218,3 +218,11 @@ export function buildImagePrompt(name: string, hint: string | null): string {
 export function buildImagePromptFromHint(hint: string): string {
   return buildImagePrompt(hint.trim().replace(/[.\s]+$/, ""), null);
 }
+
+/**
+ * Stand-in hint for the fallback when an element has none (every legacy row): steers a refused
+ * name like "Storm" or "Lightning" toward the everyday meaning instead of a brand or character.
+ */
+export function genericImageHint(name: string): string {
+  return `a stylized ${name.toLowerCase()}, the everyday thing, substance or natural phenomenon (not a brand, character or person)`;
+}

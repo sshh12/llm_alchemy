@@ -36,8 +36,11 @@ export interface GameState {
   recent: ElementId[];
   /** Local day the loaded challenge belongs to. */
   day: string;
-  /** Set when this load adopted/imported 2023 progress (drives the one-time welcome-back notice). */
-  legacyWelcome: { restored: number } | null;
+  /**
+   * Set when this load adopted/imported 2023 progress (drives the one-time welcome-back notice).
+   * `claimedElsewhere`: the legacy player is bound to another browser; this one got a copy of the elements.
+   */
+  legacyWelcome: { restored: number; claimedElsewhere?: boolean } | null;
 }
 
 const EMPTY_STATS: Stats = { known: 0, mine: 0, firsts: 0, challengesCompleted: 0, streak: { current: 0, best: 0 } };
@@ -83,8 +86,10 @@ export async function bootGame(): Promise<void> {
     let legacyWelcome: GameState["legacyWelcome"] = null;
     if (legacy && res.legacyImport) {
       markLegacyImported(legacy.marker);
-      const { adopted, imported } = res.legacyImport;
-      if (adopted || imported > 0) {
+      const { adopted, imported, claimed } = res.legacyImport;
+      if (claimed) {
+        legacyWelcome = { restored: imported, claimedElsewhere: true };
+      } else if (adopted || imported > 0) {
         legacyWelcome = { restored: adopted ? res.library.filter((e) => !e.starter).length : imported };
       }
     }

@@ -6,8 +6,9 @@
 // Always targets alchemy_e2e (never the production schema): migrates it, wipes ONLY its tables,
 // then inserts starters + ~30 elements with 1-, 2- and 3-step chains, a few quarantined legacy
 // spam elements (one behind a quarantined recipe that the server must "heal"), challenges for
-// local today-3 .. today+3 plus legacy history days, and 5 pre-created legacy players (one per
-// Playwright project) with legacy ids in legacy_element_map. Unknown combinations are answered
+// local today-3 .. today+3 plus legacy history days, and 6 pre-created legacy players (one per
+// Playwright project, plus one for the adopt-once journey in e2e/legacy-claim.spec.ts) with legacy
+// ids in legacy_element_map. Unknown combinations are answered
 // by the deterministic mock AI (server/ai/mock.ts); the seed picks combos whose mock answers
 // are new names, so "first discovery" tests stay honest.
 import "./lib/env.ts";
@@ -124,6 +125,13 @@ const ELEMENTS: SeedElement[] = [
 
 /** Legacy spam kept only so legacy ids map somewhere; never shown or combinable. */
 const QUARANTINED = ["timetimetime", "headlights  car  vehicle", "mechamechagolem"];
+/**
+ * Junk a purge quarantined with quarantine_reason 'review' (restorable): a legacy import keeps
+ * it in the library, hidden, so it comes back with `db:purge restore`. Only the adopt-once
+ * user's inventory has it.
+ */
+const REVIEW = "sparkleglop";
+const REVIEW_LEGACY_ID = "900000000000000015";
 /** A legacy recipe whose stored result is quarantined: the server must re-roll ("heal") it. */
 const HEAL: [string, string, string] = ["Steam", "Time", "timetimetime"];
 
@@ -151,9 +159,10 @@ const LEGACY_COMPLETIONS: [number, Tier][] = [
 
 const legacyTarget = (off: number, tier: Tier) => LEGACY_DAYS.find(([o]) => o === off)![1][tier];
 
-const LEGACY_USERS = [1, 2, 3, 4, 5].map((i) => `alchemy:00000000-0000-4000-8000-00000000e2e${i}`);
+/** One per Playwright project (by index), then the adopt-once user (index 5, desktop-chrome only). */
+const LEGACY_USERS = [1, 2, 3, 4, 5, 6].map((i) => `alchemy:00000000-0000-4000-8000-00000000e2e${i}`);
 /** Each legacy player is the first discoverer of one element. */
-const LEGACY_FIRSTS = ["Clay", "Plasma", "Pottery", "Storm", "Sword"];
+const LEGACY_FIRSTS = ["Clay", "Plasma", "Pottery", "Storm", "Sword", "Lightning"];
 
 /** Fake legacy element ids (18 digits, like 2023 ids) and what they map to. */
 const LEGACY_IDS: [string, string, "active" | "alias" | "quarantined", string][] = [
@@ -194,6 +203,7 @@ interface Row {
   notable: boolean;
   status: "active" | "quarantined";
   starter: boolean;
+  quarantineReason?: "review";
 }
 
 function buildWorld() {
@@ -201,9 +211,10 @@ function buildWorld() {
     ...STARTERS.map((e, i) => ({ id: starterId(i), name: e.name, key: nameKey(e.name), emoji: e.emoji, description: e.description, notable: false, status: "active" as const, starter: true })),
     ...ELEMENTS.map((e, i) => ({ id: elementId(i), name: e.name, key: nameKey(e.name), emoji: e.emoji, description: e.description, notable: e.notable ?? false, status: "active" as const, starter: false })),
     ...QUARANTINED.map((raw, i) => ({ id: quarantinedId(i), name: titleCase(nameKey(raw)), key: nameKey(raw), emoji: null, description: null, notable: false, status: "quarantined" as const, starter: false })),
+    { id: quarantinedId(QUARANTINED.length), name: titleCase(nameKey(REVIEW)), key: nameKey(REVIEW), emoji: null, description: null, notable: false, status: "quarantined" as const, starter: false, quarantineReason: "review" as const },
   ];
   const byName = new Map(rows.map((r) => [r.name, r]));
-  const byRaw = new Map(QUARANTINED.map((raw, i) => [raw, rows[STARTERS.length + ELEMENTS.length + i]!]));
+  const byRaw = new Map([...QUARANTINED, REVIEW].map((raw, i) => [raw, rows[STARTERS.length + ELEMENTS.length + i]!]));
   const get = (name: string) => {
     const r = byName.get(name) ?? byRaw.get(name);
     if (!r) throw new Error(`seed references unknown element ${name}`);
@@ -279,13 +290,13 @@ async function seed() {
       const base = Date.now() - world.rows.length * 60_000;
       await c.query(
         `INSERT INTO ${SCHEMA}.elements
-           (id, name, name_key, fold_key, emoji, description, notable, status, is_starter, depth, steps, discovered_by, source, legacy_id, enriched_at, created_at)
+           (id, name, name_key, fold_key, emoji, description, notable, status, is_starter, depth, steps, discovered_by, source, legacy_id, enriched_at, created_at, quarantine_reason)
          SELECT u.id, u.name, u.key, u.fold, u.emoji, u.descr, u.notable, u.status, u.starter, u.depth, u.steps, u.by,
                 'seed', NULL,
-                CASE WHEN u.status = 'active' THEN now() END, u.created_at
+                CASE WHEN u.status = 'active' THEN now() END, u.created_at, u.reason
          FROM unnest($1::INT8[], $2::STRING[], $3::STRING[], $4::STRING[], $5::STRING[], $6::STRING[], $7::BOOL[], $8::STRING[],
-                     $9::BOOL[], $10::INT4[], $11::INT4[], $12::INT8[], $13::TIMESTAMPTZ[])
-           AS u(id, name, key, fold, emoji, descr, notable, status, starter, depth, steps, by, created_at)`,
+                     $9::BOOL[], $10::INT4[], $11::INT4[], $12::INT8[], $13::TIMESTAMPTZ[], $14::STRING[])
+           AS u(id, name, key, fold, emoji, descr, notable, status, starter, depth, steps, by, created_at, reason)`,
         [
           world.rows.map((r) => r.id),
           world.rows.map((r) => r.name),
@@ -300,6 +311,7 @@ async function seed() {
           world.rows.map((r) => world.steps.get(r.id) ?? null),
           world.rows.map((r) => firstBy.get(r.name) ?? null),
           world.rows.map((_, i) => new Date(base + i * 60_000).toISOString()),
+          world.rows.map((r) => r.quarantineReason ?? null),
         ],
       );
 
@@ -313,7 +325,11 @@ async function seed() {
       await c.query(
         `INSERT INTO ${SCHEMA}.legacy_element_map (legacy_id, element_id, disposition)
          SELECT * FROM unnest($1::INT8[], $2::INT8[], $3::STRING[])`,
-        [LEGACY_IDS.map((l) => l[0]), LEGACY_IDS.map((l) => world.get(l[3]).id), LEGACY_IDS.map((l) => l[2])],
+        [
+          [...LEGACY_IDS.map((l) => l[0]), REVIEW_LEGACY_ID],
+          [...LEGACY_IDS.map((l) => world.get(l[3]).id), world.get(REVIEW).id],
+          [...LEGACY_IDS.map((l) => l[2]), "quarantined"],
+        ],
       );
 
       // challenges: legacy history days + today-3 .. today+3
@@ -406,18 +422,22 @@ async function seed() {
       legacyDays: LEGACY_DAYS.map(([off, t]) => ({ day: addDays(today, off), ...t })),
       legacyMap: LEGACY_IDS.map(([legacyId, rawName, disposition, target]) => ({ legacyId, rawName, disposition, elementId: world.get(target).id })),
       unknownLegacyId: UNKNOWN_LEGACY_ID,
+      /** Purge-quarantined ('review') element in the adopt-once user's inventory only. */
+      reviewQuarantined: { legacyId: REVIEW_LEGACY_ID, elementId: world.get(REVIEW).id, name: world.get(REVIEW).name },
       legacyUsers: LEGACY_USERS.map((userId, i) => {
         const first = LEGACY_FIRSTS[i]!;
         const completedTargets = LEGACY_COMPLETIONS.map(([off, tier]) => legacyTarget(off, tier));
+        const claimUser = i === LEGACY_USERS.length - 1;
         return {
           userId,
           playerId: null as string | null,
           elements: [
             ...LEGACY_IDS.map(([id, raw, , target]) => legacyElement(id, raw, starterNames.has(target))),
+            ...(claimUser ? [legacyElement(REVIEW_LEGACY_ID, REVIEW, false)] : []),
             legacyElement(UNKNOWN_LEGACY_ID, "forgotten thing", false),
           ],
           expectPresent: [...new Set([...STARTERS.map((s) => s.name), "Steam", "Mud", "Brick", "Cloud", "Stone", ...completedTargets, first])],
-          expectAbsent: QUARANTINED.map((raw) => titleCase(nameKey(raw))),
+          expectAbsent: [...QUARANTINED, ...(claimUser ? [REVIEW] : [])].map((raw) => titleCase(nameKey(raw))),
           firstDiscovery: first,
           history: LEGACY_COMPLETIONS.map(([off, tier]) => ({ day: addDays(today, off), completed: [tier] })),
         };
@@ -428,7 +448,7 @@ async function seed() {
     fs.writeFileSync(FIXTURES, `${JSON.stringify(fixtures, null, 2)}\n`);
     const active = world.rows.filter((r) => r.status === "active").length;
     console.log(
-      `[${SCHEMA}] seeded ${active} active + ${QUARANTINED.length} quarantined elements, ${world.recipes.length} recipes, ` +
+      `[${SCHEMA}] seeded ${active} active + ${world.rows.length - active} quarantined elements, ${world.recipes.length} recipes, ` +
         `${LEGACY_DAYS.length + 7} challenge days, ${LEGACY_USERS.length} legacy players, ${fixtures.unknownCombos.length} unknown combos; wrote ${path.relative(REPO_ROOT, FIXTURES)}`,
     );
   } finally {

@@ -22,6 +22,8 @@
     "db:enrich": "tsx scripts/enrich-elements.ts",
     "db:classify": "tsx scripts/classify-recognizable.ts",
     "db:purge": "tsx scripts/purge-elements.ts",
+    "db:depth": "tsx scripts/recompute-depth.ts",
+    "db:repair-legacy": "tsx scripts/repair-legacy.ts",
     "db:seed-e2e": "tsx scripts/seed-e2e.ts",
     "netlify": "npx -y netlify-cli@27.16.2",
     "db:check-challenges": "tsx scripts/check-challenges.ts"
