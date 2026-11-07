@@ -1708,6 +1708,30 @@
     box-shadow: 0 0 0 3px var(--glow);
   }
 
+  /* Transfer QR code: dark modules on a light card in both themes, so any phone camera reads
+     it. The code draws its own 4-module quiet zone, so the card needs no padding. */
+  .qr-card {
+    max-width: 100%;
+    border-radius: 16px;
+    background: #fffcf6;
+    box-shadow:
+      0 0 0 1px var(--border),
+      0 12px 24px -18px var(--tile-shadow);
+  }
+  .qr-card > svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+  :root[data-theme="dark"] .qr-card {
+    background: #efe6d6; /* a softer paper next to the dark sheet; contrast stays ~13:1 */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .qr-card {
+      background: #efe6d6;
+    }
+  }
+
   .seg {
     display: inline-flex;
     padding: 3px;

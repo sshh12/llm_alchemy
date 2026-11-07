@@ -8,7 +8,7 @@ v2 is a ground-up rewrite. This document is the source of truth for how it fits 
 
 | Layer | Choice | Why |
 |---|---|---|
-| Frontend | Vite 8 + React 19 SPA, TypeScript, Tailwind CSS v4, `motion` (pinned), `@tanstack/react-virtual`, `radix-ui` (Dialog/Popover only), `zustand` | The game is one interactive screen; a static SPA costs zero function invocations to serve. |
+| Frontend | Vite 8 + React 19 SPA, TypeScript, Tailwind CSS v4, `motion` (pinned), `@tanstack/react-virtual`, `radix-ui` (Dialog/Popover only), `zustand`, `qrcode.react` (transfer QR; lazy Settings chunk only) | The game is one interactive screen; a static SPA costs zero function invocations to serve. |
 | Backend | Netlify Functions v2 (`netlify/functions/*.mts`, web-standard `Request`/`Response`, path routing, `config.rateLimit`) | Small per-endpoint bundles, fast cold starts, and native platform rate limiting (Next.js route handlers can't declare Netlify rate limits and run as one large function). |
 | DB | Existing CockroachDB Cloud (Basic, us-east1) via `pg` + raw SQL | New tables live in SQL schema `alchemy` next to the untouched legacy `public."Alchemy*"` tables. |
 | Image storage | Netlify Blobs store `element-art`, served by `/img/:id/:key.webp` with immutable CDN caching; resized through Netlify Image CDN | No native deps; one function call per image per CDN, then free. |
@@ -111,6 +111,12 @@ Errors use `ApiError` with the right HTTP status (400/401/403/404/429/503/422).
   The client remembers `ia:legacyImported` and never deletes the legacy keys.
 - Transfer codes = signed `{p, v}`; redeem switches this browser to that player.
   Bumping `session_version` revokes all cookies/codes for a player.
+  Settings also shows the code as a QR deep link `/#transfer=<code>` (`src/app/lib/transferLink.ts`):
+  a fragment, so the bearer code never reaches the server, logs or referrers. On startup `main.tsx`
+  strips it from the URL (`history.replaceState`) before anything else runs; after bootstrap (onboarding
+  suppressed on that load) a confirm dialog redeems it and reloads. Malformed codes get the invalid-code
+  toast without a request; your own code gets "You're already playing as this player" (compared by
+  issuing a fresh code, since bootstrap only exposes the public id).
 
 ## Abuse & cost defenses
 

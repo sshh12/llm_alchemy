@@ -6,6 +6,7 @@ import { bootGame, useGame } from "../../state/game.ts";
 import { openSheet, showToast, useUi, type SheetName } from "../../state/ui.ts";
 import { KEYS, readString, writeString } from "../../lib/storage.ts";
 import { useOnline } from "../../lib/hooks.ts";
+import { capturedTransferLink } from "../../lib/transferLink.ts";
 
 const loaders = {
   challenges: () => import("../sheets/ChallengesSheet.tsx"),
@@ -22,6 +23,7 @@ const loadCelebration = () => import("../discovery/CelebrationCard.tsx");
 const loadQuickActions = () => import("../details/QuickActions.tsx");
 const Celebration = lazy(loadCelebration);
 const QuickActions = lazy(loadQuickActions);
+const TransferPrompt = lazy(() => import("../sheets/TransferPrompt.tsx"));
 
 function prefetchOverlays(): void {
   for (const l of Object.values(loaders)) void l();
@@ -61,7 +63,9 @@ function useFirstRun(): void {
         duration: 8_000,
       });
       writeString(KEYS.onboarded, "1");
-    } else if (readString(KEYS.onboarded) !== "1") {
+    } else if (readString(KEYS.onboarded) !== "1" && !capturedTransferLink()) {
+      // (Opened from a transfer link: the visitor is continuing their own game, so the
+      // switch prompt comes first and there is no onboarding on this load.)
       useUi.setState({ onboarding: true });
       openSheet("about");
     }
@@ -151,12 +155,15 @@ export function Overlays() {
   useFirstRun();
   const hasCelebration = useUi((s) => s.celebrations.length > 0);
   const hasDetails = useUi((s) => s.details !== null);
+  const ready = useGame((s) => s.status === "ready");
+  const transfer = capturedTransferLink();
   return (
     <>
       <SheetHost />
       <Suspense fallback={null}>
         {hasCelebration && <Celebration />}
         {hasDetails && <QuickActions />}
+        {ready && transfer && <TransferPrompt link={transfer} />}
       </Suspense>
       <OfflineBanner />
       <BootStatus />

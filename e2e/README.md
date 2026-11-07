@@ -51,6 +51,7 @@ E2E_REUSE_SERVER=1 npm run e2e
 | `legacy-player` | the returning 2023 player (below) |
 | `resilience` | injected `rate_limited` / `budget_exhausted` combines and a rate-limited bootstrap: friendly copy, nothing lost, game recovers |
 | `layout` | no horizontal scroll, finger-sized key controls (44 px touch, 24 px mouse), canvas tiles in bounds and uncovered after rotate/resize |
+| `transfer-qr` | (desktop-chrome + iphone-15) Settings shows the code as a QR `/#transfer=<code>` link (~200 px, whole-pixel modules) and Copy link copies it; a fresh device opening it bootstraps, sees the confirm (no onboarding), switches and has player A's library; the hash is gone at once; Cancel keeps the device's player; garbage gets the friendly error with no request; a forged code is refused after Switch; your own link only says you're already that player |
 
 Every test also fails on any uncaught page error.
 
@@ -124,6 +125,8 @@ Implemented by the frontend; `e2e/support/game.ts` is the single place that uses
 | `canvas`, `canvas-tile` | play surface; element on it | `data-name`, `data-selected="true\|false"`, `data-pending="true"` |
 | `canvas-undo`, `canvas-tidy`, `canvas-clear` | toolbar | |
 | `menu-button`, `settings-sheet`, `reset-progress`, `reset-confirm` | settings and the hold-to-confirm reset | |
+| `transfer-share`, `transfer-qr`, `transfer-code` | Settings transfer block once a code is shown: the QR card (an `<svg>`) and the code text | |
+| `transfer-confirm`, `transfer-switch`, `transfer-cancel` | confirm dialog after opening a `/#transfer=<code>` link | |
 
 ## Contract with the seed: `e2e/fixtures.json`
 

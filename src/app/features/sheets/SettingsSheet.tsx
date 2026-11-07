@@ -1,11 +1,12 @@
-// Settings: theme, sound, haptics, motion, device transfer (show / redeem a code),
+// Settings: theme, sound, haptics, motion, device transfer (code + QR link / redeem a code),
 // how to play, credits, and reset progress (hold to confirm).
 import { AlertDialog } from "radix-ui";
+import { QRCodeSVG } from "qrcode.react";
 import { useState, type ReactNode } from "react";
-import { ApiFailure, playerAction } from "../../lib/api.ts";
+import { playerAction } from "../../lib/api.ts";
 import { supportsHaptics } from "../../lib/haptics.ts";
 import { unlockAudio } from "../../lib/sound.ts";
-import { KEYS, removeKey } from "../../lib/storage.ts";
+import { parseTransferHash, transferUrl } from "../../lib/transferLink.ts";
 import { useCanvas } from "../../state/canvas.ts";
 import { resetLibraryLocal, useGame } from "../../state/game.ts";
 import { useSettings, type ThemePref } from "../../state/settings.ts";
@@ -14,6 +15,7 @@ import { HoldToConfirm } from "../../components/HoldToConfirm.tsx";
 import { CopyIcon, ExternalIcon } from "../../components/Icons.tsx";
 import { LEARN_MORE_URL, SOURCE_URL } from "../../content.ts";
 import { Sheet } from "./Sheet.tsx";
+import { failureText, switchToPlayer } from "./transfer.ts";
 
 function Row({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
@@ -37,13 +39,81 @@ const THEMES: { id: ThemePref; label: string }[] = [
   { id: "dark", label: "Dark" },
 ];
 
-function failureText(e: unknown): string {
-  if (e instanceof ApiFailure) {
-    if (e.code === "rate_limited") return "Too many tries. Wait a minute and try again.";
-    if (e.code === "bad_request" || e.code === "not_found" || e.code === "forbidden") return "That code isn't valid (or was revoked).";
-    if (e.code === "network" || e.code === "timeout") return "Couldn't reach the server. Check your connection.";
-  }
-  return "Something went wrong. Try again.";
+/** Dark modules on a light card in both themes, so any phone camera reads it. */
+const QR_INK = "#2a2118";
+/** The spec's 4-module quiet zone, drawn inside the SVG. */
+const QR_MARGIN = 4;
+/** Byte-mode capacity at error level M of QR versions 1–10 (ISO/IEC 18004). */
+const QR_M_BYTES = [14, 26, 42, 62, 84, 106, 122, 152, 180, 213];
+
+/** About 200 px, in whole pixels per module so the code stays crisp on 1x screens. */
+function qrSize(value: string): number {
+  const bytes = new TextEncoder().encode(value).length;
+  const version = QR_M_BYTES.findIndex((cap) => bytes <= cap) + 1 || 10;
+  const modules = 17 + 4 * version + 2 * QR_MARGIN;
+  return modules * Math.ceil(200 / modules);
+}
+
+function CopyButton({ text, label, ariaLabel, icon, className }: { text: string; label: string; ariaLabel: string; icon: ReactNode; className: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      className={className}
+      aria-label={ariaLabel}
+      onClick={() => {
+        void navigator.clipboard
+          ?.writeText(text)
+          .then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1_500);
+          })
+          .catch(() => {});
+      }}
+    >
+      {icon} {copied ? "Copied" : label}
+    </button>
+  );
+}
+
+function LinkIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" />
+      <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" />
+    </svg>
+  );
+}
+
+/** The code as a QR deep link (`/#transfer=<code>`), its text and both copy buttons. */
+function TransferShare({ code }: { code: string }) {
+  const link = transferUrl(location.origin, code);
+  return (
+    <div data-testid="transfer-share">
+      <div className="flex flex-col items-center gap-2">
+        <div className="qr-card" data-testid="transfer-qr">
+          <QRCodeSVG
+            value={link}
+            size={qrSize(link)}
+            level="M"
+            marginSize={QR_MARGIN}
+            bgColor="transparent"
+            fgColor={QR_INK}
+            role="img"
+            aria-label="QR code to continue on another device"
+          />
+        </div>
+        <p className="text-balance text-center text-[13px] text-ink-muted">Scan with your phone's camera to continue on that device</p>
+        <CopyButton text={link} label="Copy link" ariaLabel="Copy link" icon={<LinkIcon size={16} />} className="btn btn-sm btn-quiet" />
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <code className="field flex flex-1 items-center overflow-x-auto whitespace-nowrap font-mono text-[13px]" data-testid="transfer-code">
+          {code}
+        </code>
+        <CopyButton text={code} label="Copy" ariaLabel="Copy code" icon={<CopyIcon size={18} />} className="btn btn-quiet h-11 flex-none px-3" />
+      </div>
+    </div>
+  );
 }
 
 function Transfer() {
@@ -51,7 +121,6 @@ function Transfer() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState<"show" | "redeem" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const show = async () => {
     setBusy("show");
@@ -66,16 +135,15 @@ function Transfer() {
     }
   };
   const redeem = async () => {
-    const c = input.trim();
+    // Accept a pasted transfer link as well as the bare code.
+    const t = input.trim();
+    const c = (t.includes("#transfer=") && parseTransferHash(t.slice(t.indexOf("#transfer=")))?.code) || t;
     if (!c) return;
     setBusy("redeem");
     setError(null);
     try {
-      await playerAction({ action: "redeem", code: c });
-      // A different player now owns this browser: start from a clean workbench.
-      removeKey(KEYS.canvas);
-      removeKey(KEYS.undo, "session");
-      location.reload();
+      // A different player now owns this browser: reloads from a clean workbench.
+      await switchToPlayer(c);
     } catch (e) {
       setError(failureText(e));
       setBusy(null);
@@ -87,22 +155,7 @@ function Transfer() {
       <p className="font-semibold">Play on another device</p>
       <p className="mb-3 text-[13px] text-ink-muted">Your progress lives with this browser. Use a transfer code to continue somewhere else.</p>
       {code ? (
-        <div className="flex items-center gap-2">
-          <code className="field flex flex-1 items-center overflow-x-auto whitespace-nowrap font-mono text-[13px]">{code}</code>
-          <button
-            type="button"
-            className="btn btn-quiet h-11 flex-none px-3"
-            aria-label="Copy code"
-            onClick={() => {
-              void navigator.clipboard?.writeText(code).then(() => {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1_500);
-              });
-            }}
-          >
-            <CopyIcon size={18} /> {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
+        <TransferShare code={code} />
       ) : (
         <button type="button" className="btn btn-quiet w-full" disabled={busy !== null} onClick={show}>
           {busy === "show" ? "Getting a code…" : "Show my transfer code"}

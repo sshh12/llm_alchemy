@@ -332,13 +332,16 @@ function image(id: string): Response {
   return json({ state: "ready", img: `/dev-art/${slug(el.name)}.webp` } satisfies ImageResponse);
 }
 
+const FAKE_CODE = "1000000000000009999.1.QmFrZWRCeUZha2VBcGkwMQ";
+
 function player(action: PlayerAction): Response {
   if (action.action === "reset") {
     for (const id of [...owned.keys()]) if (!els.get(id)?.starter) owned.delete(id);
     return json({ ok: true, action: "reset" } satisfies PlayerResponse);
   }
-  if (action.action === "transfer-code") return json({ ok: true, action: "transfer-code", code: "IA1.eyJwIjoiOTk5OSIsInYiOjF9.Qm9vaw" } satisfies PlayerResponse);
-  return action.code.startsWith("IA1.") ? json({ ok: true, action: "redeem" } satisfies PlayerResponse) : fail("bad_request", 400);
+  // Same shape as real codes (server/session.ts): <playerId>.<version>.<22-char signature>.
+  if (action.action === "transfer-code") return json({ ok: true, action: "transfer-code", code: FAKE_CODE } satisfies PlayerResponse);
+  return /^\d+\.\d+\.[A-Za-z0-9_-]{22}$/.test(action.code) ? json({ ok: true, action: "redeem" } satisfies PlayerResponse) : fail("bad_request", 400);
 }
 
 export function installFakeApi(): void {
