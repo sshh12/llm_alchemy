@@ -1,6 +1,6 @@
 # Infinite Alchemy
 
-**Combine elements, discover anything.** Drag two or more elements together and an AI decides
+**The original infinite AI alchemy game.** Drag two or more elements together and an AI decides
 what you made, then paints it. Start with Earth, Water, Air, Fire and Time, and see where it goes.
 
 **Play at [alchemy.sshh.io](https://alchemy.sshh.io).** Free, no account, works on phones.
