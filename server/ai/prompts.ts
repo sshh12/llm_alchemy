@@ -152,7 +152,7 @@ export const COMBINE_SCHEMA = {
 } as const;
 
 const IMAGE_TEMPLATE = `A charming handmade miniature of \${name}, sculpted from soft clay and finished in a smooth matte kiln-fired ceramic glaze. \${description}
-If "\${name}" is itself a famous brand, product, company, character or real person, depict it recognizably through its iconic product, shape, outfit and signature colors. Otherwise read it as the everyday thing, material, creature, place or idea it names, not a company or logo that happens to share the name. Depict it as a single tangible object. Show it whole and intact, never broken, cracked or damaged unless the name says so. A substance, material or natural phenomenon is shown as the stuff itself, sculpted into one bold self-contained form such as a billowing puff, a splash, a droplet, a swirl or a chunk, not as a machine, vessel or scene that uses it. A soft brown substance such as mud, dirt or dough is a low, wide, flat glossy puddle, much wider than tall, never a mound, heap or pile. An abstract idea becomes the single simplest, most universally recognized physical object that evokes it. A famous person becomes a small stylized figurine bust with their most iconic attribute. A famous fictional character becomes a small figurine of that character with their signature look. A mythical or folklore creature is shown in a classic storybook way. A place or landmark becomes a tiny standalone model of it. A cosmic or celestial object becomes a compact sculpted model with its defining feature exaggerated and glowing softly. Only people and creatures have faces; never add eyes, a mouth, arms or hands to objects, substances, symbols, hearts or ideas.
+\${identity} Depict it as a single tangible object. Show it whole and intact, never broken, cracked or damaged unless the name says so. A substance, material or natural phenomenon is shown as the stuff itself, sculpted into one bold self-contained form such as a billowing puff, a splash, a droplet, a swirl or a chunk, not as a machine, vessel or scene that uses it. A soft brown substance such as mud, dirt or dough is a low, wide, flat glossy puddle, much wider than tall, never a mound, heap or pile. An abstract idea becomes the single simplest, most universally recognized physical object that evokes it. A famous person becomes a small stylized figurine bust with their most iconic attribute. A famous fictional character becomes a small figurine of that character with their signature look. A mythical or folklore creature is shown in a classic storybook way. A place or landmark becomes a tiny standalone model of it. A cosmic or celestial object becomes a compact sculpted model with its defining feature exaggerated and glowing softly. Only people and creatures have faces; never add eyes, a mouth, arms or hands to objects, substances, symbols, hearts or ideas.
 Composition: exactly one subject, perfectly centered, three-quarter front view, whole object visible with an even empty margin on all sides, filling about 70% of the square frame, nothing cropped. Chunky, simplified rounded forms with a few large shapes so it reads clearly at a tiny size.
 Style: soft 3D clay and ceramic, smooth fine-grained surface with only a subtle hand-pressed texture and no speckles, gentle glaze sheen, a clean thin dark warm-brown outline around the silhouette, soft warm studio key light from the upper left with a faint warm rim light on the edges, soft ambient occlusion.
 Color: the subject's own real-world signature color is its dominant body color, so blue things stay blue, green things stay green, grey things stay grey and white things stay cream-white, rendered as muted, warm-leaning ceramic glazes. Studio glaze accents — terracotta, burnt copper, verdigris teal, ochre gold, warm cream and deep umber — appear only as small trims and details, so not every object turns orange.
@@ -207,9 +207,20 @@ export function buildCombineRetry(reasons: string[], userMessage: string): strin
  * Tile art prompt. `hint` is the combine LLM's short visual description ("icon"), or the
  * element description for legacy rows; it disambiguates names like Steam, Apple or Mercury.
  */
-export function buildImagePrompt(name: string, hint: string | null): string {
+/**
+ * How to read the name. Only proper nouns ("notable": Taylor Swift, Coca-Cola) are drawn as the
+ * famous thing; everyday words that also name a character or brand (Storm, Lightning, Apple,
+ * Mercury) must stay literal, or the model draws the character and the output filter refuses it.
+ */
+const NOTABLE_IDENTITY =
+  '"${name}" is a specific, famous named thing (a person, character, brand, product, place, work or event): depict it recognizably through its iconic look, shape, outfit and signature colors.';
+const EVERYDAY_IDENTITY =
+  'Read "${name}" as the everyday thing, material, creature, place or idea it names, never as a person, character, company, product or logo that happens to share the name.';
+
+export function buildImagePrompt(name: string, hint: string | null, notable = false): string {
   const h = hint?.trim().replace(/[.\s]+$/, "");
-  return IMAGE_TEMPLATE.replaceAll("${name}", name)
+  return IMAGE_TEMPLATE.replaceAll("${identity}", notable ? NOTABLE_IDENTITY : EVERYDAY_IDENTITY)
+    .replaceAll("${name}", name)
     .replaceAll("${description}", h ? `It is ${h}.` : "")
     .replace(/[ \t]+\n/g, "\n");
 }

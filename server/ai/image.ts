@@ -52,9 +52,9 @@ async function render(prompt: string, safetyIdentifier: string): Promise<Generat
  * hint (legacy rows), a generic everyday-meaning phrase. A second refusal propagates as
  * Blocked, and only then is the element marked blocked.
  */
-export async function generate(name: string, hint: string | null, safetyIdentifier: string): Promise<GeneratedImage> {
+export async function generate(name: string, hint: string | null, notable: boolean, safetyIdentifier: string): Promise<GeneratedImage> {
   try {
-    return await render(buildImagePrompt(name, hint), safetyIdentifier);
+    return await render(buildImagePrompt(name, hint, notable), safetyIdentifier);
   } catch (e) {
     if (!(e instanceof Blocked)) throw e;
     return render(buildImagePromptFromHint(hint ?? genericImageHint(name)), safetyIdentifier);

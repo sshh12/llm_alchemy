@@ -16,7 +16,10 @@ export async function proposeElement(
   return env.aiMode === "mock" ? mockCombine(ingredientNames) : combine(ingredientNames, safetyIdentifier, avoid);
 }
 
-/** `hint`: the element's art hint (or description) to disambiguate the subject. */
-export async function paintElement(name: string, hint: string | null, safetyIdentifier: string): Promise<GeneratedImage> {
-  return env.aiMode === "mock" ? mockImage(name) : generate(name, hint, safetyIdentifier);
+/**
+ * `hint`: the element's art hint (or description) to disambiguate the subject. `notable`: a proper
+ * noun, drawn as the famous thing; everything else is drawn as the everyday thing it names.
+ */
+export async function paintElement(name: string, hint: string | null, notable: boolean, safetyIdentifier: string): Promise<GeneratedImage> {
+  return env.aiMode === "mock" ? mockImage(name) : generate(name, hint, notable, safetyIdentifier);
 }

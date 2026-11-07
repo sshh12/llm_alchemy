@@ -28,6 +28,7 @@ interface ArtRow {
   name: string;
   description: string | null;
   art_hint: string | null;
+  notable: boolean;
   status: string;
   image_status: string;
   image_key: string | null;
@@ -58,7 +59,7 @@ export async function requestImage(req: Request, context: Context): Promise<Resp
   const reply = (r: ImageResponse) => json(r);
 
   const el = await q1<ArtRow>(
-    `SELECT e.id, e.name, e.description, e.art_hint, e.status, e.image_status, e.image_key, e.image_attempts,
+    `SELECT e.id, e.name, e.description, e.art_hint, e.notable, e.status, e.image_status, e.image_key, e.image_attempts,
             COALESCE(e.image_lease_until > now(), false) AS leased,
             EXISTS (SELECT 1 FROM ${t("discoveries")} d WHERE d.player_id = $2 AND d.element_id = e.id) AS owned
        FROM ${t("elements")} e WHERE e.id = $1`,
@@ -105,7 +106,7 @@ export async function requestImage(req: Request, context: Context): Promise<Resp
   }
 
   try {
-    const art = await paintElement(el.name, el.art_hint ?? el.description, safetyId(player.id));
+    const art = await paintElement(el.name, el.art_hint ?? el.description, el.notable, safetyId(player.id));
     const imageKey = newImageKey(art.ext);
     await putArt(el.id, imageKey, art.bytes, art.contentType);
     await setOutcome(el.id, "ready", imageKey);
