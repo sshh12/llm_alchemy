@@ -19,11 +19,32 @@ export function slug(s: string): string {
     .slice(0, 80);
 }
 
+/**
+ * Wait (bounded) until no short enter/exit animation is mid-flight, so a screenshot shows the
+ * settled UI rather than a half-faded popover. Looping and long-running animations (breathing
+ * outlines, toast countdowns) are ignored, and nothing is fast-forwarded: app state is untouched.
+ */
+async function animationsSettled(page: Page): Promise<void> {
+  await page
+    .waitForFunction(
+      () =>
+        document.getAnimations().every((a) => {
+          if (a.playState !== "running") return true;
+          const t = a.effect?.getComputedTiming();
+          return !t || Number(t.endTime) - Number(t.localTime ?? 0) > 1_000;
+        }),
+      null,
+      { timeout: 1_500, polling: 50 },
+    )
+    .catch(() => {}); // a screenshot is evidence, not an assertion: never fail or hang on it
+}
+
 /** Screenshot to e2e/.artifacts/screens/<project>/<test>[--<step>].png and attach it to the report. */
 export async function snapshot(page: Page, testInfo: TestInfo, step?: string): Promise<string> {
   const base = slug(testInfo.title);
   const file = path.join(ARTIFACTS_PATH, "screens", testInfo.project.name, `${base}${step ? `--${slug(step)}` : ""}.png`);
   fs.mkdirSync(path.dirname(file), { recursive: true });
+  await animationsSettled(page);
   await page.screenshot({ path: file });
   await testInfo.attach(step ?? base, { path: file, contentType: "image/png" });
   return file;

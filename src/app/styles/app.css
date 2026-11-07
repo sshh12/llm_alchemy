@@ -570,7 +570,7 @@
     position: relative;
     isolation: isolate;
     padding: 14px 16px 18px;
-    max-width: 320px;
+    max-width: min(320px, 100%);
   }
   /* The dashed outline breathes gently; the content inside stays still. */
   .empty-zone::before {

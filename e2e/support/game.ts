@@ -218,20 +218,33 @@ export class Game {
     return p ? { x: p.x, y: p.y } : null;
   }
 
-  /** Center of a tile once its position stops changing (spawn/settle springs finished). */
+  /**
+   * Center of a tile once it has stopped moving. Spawn springs overshoot (a tapped tile flies
+   * past its spot and back) and pause for a moment at each turning point, so the tile must stay
+   * within half a pixel for longer than half a period of the bounciest spring, sampled every frame.
+   */
   async settledCenter(tile: Locator): Promise<Point> {
-    let prev: Point | null = null;
-    for (let i = 0; i < 40; i++) {
-      const box = await tile.boundingBox();
-      if (box) {
-        const c = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-        if (prev && Math.abs(prev.x - c.x) < 0.5 && Math.abs(prev.y - c.y) < 0.5) return c;
-        prev = c;
-      }
-      await this.page.waitForTimeout(50);
-    }
-    if (!prev) throw new Error(`${tile} never got a bounding box`);
-    return prev;
+    return tile.evaluate(
+      (el, { stillMs, timeoutMs }) =>
+        new Promise<Point>((resolve) => {
+          const start = performance.now();
+          let anchor: Point | null = null;
+          let stillSince = start;
+          const step = () => {
+            const b = el.getBoundingClientRect();
+            const c = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+            const now = performance.now();
+            if (!anchor || Math.abs(c.x - anchor.x) > 0.5 || Math.abs(c.y - anchor.y) > 0.5) {
+              anchor = c;
+              stillSince = now;
+            }
+            if (now - stillSince >= stillMs || now - start >= timeoutMs) resolve(c);
+            else requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        }),
+      { stillMs: 300, timeoutMs: 4_000 },
+    );
   }
 
   /** Drag a library element onto the canvas (empty spot or a point) and return its canvas tile. */

@@ -84,11 +84,6 @@ export const ShareIcon = (p: P) => (
     <path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />
   </Svg>
 );
-export const CheckIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="m5 12.5 4.5 4.5L19 7.5" />
-  </Svg>
-);
 /** A check that draws itself on mount (see .check-draw). */
 export const DrawnCheckIcon = (p: P) => (
   <Svg {...p} className={`check-draw ${p.className ?? ""}`}>

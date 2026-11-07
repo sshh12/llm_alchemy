@@ -2,7 +2,7 @@
 // tapped toast/feed item): description, rarity, how you made it, Add / Pin / Share /
 // Put away. Anchored next to the tile (Radix Popover with a virtual anchor).
 import { Popover } from "radix-ui";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { RARITY_LABEL } from "../../../shared/rarity.ts";
 import { formatDay } from "../../lib/format.ts";
 import { recipeCache } from "../../lib/recipes.ts";
@@ -19,6 +19,7 @@ export default function QuickActions() {
   const owned = useGame((s) => (details ? s.owned[details.elementId] : undefined));
   const pinned = useUi((s) => (details ? s.pins.has(details.elementId) : false));
   const [sharing, setSharing] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   const recipes = useMemo(() => (details ? recipeCache.recipesFor(details.elementId, 2) : []), [details]);
 
   const anchor = details?.anchor;
@@ -43,6 +44,7 @@ export default function QuickActions() {
       <Popover.Anchor virtualRef={virtualRef} />
       <Popover.Portal>
         <Popover.Content
+          ref={contentRef}
           className="popover"
           side={anchor ? "top" : "bottom"}
           align="center"
@@ -50,6 +52,11 @@ export default function QuickActions() {
           collisionPadding={12}
           aria-label={`${el.name} details`}
           data-testid="quick-actions"
+          onOpenAutoFocus={(e) => {
+            // Focus the menu itself (not the close button) so no focus ring flashes on open.
+            e.preventDefault();
+            contentRef.current?.focus({ preventScroll: true });
+          }}
         >
           <div className="relative flex gap-3 p-4 pb-3 pr-11">
             <Tile element={el} size={64} first={owned?.first} />

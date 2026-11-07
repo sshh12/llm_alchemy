@@ -111,7 +111,7 @@ export function LibraryEmpty({ compact }: { compact?: boolean }) {
     title = "Your library is empty.";
   }
   return (
-    <div className={compact ? "flex h-full items-center gap-3 px-4" : "px-6 py-8 text-center"}>
+    <div className={`reveal ${compact ? "flex h-full items-center gap-3 px-4" : "px-6 py-8 text-center"}`}>
       <div className={compact ? "min-w-0 flex-1" : ""}>
         <p className="font-semibold text-ink">{title}</p>
         {body && <p className="text-[14px] text-ink-muted">{body}</p>}

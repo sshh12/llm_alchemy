@@ -22,17 +22,19 @@ const WATER = demoEl("demo-water", "Water", "💧");
 const FIRE = demoEl("demo-fire", "Fire", "🔥");
 const STEAM = demoEl("demo-steam", "Steam", "♨️");
 const SIZE = 64;
+/** The static equation puts three tiles in a row, so it must fit narrow phone layouts. */
+const STATIC_SIZE = 56;
 
 export function GhostDemo({ className = "" }: { className?: string }) {
   const reduced = useReducedMotion();
   if (reduced) {
     return (
-      <div className={`demo flex items-center justify-center gap-3 ${className}`} aria-hidden="true">
-        <Tile element={WATER} size={SIZE} requestArt={false} />
+      <div className={`demo flex items-center justify-center gap-2 ${className}`} aria-hidden="true">
+        <Tile element={WATER} size={STATIC_SIZE} requestArt={false} />
         <span className="text-xl font-semibold text-ink-muted">+</span>
-        <Tile element={FIRE} size={SIZE} requestArt={false} />
+        <Tile element={FIRE} size={STATIC_SIZE} requestArt={false} />
         <span className="text-xl font-semibold text-ink-muted">=</span>
-        <Tile element={STEAM} size={SIZE} requestArt={false} />
+        <Tile element={STEAM} size={STATIC_SIZE} requestArt={false} />
       </div>
     );
   }

@@ -13,7 +13,6 @@ import path from "node:path";
 import type { BrowserContext, Request } from "@playwright/test";
 import type { BootstrapRequest, BootstrapResponse, Tier } from "../src/shared/api.ts";
 import { startLegacyServer, startOriginProxy, type RunningServer } from "./legacy-fixture/server.ts";
-import { E2E_PORT } from "./support/env.ts";
 import { Game } from "./support/game.ts";
 import { expect, snapshot, test } from "./support/test.ts";
 
@@ -28,10 +27,12 @@ test.describe("returning legacy player", () => {
     const user = fx.legacyUsers[device.index];
     if (!user) throw new Error(`fixtures.json needs a legacy user for project #${device.index} (${device.project})`);
     const port = LEGACY_PORT_BASE + device.index;
+    const use = testInfo.project.use;
+    // The proxy fronts whichever server the run targets (a config may point baseURL elsewhere).
+    const appPort = Number(new URL(use.baseURL!).port);
     // A short profile path: Chromium's Cache Storage nests deeply and silently fails to write
     // past Windows' 260-char path limit (the old worker would never finish installing).
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), `ia-legacy-${device.index}-`));
-    const use = testInfo.project.use;
     const launch = () =>
       playwright.chromium.launchPersistentContext(profile, {
         headless: use.headless ?? true,
@@ -73,7 +74,7 @@ test.describe("returning legacy player", () => {
       });
 
       // ---------------------------------------------------------------- B: same origin, now v2
-      servers.push(await startOriginProxy(port, E2E_PORT));
+      servers.push(await startOriginProxy(port, appPort));
       const ctx = await launch();
       contexts.push(ctx);
       const page = await firstPage(ctx);
@@ -201,6 +202,23 @@ test.describe("returning legacy player", () => {
         expect(JSON.parse(keys.elements!)).toEqual(user.elements);
         expect(keys.imported).not.toBeNull();
         await snapshot(page, testInfo, "C-second-reload");
+      });
+
+      await test.step("D: the adopted player keeps playing on the same origin and the result is saved", async () => {
+        const steam = fx.recipes.find((r) => r.result === "Steam");
+        expect(steam, "fixtures.json lists a recipe for Steam").toBeTruthy();
+        const res = await game.combineByTap(steam!.ingredients);
+        expect(res.result.name).toBe("Steam");
+        await game.dismissCelebrations(res);
+        const libraryAfter = boot.library.length + (res.newForPlayer ? 1 : 0);
+        await game.expectLibraryCount(libraryAfter);
+        await snapshot(page, testInfo, "D-combined");
+
+        const again = await game.reload();
+        expect(again.player.id).toBe(boot.player.id);
+        expect(again.legacyImport).toBeUndefined();
+        expect(again.library.map((e) => e.name)).toContain("Steam");
+        expect(again.library.length).toBe(libraryAfter);
       });
 
       expect(pageErrors, "uncaught errors in the page").toEqual([]);

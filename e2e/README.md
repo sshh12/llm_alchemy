@@ -6,7 +6,7 @@ that `scripts/seed-e2e.ts` writes into the `alchemy_e2e` schema. It never touche
 schema `alchemy` (see "Safety").
 
 ```
-npm run e2e                                   # everything, all projects (~3.5 min, 3 workers)
+npm run e2e                                   # everything, all projects (~4 min, 3 workers)
 npx playwright test --project=desktop-chrome  # one device
 npx playwright test e2e/legacy-player.spec.ts # the returning-legacy-player journey
 npx playwright show-report e2e/.artifacts/report
@@ -52,6 +52,7 @@ E2E_REUSE_SERVER=1 npm run e2e
 | `legacy-claim` | (desktop-chrome only; its own seeded legacy user) adopt-once: browser A adopts the legacy player and keeps its claim token (`ia:legacyClaim`, sent before the response); browser B with the same id and inventory gets a new player with a copy of the elements only (no firsts, no history, one `legacy-claimed` notice, no onboarding, nothing dated `now()`); a purge-quarantined (`review`) inventory element stays hidden but is kept in the library (read-only DB check); A with its cookie cleared re-adopts the same player with its token |
 | `resilience` | injected `rate_limited` / `budget_exhausted` combines and a rate-limited bootstrap: friendly copy, nothing lost, game recovers |
 | `layout` | no horizontal scroll, finger-sized key controls (44 px touch, 24 px mouse), canvas tiles in bounds and uncovered after rotate/resize |
+| `head-meta` | (desktop-chrome only) one title/description of search-friendly length, canonical, Open Graph/Twitter cards; the og:image exists at its advertised URL and size; manifest + every icon resolves as a real image of its declared size; font preloads; `robots.txt`, `llms.txt`, sitemap, `.well-known/ai-catalog.json`; every other sitemap page is a real, indexable, cookie-free page with its own canonical, a unique title/description and resolving og:image, stylesheet, fonts and icons; `/daily` names today's seeded targets; the 2023 `/manifest.json` and `/logo*.png` URLs 301 to the new files |
 | `transfer-qr` | (desktop-chrome + iphone-15) Settings shows the code as a QR `/#transfer=<code>` link (~200 px, whole-pixel modules) and Copy link copies it; a fresh device opening it bootstraps, sees the confirm (no onboarding), switches and has player A's library; the hash is gone at once; Cancel keeps the device's player; garbage gets the friendly error with no request; a forged code is refused after Switch; your own link only says you're already that player |
 
 Every test also fails on any uncaught page error.
@@ -75,6 +76,8 @@ Every test also fails on any uncaught page error.
    exactly one non-blocking welcome-back notice (the board is usable without dismissing it), no
    onboarding, and that a second reload sends no legacy payload, imports nothing and keeps the legacy
    keys untouched.
+4. The adopted player keeps playing on that origin: a combine through the proxy succeeds, and the
+   result is still in the library after a reload.
 
 ## Layout
 
@@ -90,7 +93,7 @@ e2e/support/test.ts           `test` with game/fixtures/device fixtures, screens
 e2e/support/node-api.ts       Node API client (PoW + bootstrap) used by the guard
 e2e/legacy-fixture/           fake 2023 app (index.html, main.legacy.js, service-worker.js) + server/proxy
 e2e/*.spec.ts                 the suites
-e2e/.artifacts/               screens/<project>/<test>--<step>.png, test-results (traces), report (gitignored)
+e2e/.artifacts/               screens/<project>/<test>--<step>.png (taken once short animations settle), test-results (traces), report (gitignored)
 ```
 
 ## Safety
@@ -99,14 +102,19 @@ e2e/.artifacts/               screens/<project>/<test>--<step>.png, test-results
   then calls the running server's `/api/bootstrap` without a cookie and **aborts the run** unless
   the PoW challenge asks for exactly 8 bits (the server got the E2E env) and the world it reports is
   the small seeded one (it reads `alchemy_e2e`, not the production world).
-- Each test is a fresh browser context, i.e. a fresh anonymous player (~47 players per full run,
-  under the server's 60/hour per-IP creation limit; the reseed also clears the e2e counters).
+- Each test is a fresh browser context, i.e. a fresh anonymous player (59 players per full run,
+  one under the server's 60/hour per-IP creation limit; the reseed also clears the e2e counters).
+  A new suite that creates players must stay inside that budget: past it, the last tests to run
+  get `429` on bootstrap ("Lots of alchemists right now").
 - Tests that need a "first discovery" claim a distinct `unknownCombos` entry per project, so projects
   never race. Retries are off: a retried first discovery would no longer be first. The same goes
   for legacy players: one can be adopted once per reseed (adopt-once), so a rerun of
   `legacy-player` or `legacy-claim` needs a reseed. Adoption attempts are limited to 10/hour per IP
   (`adopt.ip`); a run uses 8 (one per project in `legacy-player`, four in `legacy-claim`, whose
   second browser also creates one player).
+- One run at a time per machine, even against different servers: every run reseeds the shared
+  `alchemy_e2e` schema (deleting the other run's players, so their sessions answer `pow_required`),
+  the per-IP creation limit is shared, and the legacy journey binds ports 8890-8893.
 
 ## Contract with the app: `data-testid`s
 
