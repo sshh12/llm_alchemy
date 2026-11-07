@@ -100,17 +100,41 @@ interface Outcome {
 /** A concurrent request wrote the same recipe or element name; re-run the transaction. */
 class Raced extends Error {}
 
+/**
+ * Reactivate an element that a purge quarantined only because it became unreachable from the
+ * starters (quarantine_reason 'orphaned', scripts/purge-elements.ts). Any other quarantined row
+ * (legacy spam, review-purged junk) is left alone and undefined is returned.
+ */
+async function reviveOrphan(c: Queryable, id: string): Promise<ResultRow | undefined> {
+  try {
+    return await q1<ResultRow>(
+      `UPDATE ${t("elements")} AS e SET status = 'active', quarantine_reason = NULL, purge_run = NULL
+        WHERE e.id = $1 AND e.status = 'quarantined' AND e.quarantine_reason = 'orphaned'
+        RETURNING ${RESULT_COLS}`,
+      [id],
+      c,
+    );
+  } catch (e) {
+    // undefined_column: migration 0004 is not applied yet, so nothing can be orphaned.
+    if ((e as { code?: string }).code === "42703") return undefined;
+    throw e;
+  }
+}
+
 /** Resolve the proposal to an element row: exact name, then a near-identical (folded) name, else insert. */
-async function resolveElement(
+export async function resolveElement(
   c: pg.PoolClient,
   proposal: ElementProposal,
   cost: { depth: number | null; steps: number | null },
   playerId: string,
 ): Promise<{ element: ResultRow; inserted: boolean }> {
   const byKey = await q1<ResultRow>(`SELECT ${RESULT_COLS} FROM ${t("elements")} e WHERE e.name_key = $1`, [proposal.key], c);
-  // Quarantined names (legacy spam / blocklisted) are never resurrected.
-  if (byKey && byKey.status !== "active") throw new Fizzled(`"${proposal.name}" is quarantined`);
+  // Quarantined names (legacy spam / blocklisted / purged junk) are never resurrected; only
+  // elements a purge orphaned come back when the model names them again.
+  const revived = byKey && byKey.status !== "active" ? await reviveOrphan(c, byKey.id) : undefined;
+  if (byKey && byKey.status !== "active" && !revived) throw new Fizzled(`"${proposal.name}" is quarantined`);
   const existing =
+    revived ??
     byKey ??
     (await q1<ResultRow>(
       `SELECT ${RESULT_COLS} FROM ${t("elements")} e WHERE e.fold_key = $1 AND e.status = 'active' ORDER BY e.id LIMIT 1`,

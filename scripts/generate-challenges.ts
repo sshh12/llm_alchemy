@@ -81,12 +81,12 @@ export function printPools(pools: Record<Tier, TierPool>, stats: Record<Tier, Po
   }
 }
 
-interface InsertRow {
+export interface InsertRow {
   day: string;
   t: DayTargets;
 }
 
-async function insertDays(db: pg.Pool | pg.PoolClient, schema: string, rows: InsertRow[], steps: Map<string, number | null>): Promise<number> {
+export async function insertDays(db: pg.Pool | pg.PoolClient, schema: string, rows: InsertRow[], steps: Map<string, number | null>): Promise<number> {
   let inserted = 0;
   for (const batch of chunk(rows, 1_000)) {
     const res = await db.query(
@@ -110,7 +110,7 @@ async function insertDays(db: pg.Pool | pg.PoolClient, schema: string, rows: Ins
   return inserted;
 }
 
-async function completionsFrom(db: pg.Pool | pg.PoolClient, schema: string, from: string): Promise<number> {
+export async function completionsFrom(db: pg.Pool | pg.PoolClient, schema: string, from: string): Promise<number> {
   const res = await db.query<{ n: string }>(`SELECT count(*) AS n FROM ${schema}.challenge_completions WHERE day >= $1::DATE`, [from]);
   return Number(res.rows[0]!.n);
 }

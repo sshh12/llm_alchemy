@@ -83,5 +83,27 @@ export async function retrying<T>(label: string, fn: () => Promise<T>, attempts 
   }
 }
 
+/**
+ * Run `fn` in one transaction. The whole transaction is retried on transient errors (40001,
+ * 40003, connection resets; see `retrying`), so `fn` must be idempotent and must not call
+ * external services.
+ */
+export async function withTx<T>(pool: pg.Pool, label: string, fn: (c: pg.PoolClient) => Promise<T>): Promise<T> {
+  return retrying(label, async () => {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const out = await fn(client);
+      await client.query("COMMIT");
+      return out;
+    } catch (e) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw e;
+    } finally {
+      client.release();
+    }
+  });
+}
+
 /** Format integers with thousands separators for logs. */
 export const fmt = (n: number) => n.toLocaleString("en-US");

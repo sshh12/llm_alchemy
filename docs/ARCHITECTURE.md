@@ -24,7 +24,7 @@ session, client-side recipe cache, CDN-cached images, and rate limits in front o
 
 ```
 db/migrations/*.sql          versioned idempotent SQL ({{schema}} placeholder)          (db)
-scripts/                     migrate, backfill-legacy, generate-challenges, enrich-elements, seed-e2e (db)
+scripts/                     migrate, backfill-legacy, generate-challenges, enrich-elements, classify-recognizable, purge-elements, seed-e2e (db)
 server/                      backend modules shared by functions                       (server)
   env.ts db.ts http.ts session.ts ratelimit.ts pow.ts blobs.ts
   ai/llm.ts ai/image.ts ai/mock.ts ai/prompts.ts
@@ -46,6 +46,8 @@ See `db/migrations/0001_init.sql`. Key rules:
   lets a new LLM answer like "time-travel" reuse an existing "time travel".
 - `status = 'quarantined'` elements (legacy spam) are kept so every legacy id still maps,
   but they are never shown, never combinable, and never challenge targets.
+  `quarantine_reason` says why: `legacy-filter` (backfill), `review` (purged junk) or
+  `orphaned` (cut off by a purge; see "Element purge").
 - **Recipes** are keyed by `ingredient_ids` = the ingredient multiset sorted ascending
   **numerically** (BigInt compare; duplicates kept). Once active, a recipe's result never
   changes — this guarantees daily challenges stay solvable. A recipe whose stored result is
@@ -163,6 +165,32 @@ fades it in. Tiles use `/.netlify/images?url=<img>&w=192&h=192&fit=contain` and 
 - Challenge completions: OR-merged per (user, day), only rows with a completion.
 - Challenges: legacy days before the cutover copied as-is.
 - Emails, credits, and visit-only rows are not migrated.
+
+## Element purge (`npm run db:purge`, `scripts/purge-elements.ts`)
+
+Soft delete of junk names the 2023-2025 model produced ("Doublepanoramajungle"), decided by
+two review passes of small models and never by the script itself:
+
+1. `export --out <dir>` writes `batch-NNN.jsonl` (`{id, name, depth, made_from}`, every active
+   non-starter outside the never-purge set) and `manifest.json`.
+2. Reviewers run `stage --pass review --batch <n> --file <verdicts.json> --manifest <dir>/manifest.json`
+   (`[{"id":"…","verdict":"purge"|"keep","reason":"…"}]`, all-or-nothing, idempotent) into
+   `purge_review`; a second `verify` pass (`export --pass verify`) re-judges the review's purges.
+3. `plan` (read-only) = review purge AND verify purge, minus the never-purge set (starters, every
+   challenge target, the shortest derivations of the targets of every day that is "today"
+   somewhere, protected recipes' elements), plus the cascade: active elements that were reachable
+   from the starters and are not any more become `orphaned` (already-unreachable ones are left
+   alone; never-purge ones are kept and reported). `--no-cascade` keeps those survivors active but
+   unreachable instead (used for the first production run: most "orphans" were real names that
+   only junk happened to lead to). Recipes whose result is removed are quarantined
+   unless protected (the next combine heals them); recipes using a removed element are quarantined.
+4. `apply --plan` re-validates, quarantines in batched transactions (run id `purge-YYYYMMDD-HHMMSS`
+   in `elements/recipes.purge_run`, summary in meta `purge:<id>`), recomputes depth/steps, and
+   re-picks generated days after the live window whose targets the purge made inactive or moved
+   out of their BFS-tier pool. `restore --run <id>` reverses a run (re-picked days stay).
+
+Combine reactivates an `orphaned` element when the model names it again; any other quarantined
+name still fizzles.
 
 ## Testing
 
