@@ -44,9 +44,10 @@ export interface LegacyClaim {
  * Adopt-once. The 2023 app published every element's creator id, so a legacy user id is not a
  * secret: the first browser to present it binds the player (storing the sha256 of its claim
  * token), and afterwards only a request carrying that same token adopts it again (a retry whose
- * response was lost, or the same browser after its cookie was cleared). Players that already
- * played v2 (last_seen_at set; e.g. adopted by the earlier code) are never adopted again. One
- * atomic statement, so two racing browsers cannot both win.
+ * response was lost, or the same browser after its cookie was cleared). Players the earlier code
+ * already adopted (it always imported: legacy_imported_at set) are never adopted again. A player
+ * only reached via a transfer code (e.g. the owner peeking) stays claimable by its original
+ * browser. One atomic statement, so two racing browsers cannot both win.
  */
 export async function claimLegacyPlayer(legacyUserId: string, claimHash: string | null): Promise<LegacyClaim> {
   const player = await q1<PlayerRow>(
@@ -55,7 +56,7 @@ export async function claimLegacyPlayer(legacyUserId: string, claimHash: string 
             legacy_claim_hash = COALESCE(legacy_claim_hash, $2::STRING),
             last_seen_at = now()
       WHERE legacy_user_id = $1
-        AND ((legacy_claimed_at IS NULL AND last_seen_at IS NULL)
+        AND ((legacy_claimed_at IS NULL AND legacy_imported_at IS NULL)
           OR (legacy_claim_hash IS NOT NULL AND legacy_claim_hash = $2::STRING))
       RETURNING ${PLAYER_COLS}`,
     [legacyUserId, claimHash],

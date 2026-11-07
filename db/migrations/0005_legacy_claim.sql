@@ -7,7 +7,9 @@
 ALTER TABLE {{schema}}.players ADD COLUMN IF NOT EXISTS legacy_claimed_at TIMESTAMPTZ NULL;
 ALTER TABLE {{schema}}.players ADD COLUMN IF NOT EXISTS legacy_claim_hash STRING NULL;
 
--- Legacy players that were already adopted (or imported into) by the earlier code are bound,
--- without a claim hash: their current sessions keep working, nobody can adopt them again.
-UPDATE {{schema}}.players SET legacy_claimed_at = COALESCE(last_seen_at, legacy_imported_at)
- WHERE legacy_user_id IS NOT NULL AND legacy_claimed_at IS NULL AND (last_seen_at IS NOT NULL OR legacy_imported_at IS NOT NULL);
+-- Legacy players that were already adopted through the legacy flow by the earlier code (it
+-- always imported) are bound, without a claim hash: their sessions keep working, nobody can
+-- adopt them again. Players only reached via a transfer code stay claimable by their original
+-- browser, so the real early player still gets their firsts back.
+UPDATE {{schema}}.players SET legacy_claimed_at = legacy_imported_at
+ WHERE legacy_user_id IS NOT NULL AND legacy_claimed_at IS NULL AND legacy_imported_at IS NOT NULL;
