@@ -17,6 +17,8 @@ export const E2E_ENV = {
   AI_MODE: "mock",
   DB_SCHEMA: E2E_SCHEMA,
   POW_BITS: String(E2E_POW_BITS),
+  // A full run creates ~60 players from one IP; production keeps the default of 60/hour.
+  CREATE_IP_HOURLY: "1000",
 } as const;
 
 /**

@@ -53,7 +53,8 @@ const rule = (name: string, limit: number, windowMs: number): Limit => ({ name, 
 
 export const LIMITS = {
   bootstrapIp: rule("bootstrap.ip", 600, HOUR),
-  createIp: rule("create.ip", 60, HOUR),
+  // CREATE_IP_HOURLY lets the e2e environment (one IP, ~60 players per full run) raise this.
+  createIp: rule("create.ip", Number(process.env.CREATE_IP_HOURLY) || 60, HOUR),
   createIpDay: rule("create.ip.day", 300, DAY),
   adoptIp: rule("adopt.ip", 10, HOUR),
   combinePlayer: rule("combine.player", 60, MIN),
