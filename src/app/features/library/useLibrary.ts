@@ -30,12 +30,15 @@ export function useLibraryList(): ElementId[] {
     const name = (id: ElementId) => els[id]!.name;
     const time = (id: ElementId) => Date.parse(owned[id]!.discoveredAt) || 0;
     const rank = (id: ElementId) => RARITY_ORDER.indexOf(els[id]!.rarity);
+    // Within a tier, deeper is rarer. Starters are always the least rare; elements whose depth
+    // is unknown (no current path from the starters) sit just above them.
+    const depth = (id: ElementId) => (els[id]!.starter ? -1 : (els[id]!.depth ?? 0.5));
     const byName = (a: ElementId, b: ElementId) => name(a).localeCompare(name(b));
     const bySort =
       sort === "az"
         ? byName
         : sort === "rarity"
-          ? (a: ElementId, b: ElementId) => rank(b) - rank(a) || byName(a, b)
+          ? (a: ElementId, b: ElementId) => rank(b) - rank(a) || depth(b) - depth(a) || byName(a, b)
           : (a: ElementId, b: ElementId) => time(b) - time(a) || byName(a, b);
     return ids.sort((a, b) => {
       if (q) {
