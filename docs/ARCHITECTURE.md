@@ -157,6 +157,8 @@ Errors use `ApiError` with the right HTTP status (400/401/403/404/429/503/422).
    generations per 30 days, which keeps image work inside the Netlify Starter plan's 100
    function-hours/month; raise it after a plan upgrade). Over budget → combine of *known*
    recipes still works; new recipes return `budget_exhausted`; images return `deferred`.
+   Budgets are charged only after the per-player/per-IP limits pass (and, for new players,
+   after the PoW salt is spent), so rejected requests never consume them.
 4. PoW on player creation; per-IP creation limits; global daily player cap.
 5. Ingredient ownership is enforced, so automation must play legitimately to reach new recipes.
 6. Images are only generated for elements the player owns or today's challenge targets,

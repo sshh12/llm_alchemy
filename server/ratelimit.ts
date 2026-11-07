@@ -3,8 +3,11 @@
 // of these; these add per-player limits, longer windows and money budgets.
 //
 // A request "hits" several limits at once with ONE multi-row upsert statement (single
-// round trip, retried server-side by CockroachDB). Rejected attempts still count, which
-// is intentional: hammering keeps you limited. Rows expire via row-level TTL.
+// round trip, retried server-side by CockroachDB). Rejected attempts still count toward the
+// per-player/per-IP limits, which is intentional: hammering keeps you limited. Global budgets
+// are charged only once those pass (a second round trip, only where a request carries both:
+// new recipes and image generations), so a request the local limits reject never spends
+// budget. Rows expire via row-level TTL.
 //
 // Limits (subject = player id or keyed hash of the client /64 or IPv4 address):
 //
@@ -120,8 +123,23 @@ export function evaluate(hits: Hit[], counts: Map<string, number>, nowMs: number
   return worst;
 }
 
-/** Increment every counter in one statement and report whether all limits still hold. */
+export const isBudget = (l: Limit): boolean => l.name.startsWith("budget.");
+
+/**
+ * Increment the counters and report whether all limits still hold. Per-player/per-IP limits
+ * are charged and checked first; global budgets only when they pass, so rejected requests
+ * never consume budget.
+ */
 export async function hit(hits: Hit[], nowMs = Date.now()): Promise<HitResult> {
+  const local = hits.filter((h) => !isBudget(h.limit));
+  const global = hits.filter((h) => isBudget(h.limit));
+  if (local.length === 0 || global.length === 0) return hitAll(hits, nowMs);
+  const r = await hitAll(local, nowMs);
+  return r.ok ? hitAll(global, nowMs) : r;
+}
+
+/** Increment every counter in one statement and report whether all limits still hold. */
+async function hitAll(hits: Hit[], nowMs: number): Promise<HitResult> {
   if (hits.length === 0) return { ok: true };
   const rows = new Map<string, { cost: number; expiresAt: string }>();
   for (const h of hits) {
@@ -146,7 +164,7 @@ export async function hit(hits: Hit[], nowMs = Date.now()): Promise<HitResult> {
 export async function enforce(hits: Hit[], nowMs = Date.now()): Promise<void> {
   const r = await hit(hits, nowMs);
   if (r.ok) return;
-  throw r.limit.name.startsWith("budget.") ? errors.budgetExhausted(r.retryAfterMs) : errors.rateLimited(r.retryAfterMs);
+  throw isBudget(r.limit) ? errors.budgetExhausted(r.retryAfterMs) : errors.rateLimited(r.retryAfterMs);
 }
 
 /** Single-use token: true the first time `token` is seen within `ttlMs`. */

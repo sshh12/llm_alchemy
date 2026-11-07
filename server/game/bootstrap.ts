@@ -48,7 +48,10 @@ const POW_MESSAGES: Record<Exclude<PowCheck, "ok">, string> = {
   replayed: "Proof-of-work challenge was already used.",
 };
 
-/** New players must present a fresh, unspent PoW solution and fit the creation limits. */
+/**
+ * New players must present a fresh, unspent PoW solution and fit the creation limits. The
+ * global player budget is charged last, so a replayed salt or an over-limit IP never spends it.
+ */
 async function createWithPow(pow: PowSolution | undefined, ip: string): Promise<PlayerRow> {
   if (!pow) throw errors.powRequired(issuePow());
   const stateless = checkPowSolution(pow);
@@ -56,10 +59,10 @@ async function createWithPow(pow: PowSolution | undefined, ip: string): Promise<
   await enforce([
     { limit: LIMITS.createIp, subject: ip },
     { limit: LIMITS.createIpDay, subject: ip },
-    { limit: BUDGETS.players, subject: "all" },
   ]);
   const spent = await verifyPow(pow);
   if (spent !== "ok") throw errors.powRequired(issuePow(), POW_MESSAGES[spent]);
+  await enforce([{ limit: BUDGETS.players, subject: "all" }]);
   return createPlayer(ip);
 }
 
