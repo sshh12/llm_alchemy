@@ -7,7 +7,8 @@ import { ELEMENT_COLS, isElementId, type ElementRow, type LibraryRow } from "./d
 /** Imports allowed per player (the client imports once; this tolerates a couple of retries). */
 export const MAX_LEGACY_IMPORTS = 3;
 
-const LEGACY_USER_RE = /^alchemy:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/** 'alchemy:<uuid>', or a bare <uuid> for the earliest players (the prefix arrived 2023-05-23). */
+const LEGACY_USER_RE = /^(?:alchemy:)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export function isLegacyUserId(s: unknown): s is string {
   return typeof s === "string" && LEGACY_USER_RE.test(s);

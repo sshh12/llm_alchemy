@@ -7,8 +7,12 @@ import { CHALLENGE_CUTOVER_DAY } from "../../src/shared/dates.ts";
 import { checkName, foldKey, nameKey, titleCase } from "../../src/shared/names.ts";
 import { computeDepthSteps, derivationClosure, sortIds, type GraphRecipe } from "./graph.ts";
 
-/** Valid legacy user ids ('alchemy:' + lowercase UUID shape); everything else is junk. */
-export const LEGACY_USER_RE = /^alchemy:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/**
+ * Valid legacy user ids: 'alchemy:' + lowercase UUID, or a bare UUID for the earliest
+ * players (the app added the prefix on 2023-05-23; existing players kept their bare id).
+ * Everything else is junk.
+ */
+export const LEGACY_USER_RE = /^(?:alchemy:)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export const STARTER_EMOJI: Record<string, string> = { earth: "🌍", water: "💧", air: "💨", fire: "🔥", time: "⏳" };
 

@@ -129,6 +129,24 @@ async function writePlan(pool: pg.Pool, schema: string, plan: Plan, sample: numb
   );
   written.push({ table: "elements", planned: elements.length, existing: elements.length - newElements.length, inserted: insertedElements });
 
+  // Discoverer credit for rows that already existed when their creator became a known
+  // player (e.g. the earliest players, whose ids predate the 'alchemy:' prefix).
+  // Never overwrites an existing credit.
+  const credit = elements.filter((e) => existingElements.has(e.id) && e.creator && playerId.has(e.creator));
+  let credited = 0;
+  for (const batch of chunk(credit, 5_000)) {
+    const res = await retrying("elements.discovered_by", () =>
+      pool.query(
+        `UPDATE ${S}.elements AS e SET discovered_by = u.p
+           FROM unnest($1::INT8[], $2::INT8[]) AS u(id, p)
+          WHERE e.id = u.id AND e.discovered_by IS NULL`,
+        [batch.map((e) => e.id), batch.map((e) => playerId.get(e.creator!)!)],
+      ),
+    );
+    credited += res.rowCount ?? 0;
+  }
+  written.push({ table: "elements.discovered_by", planned: credit.length, existing: credit.length - credited, inserted: credited });
+
   // ---- legacy id map
   step("legacy_element_map");
   const existingMap = new Set((await pool.query<{ legacy_id: string }>(`SELECT legacy_id FROM ${S}.legacy_element_map`)).rows.map((r) => r.legacy_id));

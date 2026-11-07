@@ -22,7 +22,9 @@ describe("helpers", () => {
     expect(LEGACY_USER_RE.test(U1)).toBe(true);
     expect(LEGACY_USER_RE.test("alchemy:score 5")).toBe(false);
     expect(LEGACY_USER_RE.test(U1.toUpperCase())).toBe(false);
-    expect(LEGACY_USER_RE.test(U1.slice("alchemy:".length))).toBe(false);
+    // The earliest players (before 2023-05-23) have bare UUIDs.
+    expect(LEGACY_USER_RE.test(U1.slice("alchemy:".length))).toBe(true);
+    expect(LEGACY_USER_RE.test(`x${U1.slice("alchemy:".length)}`)).toBe(false);
   });
 });
 
