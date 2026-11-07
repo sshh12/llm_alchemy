@@ -1,6 +1,6 @@
 # Infinite Alchemy
 
-> Infinite Alchemy is a free, AI-powered element-combining game that runs in the browser. Start with Earth, Water, Air, Fire and Time and combine them into anything: an AI names every new element and paints it in a handmade clay style. Live since May 2023, inspired by Little Alchemy, rebuilt from scratch in 2026.
+> Infinite Alchemy is a free, AI-powered element-combining game that runs in the browser. Start with Earth, Water, Air, Fire and Time and combine them into anything: an AI names every new element and paints it in a handmade clay style. Inspired by Little Alchemy.
 
 Play at https://alchemy.sshh.io/ (free, no account, works on phones, tablets and desktops; needs JavaScript).
 
@@ -22,7 +22,7 @@ Play at https://alchemy.sshh.io/ (free, no account, works on phones, tablets and
 
 - [Play Infinite Alchemy](https://alchemy.sshh.io/)
 - [Source code on GitHub (MIT)](https://github.com/sshh12/llm_alchemy): README and docs/ARCHITECTURE.md
-- [The 2023 launch story](https://blog.sshh.io/p/infinite-alchemy)
+- [The launch story](https://blog.sshh.io/p/infinite-alchemy)
 - [Sitemap](https://alchemy.sshh.io/sitemap.xml)
 
 ## Credits
