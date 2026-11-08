@@ -158,9 +158,12 @@ async function renderShareCard({ element, recipe, first, at }: ShareInput): Prom
 
 export type ShareOutcome = "shared" | "downloaded" | "cancelled" | "failed";
 
-export async function shareElement(input: ShareInput): Promise<ShareOutcome> {
+/** Where the share started: an element's details, or the world-first celebration card. */
+export type ShareSurface = "details" | "celebration";
+
+export async function shareElement(input: ShareInput, surface: ShareSurface): Promise<ShareOutcome> {
   const outcome = await shareCard(input);
-  track("share", { outcome, first: !!input.first });
+  track("share", { outcome, first: !!input.first, surface });
   return outcome;
 }
 

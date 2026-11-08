@@ -304,12 +304,29 @@ Two sources, used together. Neither may ever affect gameplay (failures are swall
     `public/*.html`) stores `ia:acq` in localStorage on the first page with an external (or no)
     referrer; bootstrap sends it and the server drops anything malformed (never a 400).
   - Already there: `discoveries.discovered_at` (new elements), `challenge_completions`, `elements.discovered_by`.
-- **Google Analytics 4** (`G-PYCZGBX322`, production host only, `src/app/lib/analytics.ts`).
-  `user_id` = `players.public_id` (random UUID) and user property `legacy_player`, so a GA export
-  joins to the DB. Events: `app_ready` (`pow` = brand-new player, `boot_ms`), `load_failed`,
-  `combine`, `combine_failed` (`code`), `first_combine` (once per session = activation),
-  `discovery`, `first_discovery`, `challenge_complete`, `share`, `custom_sort`. Event params
-  are only queryable in GA reports/API once registered as custom dimensions/metrics.
+- **Google Analytics 4** (property `377917905`, stream `G-PYCZGBX322`, production host only,
+  `src/app/lib/analytics.ts`). `user_id` = `players.public_id` (random UUID) and user property
+  `legacy_player`, so a GA export joins to the DB. Params are only queryable in GA reports/API
+  once registered as custom dimensions/metrics. Key events: `first_combine`, `challenge_complete`.
+  Event semantics (count with these in mind):
+  - `app_ready`: bootstrap succeeded and the game is playable. `pow` = this load created the
+    player (brand-new), `boot_ms` = navigation start to playable, `elements` = library size.
+    `load_failed` (`code`) is the failure counterpart.
+  - `combine`: a **successful** combine, once per result. `cached` = answered from the client's
+    recipe cache (no request), `new` = new for this player. A failed attempt is `combine_failed`
+    (`code` = ApiFailure code or `network`) instead, so attempts = `combine` + `combine_failed`.
+  - `first_combine`: the first successful combine **per browser-tab session** (sessionStorage),
+    i.e. an activated session, not once per player. Player activation = new users (or
+    `app_ready.pow`) who reach it.
+  - `discovery`: a combine whose result is new for this player (`first` = also a world-first).
+    `first_discovery` = a **world-first** (no player made this element before), not the player's
+    first discovery; it fires alongside `discovery` with `first: true`.
+  - `challenge_complete`: once per player per day per tier (`tier` = easy/hard/expert; the server
+    dedupes on `challenge_completions`). One player finishing all three tiers = 3 events.
+  - `share`: `surface` (details/celebration), `outcome` (shared/downloaded/cancelled/failed), `first`.
+  - `custom_sort`: see "Custom sort".
+  - `challenge_complete_easy|hard|expert`, `element_combined` and `element_cleared` come from the
+    2023 app (replaced 2026-11-06), not this code; they only appear in history.
 
 ## Testing
 

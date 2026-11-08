@@ -127,7 +127,10 @@ export default function QuickActions() {
             disabled={sharing}
             onClick={async () => {
               setSharing(true);
-              const outcome = await shareElement({ element: el, recipe: recipes[0] ? recipeLabel(recipes[0]) : undefined, first: owned?.first, at: owned?.discoveredAt });
+              const outcome = await shareElement(
+                { element: el, recipe: recipes[0] ? recipeLabel(recipes[0]) : undefined, first: owned?.first, at: owned?.discoveredAt },
+                "details",
+              );
               setSharing(false);
               if (outcome === "downloaded") showToast({ kind: "info", text: "Card saved, and the link is copied.", duration: 3_500 });
               close();

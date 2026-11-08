@@ -46,7 +46,7 @@ function FirstCard({ c }: { c: Extract<Celebration, { kind: "first" }> }) {
   const recipe = recipeLabel(c.ingredients);
   const share = async () => {
     setSharing(true);
-    const outcome = await shareElement({ element: el, recipe, first: true, at: c.at });
+    const outcome = await shareElement({ element: el, recipe, first: true, at: c.at }, "celebration");
     setSharing(false);
     if (outcome === "downloaded") showToast({ kind: "info", text: "Card saved, and the link is copied to your clipboard.", duration: 4_000 });
     if (outcome === "failed") showToast({ kind: "error", text: "Couldn't create the share card.", duration: 4_000 });
