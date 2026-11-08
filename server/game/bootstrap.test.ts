@@ -144,3 +144,28 @@ describe("player creation", () => {
     expect(m.createPlayer).not.toHaveBeenCalled();
   });
 });
+
+describe("first-touch acquisition", () => {
+  const acq = { ref: "www.google.com", path: "/how-to-play", src: "hn", med: null, cmp: null };
+
+  it("stores it on the player this bootstrap creates", async () => {
+    const res = await call({ acq });
+    expect(res.status).toBe(200);
+    expect(m.createPlayer).toHaveBeenCalledWith(expect.any(String), acq);
+  });
+
+  it("drops a malformed or oversized value instead of failing the bootstrap", async () => {
+    for (const bad of [{ ref: 1, path: "/" }, { ref: "x", path: "/".repeat(500) }, "nope", null]) {
+      const res = await call({ acq: bad });
+      expect(res.status).toBe(200);
+      expect(m.createPlayer).toHaveBeenLastCalledWith(expect.any(String), undefined);
+    }
+  });
+
+  it("is ignored for an existing player", async () => {
+    m.sessionPlayer.mockResolvedValue(freshRow);
+    const res = await call({ acq });
+    expect(res.status).toBe(200);
+    expect(m.createPlayer).not.toHaveBeenCalled();
+  });
+});

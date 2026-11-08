@@ -2,20 +2,23 @@
 // library, stats, today's challenge, history and the "fresh from the lab" feed.
 // Elements are normalized by id so art updates touch exactly one record.
 import { create } from "zustand";
-import { track } from "../lib/analytics.ts";
-import type {
-  BootstrapResponse,
-  ChallengeHistoryDay,
-  CombineResponse,
-  DailyChallengeDTO,
-  ElementDTO,
-  ElementId,
-  Stats,
-  Tier,
+import { identify, track } from "../lib/analytics.ts";
+import {
+  ACQ_MAX,
+  type Acquisition,
+  type BootstrapResponse,
+  type ChallengeHistoryDay,
+  type CombineResponse,
+  type DailyChallengeDTO,
+  type ElementDTO,
+  type ElementId,
+  type Stats,
+  type Tier,
 } from "../../shared/api.ts";
 import { localDay } from "../../shared/dates.ts";
 import { ApiFailure, bootstrap, type FailureCode } from "../lib/api.ts";
 import { markLegacyImported, readLegacy } from "../lib/legacy.ts";
+import { KEYS, readJSON } from "../lib/storage.ts";
 
 export interface Owned {
   discoveredAt: string;
@@ -75,13 +78,33 @@ function withElements(map: Record<ElementId, ElementDTO>, list: readonly Element
   return out;
 }
 
+/** First-touch acquisition recorded by the page head, cleaned to the server's caps (or undefined). */
+function readAcquisition(): Acquisition | undefined {
+  const raw = readJSON<Record<string, unknown> | null>(KEYS.acq, null);
+  if (!raw || typeof raw !== "object" || typeof raw.path !== "string") return undefined;
+  const str = (v: unknown, max: number) => (typeof v === "string" && v ? v.slice(0, max) : null);
+  return {
+    ref: str(raw.ref, ACQ_MAX.ref) ?? "",
+    path: raw.path.slice(0, ACQ_MAX.path),
+    src: str(raw.src, ACQ_MAX.utm),
+    med: str(raw.med, ACQ_MAX.utm),
+    cmp: str(raw.cmp, ACQ_MAX.utm),
+  };
+}
+
 export async function bootGame(): Promise<void> {
   const legacy = readLegacy();
+  const acq = readAcquisition();
   const day = localDay();
+  let pow = false;
   useGame.setState({ status: "booting", bootError: null });
   try {
-    const res = await bootstrap({ clientDate: day, ...(legacy ? { legacy: legacy.payload } : {}) }, () =>
-      useGame.setState({ powSolving: true }),
+    const res = await bootstrap(
+      { clientDate: day, ...(legacy ? { legacy: legacy.payload } : {}), ...(acq ? { acq } : {}) },
+      () => {
+        pow = true;
+        useGame.setState({ powSolving: true });
+      },
     );
     let legacyWelcome: GameState["legacyWelcome"] = null;
     if (legacy && res.legacyImport) {
@@ -113,7 +136,15 @@ export async function bootGame(): Promise<void> {
       day,
       legacyWelcome,
     });
-    track("app_ready", { returning_legacy: !!legacyWelcome, elements: res.library.length });
+    identify(res.player.id, { legacy: res.player.legacy });
+    // pow: this load created the player (only creation asks for proof-of-work), so it marks a
+    // brand-new player. boot_ms: navigation start to playable, PoW included.
+    track("app_ready", {
+      returning_legacy: !!legacyWelcome,
+      elements: res.library.length,
+      pow,
+      boot_ms: Math.round(performance.now()),
+    });
   } catch (e) {
     const code = e instanceof ApiFailure ? e.code : "network";
     useGame.setState({ status: "error", powSolving: false, bootError: code });

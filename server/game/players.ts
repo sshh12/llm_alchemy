@@ -1,5 +1,5 @@
 // Player lifecycle: creation, legacy adoption + inventory import, library, stats.
-import { MAX_LEGACY_IDS } from "../../src/shared/api.ts";
+import { MAX_LEGACY_IDS, type Acquisition } from "../../src/shared/api.ts";
 import { q, q1, t, withTx } from "../db.ts";
 import { PLAYER_COLS, type PlayerRow } from "../session.ts";
 import { ELEMENT_COLS, isElementId, type ElementRow, type LibraryRow } from "./dto.ts";
@@ -14,11 +14,13 @@ export function isLegacyUserId(s: unknown): s is string {
   return typeof s === "string" && LEGACY_USER_RE.test(s);
 }
 
-/** Create a player and give them the starters, in one statement. */
-export async function createPlayer(ipHash: string): Promise<PlayerRow> {
+/** Create a player (with its first-touch acquisition, if known) and give them the starters, in one statement. */
+export async function createPlayer(ipHash: string, acq?: Acquisition): Promise<PlayerRow> {
   const row = await q1<PlayerRow>(
     `WITH p AS (
-       INSERT INTO ${t("players")} (created_ip_hash, last_seen_at) VALUES ($1, now())
+       INSERT INTO ${t("players")}
+         (created_ip_hash, last_seen_at, acq_referrer, acq_landing, acq_utm_source, acq_utm_medium, acq_utm_campaign)
+       VALUES ($1, now(), $2, $3, $4, $5, $6)
        RETURNING ${PLAYER_COLS}
      ), s AS (
        INSERT INTO ${t("discoveries")} (player_id, element_id, source)
@@ -27,7 +29,7 @@ export async function createPlayer(ipHash: string): Promise<PlayerRow> {
        RETURNING element_id -- CockroachDB requires RETURNING in data-modifying CTEs
      )
      SELECT * FROM p`,
-    [ipHash],
+    [ipHash, acq?.ref || null, acq?.path ?? null, acq?.src || null, acq?.med || null, acq?.cmp || null],
   );
   if (!row) throw new Error("player insert returned no row");
   return row;
@@ -86,7 +88,26 @@ export async function ensureStarters(playerId: string): Promise<void> {
 }
 
 export async function touchPlayer(playerId: string): Promise<void> {
-  await q(`UPDATE ${t("players")} SET last_seen_at = now() WHERE id = $1`, [playerId]);
+  await Promise.all([
+    q(`UPDATE ${t("players")} SET last_seen_at = now() WHERE id = $1`, [playerId]),
+    countActivity(playerId, "loads"),
+  ]);
+}
+
+/**
+ * Count one load or combine in today's (UTC) player_days row, for retention analysis.
+ * Analytics must never affect gameplay: a failure is logged, not thrown.
+ */
+export async function countActivity(playerId: string, what: "loads" | "combines"): Promise<void> {
+  try {
+    await q(
+      `INSERT INTO ${t("player_days")} AS pd (player_id, day, ${what}) VALUES ($1, current_date, 1)
+       ON CONFLICT (player_id, day) DO UPDATE SET ${what} = pd.${what} + 1`,
+      [playerId],
+    );
+  } catch (e) {
+    console.error(`[activity] ${what} not counted`, e instanceof Error ? e.message : e);
+  }
 }
 
 export interface LegacyImportResult {

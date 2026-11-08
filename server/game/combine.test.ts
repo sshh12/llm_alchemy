@@ -282,6 +282,7 @@ describe("combine with an active custom sort", () => {
         return [{ recipe_id: "500", recipe_status: "active", protected: false, ...element(MUD.id, "Mud") }];
       }
       if (/INSERT INTO \S+discoveries/.test(sql)) return isNew ? [{ discovered_at: new Date("2026-11-07T10:00:00Z") }] : [];
+      if (/INSERT INTO \S+player_days/.test(sql)) return [];
       throw new Error(`unexpected query: ${sql}`);
     });
   });

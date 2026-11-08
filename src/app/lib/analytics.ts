@@ -4,6 +4,8 @@ type EventName =
   | "app_ready"
   | "load_failed"
   | "combine"
+  // A combine the server refused or could not answer (code: the ApiFailure code, or "network").
+  | "combine_failed"
   | "first_combine"
   | "discovery"
   | "first_discovery"
@@ -13,11 +15,15 @@ type EventName =
   // cached, outcome). Never the prompt or group text.
   | "custom_sort";
 
-type Gtag = (command: "event", name: string, params?: Record<string, unknown>) => void;
+type Gtag = (command: "event" | "set", ...args: unknown[]) => void;
+
+function gtag(): Gtag | undefined {
+  return (window as Window & { gtag?: Gtag }).gtag;
+}
 
 export function track(name: EventName, params?: Record<string, string | number | boolean>): void {
   try {
-    (window as Window & { gtag?: Gtag }).gtag?.("event", name, params);
+    gtag()?.("event", name, params);
   } catch {
     // Analytics must never affect gameplay.
   }
@@ -33,4 +39,19 @@ export function trackOncePerSession(name: EventName, params?: Record<string, str
     // Storage unavailable: still send it.
   }
   track(name, params);
+}
+
+/**
+ * Tie this browser's GA events to the player: `user_id` is the player's random public id (the
+ * same id the database has as players.public_id, so GA exports join to server data; no PII).
+ * Call before the session's first event so every event carries it.
+ */
+export function identify(playerPublicId: string, props: { legacy: boolean }): void {
+  try {
+    const g = gtag();
+    g?.("set", { user_id: playerPublicId });
+    g?.("set", "user_properties", { legacy_player: props.legacy });
+  } catch {
+    // Analytics must never affect gameplay.
+  }
 }

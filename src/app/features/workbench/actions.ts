@@ -303,6 +303,7 @@ function failMerge(pendingUid: string, saved: SavedTile[], at: Pt, e: unknown, u
     removeTiles([pendingUid]);
     for (const t of saved) addTile({ ...t, enterFrom: at, fx: "restore", fxKey: nextFxKey() });
   }
+  track("combine_failed", { code: e instanceof ApiFailure ? e.code : "network" });
   const { text, until } = failureMessage(e);
   showToast({
     kind: "error",

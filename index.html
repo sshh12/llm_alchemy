@@ -129,6 +129,17 @@
     </script>
 
     <script>
+      // First-touch acquisition, stored once per browser for players.acq_* (sent when the player
+      // is created): external referrer host, landing path and UTM tags of the visit's first page.
+      (function () {
+        try {
+          if (localStorage.getItem("ia:acq")) return;
+          var ref = document.referrer ? new URL(document.referrer).hostname : "";
+          if (ref === location.hostname) return;
+          var utm = new URLSearchParams(location.search);
+          localStorage.setItem("ia:acq", JSON.stringify({ ref: ref, path: location.pathname, src: utm.get("utm_source"), med: utm.get("utm_medium"), cmp: utm.get("utm_campaign") }));
+        } catch (e) {}
+      })();
       // Google Analytics 4, production host only. gtag() queues into dataLayer right away; the
       // library itself loads after the window load event so it never competes with first paint.
       if (location.hostname === "alchemy.sshh.io") {

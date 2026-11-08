@@ -28,6 +28,7 @@ import { BUDGETS, LIMITS, enforce, hit } from "../ratelimit.ts";
 import { playerForClaims, sessionClaims } from "../session.ts";
 import { completeTiers, resolveDay } from "./challenges.ts";
 import { ELEMENT_COLS, isElementId, sortIds, toElementDTO, type ElementRow } from "./dto.ts";
+import { countActivity } from "./players.ts";
 import { SortSpecSchema } from "./sortSpec.ts";
 
 export const CombineSchema = z.object({
@@ -402,6 +403,7 @@ export async function combineElements(req: Request, context: Context): Promise<R
   const [completed, sortScore] = await Promise.all([
     completeTiers(player.id, resolveDay(body.clientDate), outcome.result.id),
     scoring,
+    countActivity(player.id, "combines"),
   ]);
   const result = toElementDTO(outcome.result);
   const response: CombineResponse = {

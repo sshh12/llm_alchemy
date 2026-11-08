@@ -291,6 +291,26 @@ e.g. "spookiest") or **groups** (`{kind: "groups", groups}`, 2–8 labels plus a
   key and rubric, plus the owned ids the server ruled out and the truncated flag, so a reload in
   the same tab re-sorts with no request, even for a library over 25,000). Nothing in the DB.
 
+## Analytics
+
+Two sources, used together. Neither may ever affect gameplay (failures are swallowed/logged).
+
+- **Server (ground truth for retention; ad blockers can't hide it).** `db/migrations/0006_analytics.sql`.
+  - `player_days (player_id, day, loads, combines)`: one row per player per UTC day with activity.
+    Bootstrap counts a load (`touchPlayer`), each server-answered combine counts a combine
+    (`countActivity`). Exact DAU and D1/D7/D30 cohorts from `players.created_at`.
+  - `players.acq_*`: first-touch referrer host, landing path and UTM tags, written once at player
+    creation. The inline page-head script (`index.html`, `src/shared/pages.ts` → generated
+    `public/*.html`) stores `ia:acq` in localStorage on the first page with an external (or no)
+    referrer; bootstrap sends it and the server drops anything malformed (never a 400).
+  - Already there: `discoveries.discovered_at` (new elements), `challenge_completions`, `elements.discovered_by`.
+- **Google Analytics 4** (`G-PYCZGBX322`, production host only, `src/app/lib/analytics.ts`).
+  `user_id` = `players.public_id` (random UUID) and user property `legacy_player`, so a GA export
+  joins to the DB. Events: `app_ready` (`pow` = brand-new player, `boot_ms`), `load_failed`,
+  `combine`, `combine_failed` (`code`), `first_combine` (once per session = activation),
+  `discovery`, `first_discovery`, `challenge_complete`, `share`, `custom_sort`. Event params
+  are only queryable in GA reports/API once registered as custom dimensions/metrics.
+
 ## Testing
 
 - Unit: Vitest (`*.test.ts`) for names, rarity, dates, PoW, recipe keys, rate-limit math.

@@ -69,4 +69,6 @@ export const KEYS = {
   customSort: "ia:customSort",
   /** sessionStorage: the active custom sort's scores, tagged with player id, spec key and rubric. */
   customSortScores: "ia:customSortScores",
+  /** First-touch acquisition; written only by the inline page-head script (index.html, src/shared/pages.ts). */
+  acq: "ia:acq",
 } as const;

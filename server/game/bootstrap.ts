@@ -3,7 +3,7 @@
 import crypto from "node:crypto";
 import type { Context } from "@netlify/functions";
 import { z } from "zod";
-import type { BootstrapResponse, PowSolution } from "../../src/shared/api.ts";
+import { ACQ_MAX, type Acquisition, type BootstrapResponse, type PowSolution } from "../../src/shared/api.ts";
 import { BODY_LIMIT_BOOTSTRAP, checkCsrf, clientIp, errors, ipHash, json, readJson } from "../http.ts";
 import { checkPowSolution, issuePow, verifyPow, type PowCheck } from "../pow.ts";
 import { BUDGETS, LIMITS, enforce } from "../ratelimit.ts";
@@ -37,6 +37,17 @@ export const BootstrapSchema = z.object({
       claim: z.string().regex(/^[0-9a-f]{32}$/).optional(),
     })
     .optional(),
+  // Analytics only: a malformed or oversized value is dropped, never a 400.
+  acq: z
+    .object({
+      ref: z.string().max(ACQ_MAX.ref),
+      path: z.string().max(ACQ_MAX.path),
+      src: z.string().max(ACQ_MAX.utm).nullish(),
+      med: z.string().max(ACQ_MAX.utm).nullish(),
+      cmp: z.string().max(ACQ_MAX.utm).nullish(),
+    })
+    .optional()
+    .catch(undefined),
 });
 
 /** Earth, Water, Air, Fire and Time. */
@@ -54,7 +65,7 @@ const POW_MESSAGES: Record<Exclude<PowCheck, "ok">, string> = {
  * New players must present a fresh, unspent PoW solution and fit the creation limits. The
  * global player budget is charged last, so a replayed salt or an over-limit IP never spends it.
  */
-async function createWithPow(pow: PowSolution | undefined, ip: string): Promise<PlayerRow> {
+async function createWithPow(pow: PowSolution | undefined, ip: string, acq: Acquisition | undefined): Promise<PlayerRow> {
   if (!pow) throw errors.powRequired(issuePow());
   const stateless = checkPowSolution(pow);
   if (stateless !== "ok") throw errors.powRequired(issuePow(), POW_MESSAGES[stateless]);
@@ -65,7 +76,7 @@ async function createWithPow(pow: PowSolution | undefined, ip: string): Promise<
   const spent = await verifyPow(pow);
   if (spent !== "ok") throw errors.powRequired(issuePow(), POW_MESSAGES[spent]);
   await enforce([{ limit: BUDGETS.players, subject: "all" }]);
-  return createPlayer(ip);
+  return createPlayer(ip, acq);
 }
 
 export async function bootstrap(req: Request, context: Context): Promise<Response> {
@@ -95,7 +106,7 @@ export async function bootstrap(req: Request, context: Context): Promise<Respons
     claimed = claim.claimed;
     legacyExists = claim.player !== undefined || claim.claimed;
   }
-  player ??= await createWithPow(body.pow, ip);
+  player ??= await createWithPow(body.pow, ip, body.acq);
 
   let legacyImport: BootstrapResponse["legacyImport"];
   if (body.legacy) {

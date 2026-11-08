@@ -91,11 +91,29 @@ export interface LegacyPayload {
   claim?: string;
 }
 
+/**
+ * First-touch acquisition (localStorage 'ia:acq', written by the page head on the visit's first
+ * page). Stored only when this bootstrap creates the player; ignored otherwise.
+ */
+export interface Acquisition {
+  /** External referrer host ("" = direct). */
+  ref: string;
+  /** Landing path, no query string. */
+  path: string;
+  src?: string | null;
+  med?: string | null;
+  cmp?: string | null;
+}
+
+/** Field caps for Acquisition: the client truncates to these, the server drops anything longer. */
+export const ACQ_MAX = { ref: 253, path: 200, utm: 100 } as const;
+
 export interface BootstrapRequest {
   /** Player's local calendar date (used for daily challenges); server validates ±1 day. */
   clientDate: string;
   pow?: PowSolution;
   legacy?: LegacyPayload;
+  acq?: Acquisition;
 }
 
 export interface BootstrapResponse {
