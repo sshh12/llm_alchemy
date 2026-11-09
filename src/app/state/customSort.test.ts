@@ -190,14 +190,14 @@ describe("full runs", () => {
   it("sends the analytics event once per apply, without the prompt", async () => {
     await ready();
     const events = gtag.mock.calls.filter((c) => c[1] === "custom_sort");
-    expect(events).toEqual([["event", "custom_sort", { kind: "rank", groups: 0, source: "typed", size: "lt100", cached: false, outcome: "ok" }]]);
+    expect(events).toEqual([["event", "custom_sort", { kind: "rank", groups: 0, from: "typed", size: "lt100", cached: false, outcome: "ok" }]]);
     m.cs.applyCustomSort(CUTE, { source: "recent" });
     await tick();
     m.cs.activateCustom();
     m.cs.applyCustomSort(SPOOKY, { source: "recent" });
     await tick();
     const all = gtag.mock.calls.filter((c) => c[1] === "custom_sort").map((c) => c[2]);
-    expect(all.map((p) => [p.source, p.cached])).toEqual([
+    expect(all.map((p) => [p.from, p.cached])).toEqual([
       ["typed", false],
       ["recent", false],
       ["select", true],
@@ -740,7 +740,7 @@ describe("reload, players and resets", () => {
     expect(st().committed?.scores.size).toBe(4);
     expect(m.ui.useUi.getState().live.polite).toMatch(/^Sorted by “spookiest”\. First: El\d, El\d, El\d\.$/);
     const events = gtag.mock.calls.filter((c) => c[1] === "custom_sort").map((c) => c[2]);
-    expect(events).toEqual([{ kind: "rank", groups: 0, source: "select", size: "lt100", cached: true, outcome: "ok" }]);
+    expect(events).toEqual([{ kind: "rank", groups: 0, from: "select", size: "lt100", cached: true, outcome: "ok" }]);
     await tick(60_000);
     expect(sortCalls()).toHaveLength(0);
   });
@@ -837,7 +837,7 @@ describe("cached means a whole order", () => {
     expect(st().epoch).toBe(1); // the run's commit is the fresh one: stagger, scroll to top
     expect(st().committed?.scores.size).toBe(5);
     expect(m.ui.useUi.getState().live.polite).toMatch(/^Sorted by “spookiest”\. First: El5, /);
-    const events = gtag.mock.calls.filter((c) => c[1] === "custom_sort").map((c) => [c[2].source, c[2].cached, c[2].outcome]);
+    const events = gtag.mock.calls.filter((c) => c[1] === "custom_sort").map((c) => [c[2].from, c[2].cached, c[2].outcome]);
     expect(events).toEqual([["select", false, "ok"]]);
     expect(sortCalls()).toHaveLength(1);
   });

@@ -13,11 +13,14 @@ export function useMediaQuery(query: string): boolean {
   );
 }
 
+/** The right panel (today's challenge, stats) shows at this width and up. */
+export const WIDE_QUERY = "(min-width: 1280px)";
+
 /** Layout tier: phone shelf (<640), rail (≥640), large tiles (≥1024), right panel (≥1280). */
 export function useLayoutTier() {
   const rail = useMediaQuery("(min-width: 640px)");
   const desktop = useMediaQuery("(min-width: 1024px)");
-  const wide = useMediaQuery("(min-width: 1280px)");
+  const wide = useMediaQuery(WIDE_QUERY);
   return { rail, desktop, wide };
 }
 

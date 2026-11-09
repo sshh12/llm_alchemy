@@ -137,6 +137,7 @@ export function spawnElement(elementId: ElementId, opts: { focus?: boolean } = {
   if (!p) return null;
   commit();
   const uid = addTile({ elementId, x: p.x, y: p.y, enterFrom: libraryEdge(), fx: "spawn", fxKey: nextFxKey() });
+  trackOncePerSession("first_tile", { via: "tap" });
   if (anchor && !multi) {
     void mergeTiles([...selected.map((t) => t!.uid), uid], { x: anchor.x, y: anchor.y }, { snapshot: false });
     return uid;
@@ -158,7 +159,9 @@ export function spawnElement(elementId: ElementId, opts: { focus?: boolean } = {
 export function dropNewTile(elementId: ElementId, at: Pt, from: Pt, snapshot = true): string | null {
   if (canvasFull()) return null;
   if (snapshot) commit();
-  return addTile({ elementId, x: at.x, y: at.y, enterFrom: from, fx: "drop", fxKey: nextFxKey() });
+  const uid = addTile({ elementId, x: at.x, y: at.y, enterFrom: from, fx: "drop", fxKey: nextFxKey() });
+  trackOncePerSession("first_tile", { via: "drag" });
+  return uid;
 }
 
 // ------------------------------------------------------------------ selection (tap path)

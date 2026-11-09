@@ -11,6 +11,7 @@ import {
   encodeTransferCode,
   loadPlayer,
   requirePlayer,
+  sessionClaims,
   sessionCookie,
 } from "../session.ts";
 
@@ -40,6 +41,21 @@ async function resetLibrary(playerId: string): Promise<void> {
   });
 }
 
+/**
+ * Analytics: this browser is leaving its current player for `toPlayerId`, so the old player was a
+ * throwaway (typically created moments ago on the new device); player metrics exclude it
+ * (players.switched_away_at). Best effort: never fails the redeem.
+ */
+async function markSwitchedAway(req: Request, toPlayerId: string): Promise<void> {
+  const from = sessionClaims(req)?.p;
+  if (!from || from === toPlayerId) return;
+  try {
+    await q(`UPDATE ${t("players")} SET switched_away_at = now() WHERE id = $1 AND switched_away_at IS NULL`, [from]);
+  } catch (e) {
+    console.error("[player] switched_away_at not recorded", e instanceof Error ? e.message : e);
+  }
+}
+
 export async function playerAction(req: Request, context: Context): Promise<Response> {
   checkCsrf(req);
   const body = await readJson(req, PlayerActionSchema, BODY_LIMIT_DEFAULT);
@@ -65,6 +81,7 @@ export async function playerAction(req: Request, context: Context): Promise<Resp
       if (!claims || !player || player.session_version !== claims.v) {
         throw errors.badRequest("That transfer code is not valid.");
       }
+      await markSwitchedAway(req, player.id);
       return json({ ok: true, action: "redeem" } satisfies PlayerResponse, {
         headers: { "set-cookie": sessionCookie(req, encodeSession(player.id, player.session_version)) },
       });

@@ -16,9 +16,13 @@ v2 is a ground-up rewrite. This document is the source of truth for how it fits 
 | Images | OpenAI `gpt-image-2.5-flare-2026-09-08`, 816×816, `quality: "low"`, transparent webp | ~$0.005 and ~8 s per image; generated lazily on first need. |
 | Sort AI | TypeSafe Jev `jev-1.14.0` (System One `score`/`choice`/`noul` questions), raw `fetch` in `server/ai/jev.ts` | ~$0.004 per 1k-element rank sort (measured 92 input tokens per element for rank, ~153 for 3 groups, ~256 for 8 groups ≈ $0.011 per 1k; output is free); numbers only, never text. |
 
-Hosting constraints that shape the design (Netlify legacy **Starter** plan): 125k function
-calls/site/month, 100 function-hours/month, 100 GB bandwidth, **2 platform rate-limit rules**,
-and the whole account pauses at 100% of a limit. So: static pages, one bootstrap call per
+Hosting constraints that shape the design (Netlify legacy **Starter** plan, $0, plus the
+**Functions Level 1** add-on, $25/site/month, which Netlify applies automatically whenever a site
+passes Level 0's 125k calls or 100 hours; this site always does): 2M function calls and 1,000
+function-hours per site/month, 100 GB bandwidth, **2 platform rate-limit rules**. Usage
+(2026-11): ~250-330k calls and ~15-20 GB-hours a month, so OpenAI spend, not Netlify, is the
+binding cost. Do not move to a credit-based plan: deploys (15 credits each), compute and requests
+all draw credits, and a plan out of credits suspends the site. So: static pages, one bootstrap call per
 session, client-side recipe cache, CDN-cached images, and rate limits in front of the costly paths.
 
 ## Repository layout (ownership in parentheses)
@@ -75,7 +79,10 @@ All ids are INT8 and travel as decimal strings (they exceed JS safe integers).
 
 ## Game rules
 
-- Starters: Earth, Water, Air, Fire, Time.
+- Starters: Earth, Water, Air, Fire, Time. Shelf order is `STARTER_ORDER` in
+  `src/shared/starters.ts` (Water, Fire, Earth, Air, Time): its first two are the onboarding demo
+  pair (`DEMO_RECIPE`, used by the How-to-play demo and copy), and the library's time and rarity
+  sorts break the starters' tie with it.
 - Combine 2–4 owned elements (duplicates allowed). Order never matters.
 - Known recipe → result immediately. Unknown → LLM proposes `{name, emoji, description, notable}`;
   the server validates with `checkName` (retry once with feedback, then `fizzled`, nothing saved).
@@ -161,9 +168,9 @@ Errors use `ApiError` with the right HTTP status (400/401/403/404/429/503/422).
    items counted in Jev questions).
 3. Global budgets: `JEV_DAILY_CAP` (default 2,500,000 Jev questions/day ≈ $10-13; when it runs
    out only custom sort stops, everything else keeps working), `LLM_DAILY_CAP` (default 100,000 new recipes/day ≈ $10),
-   `IMAGE_DAILY_CAP` (default 17,000 images/day ≈ $90), and `IMAGE_MONTHLY_CAP` (default 20,000
-   generations per 30 days, which keeps image work inside the Netlify Starter plan's 100
-   function-hours/month; raise it after a plan upgrade). Over budget → combine of *known*
+   `IMAGE_DAILY_CAP` (default 2,000 images/day ≈ $10.60, ~1.5× the monthly average so no single
+   week can spend the month), and `IMAGE_MONTHLY_CAP` (default 40,000 generations per 30 days
+   ≈ $212, sized to ~1,100-1,400/day). Over budget → combine of *known*
    recipes still works; new recipes return `budget_exhausted`; images return `deferred`.
    Budgets are charged only after the per-player/per-IP limits pass (and, for new players,
    after the PoW salt is spent), so rejected requests never consume them.
@@ -294,24 +301,41 @@ e.g. "spookiest") or **groups** (`{kind: "groups", groups}`, 2–8 labels plus a
 ## Analytics
 
 Two sources, used together. Neither may ever affect gameplay (failures are swallowed/logged).
+Pull the numbers with `npm run analytics:pull` (GA4, Search Console, Bing) and
+`npm run analytics:snapshot` (DB aggregates); both write to the gitignored `.analytics/`.
 
-- **Server (ground truth for retention; ad blockers can't hide it).** `db/migrations/0006_analytics.sql`.
-  - `player_days (player_id, day, loads, combines)`: one row per player per UTC day with activity.
-    Bootstrap counts a load (`touchPlayer`), each server-answered combine counts a combine
-    (`countActivity`). Exact DAU and D1/D7/D30 cohorts from `players.created_at`.
+- **Server (ground truth for retention; ad blockers can't hide it).** Migrations 0006 and 0007.
+  - `player_days (player_id, day, loads, combines)`: one row per player per **local** calendar day
+    with activity (the validated client date, as daily challenges use; rows before 2026-11-09 are
+    UTC-dated). Bootstrap counts a load (`touchPlayer`), each server-answered combine counts a
+    combine (`countActivity`). Cohort day = a player's first `player_days.day`; D1/D7 = activity on
+    that day + 1 / + 7.
   - `players.acq_*`: first-touch referrer host, landing path and UTM tags, written once at player
     creation. The inline page-head script (`index.html`, `src/shared/pages.ts` → generated
     `public/*.html`) stores `ia:acq` in localStorage on the first page with an external (or no)
-    referrer; bootstrap sends it and the server drops anything malformed (never a 400).
+    referrer; bootstrap sends it and the server drops anything malformed (never a 400). Shared
+    links carry `utm_source=share&utm_medium=social&utm_campaign=share_<surface>` (`shareUrl`).
+  - `players.acq_ua_class`: coarse platform of the creating browser (`server/ua.ts`: bot, chromeos,
+    android, ios, windows, mac, linux, other, unknown), never the raw User-Agent.
+    `players.switched_away_at`: the browser redeemed a transfer code for another player, so this
+    one was a throwaway. Player metrics exclude both, plus internal players.
   - Already there: `discoveries.discovered_at` (new elements), `challenge_completions`, `elements.discovered_by`.
 - **Google Analytics 4** (property `377917905`, stream `G-PYCZGBX322`, production host only,
   `src/app/lib/analytics.ts`). `user_id` = `players.public_id` (random UUID) and user property
   `legacy_player`, so a GA export joins to the DB. Params are only queryable in GA reports/API
-  once registered as custom dimensions/metrics. Key events: `first_combine`, `challenge_complete`.
+  once registered as custom dimensions/metrics (not retroactive: register on ship day).
+  `track()` drops GA4-reserved param names (`source`, `medium`, `campaign`, `page_*`, `user_id`,
+  …) because GA reads them as something else; an event param named `source` once re-attributed
+  sessions. Key events: `first_combine`, `challenge_complete`.
   Event semantics (count with these in mind):
   - `app_ready`: bootstrap succeeded and the game is playable. `pow` = this load created the
-    player (brand-new), `boot_ms` = navigation start to playable, `elements` = library size.
+    player (brand-new), `boot_ms` = navigation start to playable, `elements` = library size,
+    `wide` = the right panel (challenge card) is on screen, `standalone` = installed app.
     `load_failed` (`code`) is the failure counterpart.
+  - `onboarding`: the first-run welcome sheet. `action` = shown | start ("Start mixing") |
+    dismiss (Esc, backdrop, ×) | link (`target`), with `secs` open (capped at 600).
+  - `first_tile`: the first tile placed this tab session, `via` = tap | drag.
+  - `sheet_open`: a sheet opened, `sheet` = challenges | stats | settings | about | customSort.
   - `combine`: a **successful** combine, once per result. `cached` = answered from the client's
     recipe cache (no request), `new` = new for this player. A failed attempt is `combine_failed`
     (`code` = ApiFailure code or `network`) instead, so attempts = `combine` + `combine_failed`.
@@ -324,7 +348,7 @@ Two sources, used together. Neither may ever affect gameplay (failures are swall
   - `challenge_complete`: once per player per day per tier (`tier` = easy/hard/expert; the server
     dedupes on `challenge_completions`). One player finishing all three tiers = 3 events.
   - `share`: `surface` (details/celebration), `outcome` (shared/downloaded/cancelled/failed), `first`.
-  - `custom_sort`: see "Custom sort".
+  - `custom_sort`: see "Custom sort" (`from` = where the sort was picked: typed, example, …).
   - `challenge_complete_easy|hard|expert`, `element_combined` and `element_cleared` come from the
     2023 app (replaced 2026-11-06), not this code; they only appear in history.
 

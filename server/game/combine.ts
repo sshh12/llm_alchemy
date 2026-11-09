@@ -400,10 +400,11 @@ export async function combineElements(req: Request, context: Context): Promise<R
   // The sort score runs alongside the challenge check, so it adds at most SORT_PIGGYBACK_MS.
   const scoring =
     body.sort && outcome.discoveredAt ? scoreDiscovery(body.sort, outcome.result) : Promise.resolve(undefined);
+  const day = resolveDay(body.clientDate);
   const [completed, sortScore] = await Promise.all([
-    completeTiers(player.id, resolveDay(body.clientDate), outcome.result.id),
+    completeTiers(player.id, day, outcome.result.id),
     scoring,
-    countActivity(player.id, "combines"),
+    countActivity(player.id, "combines", day),
   ]);
   const result = toElementDTO(outcome.result);
   const response: CombineResponse = {

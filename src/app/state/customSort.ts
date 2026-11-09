@@ -789,7 +789,8 @@ export function applyCustomSort(spec: SortSpec, opts: { other?: boolean; source?
     params: {
       kind: next.kind,
       groups: next.kind === "groups" ? next.groups.length : 0,
-      source: opts.source ?? "typed",
+      // Not "source": GA4 reads an event param by that name as the session's traffic source.
+      from: opts.source ?? "typed",
       size: sizeBucket(Object.keys(useGame.getState().owned).length),
       cached,
     },

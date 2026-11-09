@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { SORT_FIT_THRESHOLD, SORT_MATCH_THRESHOLD, type ElementDTO, type ElementId, type Rarity, type SortSpec } from "../../shared/api.ts";
 import { RARITY_ORDER } from "../../shared/rarity.ts";
+import { starterRank } from "../../shared/starters.ts";
 import type { Owned } from "../state/game.ts";
 import type { LibraryFilter, LibrarySort } from "../state/ui.ts";
 import type { BuiltInSort } from "./customSort.ts";
@@ -49,12 +50,15 @@ function legacyOrder(
   const rank = (id: ElementId) => RARITY_ORDER.indexOf(els[id]!.rarity);
   const depth = (id: ElementId) => (els[id]!.starter ? -1 : (els[id]!.depth ?? 0.5));
   const byName = (a: ElementId, b: ElementId) => name(a).localeCompare(name(b));
+  // Tied starters show in shelf order (STARTER_ORDER), as the implementation does.
+  const shelf = (id: ElementId) => (els[id]!.starter ? starterRank(name(id)) : -1);
+  const byShelf = (a: ElementId, b: ElementId) => (shelf(a) >= 0 && shelf(b) >= 0 ? shelf(a) - shelf(b) : 0);
   const bySort =
     sort === "az"
       ? byName
       : sort === "rarity"
-        ? (a: ElementId, b: ElementId) => rank(b) - rank(a) || depth(b) - depth(a) || byName(a, b)
-        : (a: ElementId, b: ElementId) => time(b) - time(a) || byName(a, b);
+        ? (a: ElementId, b: ElementId) => rank(b) - rank(a) || depth(b) - depth(a) || byShelf(a, b) || byName(a, b)
+        : (a: ElementId, b: ElementId) => time(b) - time(a) || byShelf(a, b) || byName(a, b);
   return ids.sort((a, b) => {
     if (q) {
       const pa = name(a).toLowerCase().startsWith(q) ? 0 : 1;
@@ -90,12 +94,15 @@ function previousOrder(i: LibraryOrderInput): { ids: ElementId[]; counts: Custom
   // is unknown (no current path from the starters) sit just above them.
   const depth = (id: ElementId) => (els[id]!.starter ? -1 : (els[id]!.depth ?? 0.5));
   const byName = (a: ElementId, b: ElementId) => name(a).localeCompare(name(b));
+  // Tied starters show in shelf order (STARTER_ORDER), as the implementation does.
+  const shelf = (id: ElementId) => (els[id]!.starter ? starterRank(name(id)) : -1);
+  const byShelf = (a: ElementId, b: ElementId) => (shelf(a) >= 0 && shelf(b) >= 0 ? shelf(a) - shelf(b) : 0);
   const builtIn = (s: BuiltInSort) =>
     s === "az"
       ? byName
       : s === "rarity"
-        ? (a: ElementId, b: ElementId) => rank(b) - rank(a) || depth(b) - depth(a) || byName(a, b)
-        : (a: ElementId, b: ElementId) => time(b) - time(a) || byName(a, b);
+        ? (a: ElementId, b: ElementId) => rank(b) - rank(a) || depth(b) - depth(a) || byShelf(a, b) || byName(a, b)
+        : (a: ElementId, b: ElementId) => time(b) - time(a) || byShelf(a, b) || byName(a, b);
   const prefixFirst = (a: ElementId, b: ElementId) => {
     if (!q) return 0;
     // Prefix matches first while searching.
@@ -150,7 +157,7 @@ function previousOrder(i: LibraryOrderInput): { ids: ElementId[]; counts: Custom
     );
   }
 
-  const newestFirst = (a: ElementId, b: ElementId) => time(b) - time(a) || byName(a, b);
+  const newestFirst = (a: ElementId, b: ElementId) => time(b) - time(a) || byShelf(a, b) || byName(a, b);
   if (!groupsMode) {
     ids.sort((a, b) => {
       const ta = tier(a);
@@ -258,6 +265,21 @@ function custom(c: Committed | null, extra: Partial<CustomOrder> = {}): CustomOr
 const names = (f: Fixture, ids: ElementId[]) => ids.map((id) => f.elements[id]!.name);
 
 describe("built-in sorts", () => {
+  it("show tied starters in shelf order (the onboarding pair first), except A–Z", () => {
+    const f = lib([
+      ["1", "Earth", 5, { starter: true, depth: 0 }],
+      ["2", "Water", 5, { starter: true, depth: 0 }],
+      ["3", "Air", 5, { starter: true, depth: 0 }],
+      ["4", "Fire", 5, { starter: true, depth: 0 }],
+      ["5", "Time", 5, { starter: true, depth: 0 }],
+      ["6", "Steam", 1],
+    ]);
+    const order = (sort: "recent" | "rarity" | "az") => names(f, orderLibrary({ ...base, ...f, sort }).ids);
+    expect(order("recent")).toEqual(["Steam", "Water", "Fire", "Earth", "Air", "Time"]);
+    expect(order("rarity")).toEqual(["Steam", "Water", "Fire", "Earth", "Air", "Time"]);
+    expect(order("az")).toEqual(["Air", "Earth", "Fire", "Steam", "Time", "Water"]);
+  });
+
   it("match the previous implementation exactly for every sort, filter, query and pin combination", () => {
     for (const seed of [1, 2, 3, 42]) {
       const f = randomLibrary(160, seed);

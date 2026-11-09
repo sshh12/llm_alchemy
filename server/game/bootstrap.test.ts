@@ -53,11 +53,11 @@ const row = (id: string, legacyUserId: string | null = null): PlayerRow => ({
 const legacyRow = row("10", LEGACY_ID);
 const freshRow = row("20");
 
-const call = (body: Record<string, unknown>) =>
+const call = (body: Record<string, unknown>, headers: Record<string, string> = {}) =>
   bootstrap(
     new Request("https://alchemy.test/api/bootstrap", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-ia-client": "1" },
+      headers: { "content-type": "application/json", "x-ia-client": "1", ...headers },
       body: JSON.stringify({ clientDate: "2026-11-07", pow: { salt: "s", nonce: "n" }, ...body }),
     }),
     { ip: "203.0.113.7" } as Context,
@@ -151,15 +151,22 @@ describe("first-touch acquisition", () => {
   it("stores it on the player this bootstrap creates", async () => {
     const res = await call({ acq });
     expect(res.status).toBe(200);
-    expect(m.createPlayer).toHaveBeenCalledWith(expect.any(String), acq);
+    expect(m.createPlayer).toHaveBeenCalledWith(expect.any(String), { acq, uaClass: "unknown" });
   });
 
   it("drops a malformed or oversized value instead of failing the bootstrap", async () => {
     for (const bad of [{ ref: 1, path: "/" }, { ref: "x", path: "/".repeat(500) }, "nope", null]) {
       const res = await call({ acq: bad });
       expect(res.status).toBe(200);
-      expect(m.createPlayer).toHaveBeenLastCalledWith(expect.any(String), undefined);
+      expect(m.createPlayer).toHaveBeenLastCalledWith(expect.any(String), { acq: undefined, uaClass: "unknown" });
     }
+  });
+
+  it("stores the creating browser's coarse platform, never the raw User-Agent", async () => {
+    await call({}, { "user-agent": "Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 Chrome/120.0 Safari/537.36" });
+    expect(m.createPlayer).toHaveBeenLastCalledWith(expect.any(String), { acq: undefined, uaClass: "chromeos" });
+    await call({}, { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" });
+    expect(m.createPlayer).toHaveBeenLastCalledWith(expect.any(String), { acq: undefined, uaClass: "bot" });
   });
 
   it("is ignored for an existing player", async () => {

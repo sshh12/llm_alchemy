@@ -162,12 +162,25 @@ export type ShareOutcome = "shared" | "downloaded" | "cancelled" | "failed";
 export type ShareSurface = "details" | "celebration";
 
 export async function shareElement(input: ShareInput, surface: ShareSurface): Promise<ShareOutcome> {
-  const outcome = await shareCard(input);
+  const outcome = await shareCard(input, shareUrl(surface));
   track("share", { outcome, first: !!input.first, surface });
   return outcome;
 }
 
-async function shareCard(input: ShareInput): Promise<ShareOutcome> {
+/**
+ * The link a share carries, tagged so visits it brings in are attributable: GA reads the UTM tags
+ * as the session source (Organic Social), and the page head stores them as the new player's
+ * players.acq_utm_* (src/shared/pages.ts, index.html).
+ */
+export function shareUrl(surface: ShareSurface): string {
+  const u = new URL(SITE_URL);
+  u.searchParams.set("utm_source", "share");
+  u.searchParams.set("utm_medium", "social");
+  u.searchParams.set("utm_campaign", `share_${surface}`);
+  return u.toString();
+}
+
+async function shareCard(input: ShareInput, url: string): Promise<ShareOutcome> {
   const { element, first } = input;
   const text = first ? `I was the first person ever to discover ${element.name} in Infinite Alchemy!` : `I made ${element.name} in Infinite Alchemy.`;
   try {
@@ -176,7 +189,7 @@ async function shareCard(input: ShareInput): Promise<ShareOutcome> {
     const file = new File([blob], `${element.name.replace(/[^\w-]+/g, "-").toLowerCase()}.png`, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: element.name, text, url: SITE_URL });
+        await navigator.share({ files: [file], title: element.name, text, url });
         return "shared";
       } catch (e) {
         if ((e as DOMException).name === "AbortError") return "cancelled";
@@ -187,7 +200,7 @@ async function shareCard(input: ShareInput): Promise<ShareOutcome> {
     a.download = file.name;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 4_000);
-    await navigator.clipboard?.writeText(`${text} ${SITE_URL}`).catch(() => {});
+    await navigator.clipboard?.writeText(`${text} ${url}`).catch(() => {});
     return "downloaded";
   } catch {
     return "failed";

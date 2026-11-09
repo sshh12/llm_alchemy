@@ -102,7 +102,7 @@ export async function requestImage(req: Request, context: Context): Promise<Resp
         WHERE id = $1 AND image_status = 'pending'`,
       [id, el.image_status === "failed" ? "failed" : "none"],
     );
-    return reply({ state: "deferred", retryAfterMs: allowed.retryAfterMs });
+    return reply({ state: "deferred", retryAfterMs: allowed.retryAfterMs, limited: true });
   }
 
   try {

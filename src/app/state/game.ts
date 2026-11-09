@@ -18,6 +18,7 @@ import {
 import { localDay } from "../../shared/dates.ts";
 import { ApiFailure, bootstrap, type FailureCode } from "../lib/api.ts";
 import { markLegacyImported, readLegacy } from "../lib/legacy.ts";
+import { WIDE_QUERY } from "../lib/hooks.ts";
 import { KEYS, readJSON } from "../lib/storage.ts";
 
 export interface Owned {
@@ -76,6 +77,14 @@ function withElements(map: Record<ElementId, ElementDTO>, list: readonly Element
   const out = { ...map };
   for (const el of list) out[el.id] = mergeElement(out[el.id], el);
   return out;
+}
+
+function matches(query: string): boolean {
+  try {
+    return window.matchMedia(query).matches;
+  } catch {
+    return false;
+  }
 }
 
 /** First-touch acquisition recorded by the page head, cleaned to the server's caps (or undefined). */
@@ -138,12 +147,15 @@ export async function bootGame(): Promise<void> {
     });
     identify(res.player.id, { legacy: res.player.legacy });
     // pow: this load created the player (only creation asks for proof-of-work), so it marks a
-    // brand-new player. boot_ms: navigation start to playable, PoW included.
+    // brand-new player. boot_ms: navigation start to playable, PoW included. wide: the right
+    // panel (today's challenge card) is on screen. standalone: running as an installed app.
     track("app_ready", {
       returning_legacy: !!legacyWelcome,
       elements: res.library.length,
       pow,
       boot_ms: Math.round(performance.now()),
+      wide: matches(WIDE_QUERY),
+      standalone: matches("(display-mode: standalone)"),
     });
   } catch (e) {
     const code = e instanceof ApiFailure ? e.code : "network";

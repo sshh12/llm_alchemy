@@ -52,16 +52,22 @@ export const env = {
   get jevDailyCap() {
     return int("JEV_DAILY_CAP", 2_500_000);
   },
+  /**
+   * Image generations per UTC day (≈ $0.0053 each, so 2,000 ≈ $10.60/day). About 1.5× the monthly
+   * cap's daily average: a busy school day is absorbed, but no single week can spend the month,
+   * so art pauses for the rest of a day instead of for the rest of the month.
+   */
   get imageDailyCap() {
-    return int("IMAGE_DAILY_CAP", 17_000);
+    return int("IMAGE_DAILY_CAP", 2_000);
   },
   /**
-   * Image generations per 30-day window. Each one holds a function for ~8-10 s, and the
-   * Netlify Starter plan allows 100 function-hours/month (the whole account pauses at 100%),
-   * so this guard, not the dollar cap, binds on Starter. Raise it after a plan upgrade.
+   * Image generations per 30-day window: the OpenAI art budget (40,000 ≈ $212). Sized to the
+   * observed ~1,100-1,400/day (2026-11). Netlify run time is not the constraint: the site is on
+   * Functions Level 1 (1,000 h/month; each generation holds a function ~8-10 s), see
+   * docs/ARCHITECTURE.md "Stack".
    */
   get imageMonthlyCap() {
-    return int("IMAGE_MONTHLY_CAP", 20_000);
+    return int("IMAGE_MONTHLY_CAP", 40_000);
   },
   get powBits() {
     return int("POW_BITS", 18);

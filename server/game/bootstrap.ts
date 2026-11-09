@@ -3,11 +3,12 @@
 import crypto from "node:crypto";
 import type { Context } from "@netlify/functions";
 import { z } from "zod";
-import { ACQ_MAX, type Acquisition, type BootstrapResponse, type PowSolution } from "../../src/shared/api.ts";
+import { ACQ_MAX, type BootstrapResponse, type PowSolution } from "../../src/shared/api.ts";
 import { BODY_LIMIT_BOOTSTRAP, checkCsrf, clientIp, errors, ipHash, json, readJson } from "../http.ts";
 import { checkPowSolution, issuePow, verifyPow, type PowCheck } from "../pow.ts";
 import { BUDGETS, LIMITS, enforce } from "../ratelimit.ts";
 import { encodeSession, sessionCookie, sessionPlayer, type PlayerRow } from "../session.ts";
+import { classifyUserAgent } from "../ua.ts";
 import { challengeStats, dailyChallenge, resolveDay } from "./challenges.ts";
 import { toElementDTO, toLibraryEntry } from "./dto.ts";
 import {
@@ -23,6 +24,7 @@ import {
   notImported,
   recentElements,
   touchPlayer,
+  type PlayerOrigin,
 } from "./players.ts";
 
 export const BootstrapSchema = z.object({
@@ -65,7 +67,7 @@ const POW_MESSAGES: Record<Exclude<PowCheck, "ok">, string> = {
  * New players must present a fresh, unspent PoW solution and fit the creation limits. The
  * global player budget is charged last, so a replayed salt or an over-limit IP never spends it.
  */
-async function createWithPow(pow: PowSolution | undefined, ip: string, acq: Acquisition | undefined): Promise<PlayerRow> {
+async function createWithPow(pow: PowSolution | undefined, ip: string, origin: PlayerOrigin): Promise<PlayerRow> {
   if (!pow) throw errors.powRequired(issuePow());
   const stateless = checkPowSolution(pow);
   if (stateless !== "ok") throw errors.powRequired(issuePow(), POW_MESSAGES[stateless]);
@@ -76,7 +78,7 @@ async function createWithPow(pow: PowSolution | undefined, ip: string, acq: Acqu
   const spent = await verifyPow(pow);
   if (spent !== "ok") throw errors.powRequired(issuePow(), POW_MESSAGES[spent]);
   await enforce([{ limit: BUDGETS.players, subject: "all" }]);
-  return createPlayer(ip, acq);
+  return createPlayer(ip, origin);
 }
 
 export async function bootstrap(req: Request, context: Context): Promise<Response> {
@@ -106,7 +108,7 @@ export async function bootstrap(req: Request, context: Context): Promise<Respons
     claimed = claim.claimed;
     legacyExists = claim.player !== undefined || claim.claimed;
   }
-  player ??= await createWithPow(body.pow, ip, body.acq);
+  player ??= await createWithPow(body.pow, ip, { acq: body.acq, uaClass: classifyUserAgent(req.headers.get("user-agent")) });
 
   let legacyImport: BootstrapResponse["legacyImport"];
   if (body.legacy) {
@@ -138,7 +140,7 @@ export async function bootstrap(req: Request, context: Context): Promise<Respons
     dailyChallenge(playerId, today),
     challengeStats(playerId, today),
     recentElements(),
-    touchPlayer(playerId),
+    touchPlayer(playerId, today),
   ]);
 
   const response: BootstrapResponse = {

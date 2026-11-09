@@ -10,6 +10,13 @@ const MAX_IN_FLIGHT = 2;
 const SESSION_CAP = 150;
 const MAX_ATTEMPTS = 8;
 const BACKOFF_MS = [1_500, 3_000, 5_000, 8_000, 13_000];
+/** Shortest whole-queue pause when the endpoint itself is limited. */
+const MIN_PAUSE_MS = 10_000;
+/**
+ * Longest single timer. A budget can defer for weeks (the monthly image window), and setTimeout
+ * fires at once past ~24.8 days, so long waits re-check hourly instead.
+ */
+const MAX_WAKE_MS = 3_600_000;
 
 const visible = new Map<ElementId, number>(); // id -> number of visible tiles showing it
 const queue: ElementId[] = [];
@@ -36,7 +43,7 @@ function pump(): void {
   clearTimeout(timer);
   const now = Date.now();
   if (now < pausedUntil) {
-    timer = setTimeout(pump, pausedUntil - now);
+    timer = setTimeout(pump, Math.min(pausedUntil - now, MAX_WAKE_MS));
     return;
   }
   let nextWake = Infinity;
@@ -55,7 +62,15 @@ function pump(): void {
     queue.splice(i, 1);
     void fetchArt(id);
   }
-  if (nextWake < Infinity) timer = setTimeout(pump, nextWake - now);
+  if (nextWake < Infinity) timer = setTimeout(pump, Math.min(nextWake - now, MAX_WAKE_MS));
+}
+
+/**
+ * The endpoint (not one element) is limited: a rate limit or an exhausted image budget applies to
+ * every request, so hold the whole queue instead of letting other visible tiles keep asking.
+ */
+function pauseQueue(retryAfterMs: number | undefined): void {
+  pausedUntil = Math.max(pausedUntil, Date.now() + Math.max(retryAfterMs ?? 0, MIN_PAUSE_MS));
 }
 
 function scheduleRetry(id: ElementId, retryAfterMs: number | undefined): void {
@@ -82,12 +97,13 @@ async function fetchArt(id: ElementId): Promise<void> {
       settled.add(id);
       setElementArt(id, "blocked", null);
     } else {
+      if (res.state === "deferred" && res.limited) pauseQueue(res.retryAfterMs);
       scheduleRetry(id, res.retryAfterMs);
     }
   } catch (e) {
     const f = e instanceof ApiFailure ? e : null;
     if (f?.code === "rate_limited") {
-      pausedUntil = Date.now() + Math.max(f.retryAfterMs ?? 0, 10_000);
+      pauseQueue(f.retryAfterMs);
       scheduleRetry(id, f.retryAfterMs);
     } else if (f && (f.code === "not_found" || f.code === "forbidden" || f.code === "not_owned" || f.code === "bad_request")) {
       settled.add(id);

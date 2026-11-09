@@ -1,6 +1,7 @@
-// "How to play" demo: a ghost hand drags Water onto Fire and Steam pops out.
-// Reduced motion shows the same idea as a static equation.
+// "How to play" demo: a ghost hand drags the first starter onto the second (DEMO_RECIPE:
+// Water onto Fire) and Steam pops out. Reduced motion shows the same idea as a static equation.
 import type { ElementDTO } from "../../shared/api.ts";
+import { DEMO_RECIPE } from "../../shared/starters.ts";
 import { useReducedMotion } from "../lib/hooks.ts";
 import { HandIcon } from "./Icons.tsx";
 import { Tile } from "./Tile.tsx";
@@ -18,9 +19,12 @@ const demoEl = (id: string, name: string, emoji: string): ElementDTO => ({
   starter: true,
 });
 
-const WATER = demoEl("demo-water", "Water", "💧");
-const FIRE = demoEl("demo-fire", "Fire", "🔥");
-const STEAM = demoEl("demo-steam", "Steam", "♨️");
+const EMOJI: Record<string, string> = { Water: "💧", Fire: "🔥", Earth: "🪨", Air: "💨", Time: "⏳", Steam: "♨️" };
+const demo = (name: string) => demoEl(`demo-${name.toLowerCase()}`, name, EMOJI[name] ?? "✨");
+// Named for the current pair; DEMO_RECIPE decides which elements they are.
+const WATER = demo(DEMO_RECIPE.a);
+const FIRE = demo(DEMO_RECIPE.b);
+const STEAM = demo(DEMO_RECIPE.result);
 const SIZE = 64;
 /** The static equation puts three tiles in a row, so it must fit narrow phone layouts. */
 const STATIC_SIZE = 56;

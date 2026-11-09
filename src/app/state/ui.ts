@@ -2,6 +2,7 @@
 // actions, library view (filter/sort/search), pins and screen-reader announcements.
 import { create } from "zustand";
 import type { ElementId, Tier } from "../../shared/api.ts";
+import { track } from "../lib/analytics.ts";
 import { readStoredSort, type BuiltInSort } from "../lib/customSort.ts";
 import { KEYS, readJSON, writeJSON } from "../lib/storage.ts";
 
@@ -115,6 +116,8 @@ export function nextCelebration(): void {
 
 export function openSheet(sheet: SheetName | null): void {
   useUi.setState({ sheet, details: null });
+  // Which panels players find (e.g. the challenges sheet on layouts without the right panel).
+  if (sheet) track("sheet_open", { sheet });
 }
 
 export function openDetails(d: Details | null): void {

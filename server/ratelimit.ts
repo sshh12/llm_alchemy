@@ -42,9 +42,9 @@
 // | sort.items.ip.day      | ip      | 1,000,000 | 1 d    |                                                            |
 //
 // Global budgets (all players): new recipes LLM_DAILY_CAP (100,000/UTC day ≈ $10), images
-// IMAGE_DAILY_CAP (17,000/UTC day ≈ $90), new players PLAYER_DAILY_CAP (20,000/UTC day), and
-// IMAGE_MONTHLY_CAP (20,000 per 30-day window) which keeps image generation inside the Netlify
-// Starter plan's 100 function-hours/month. Custom-sort scoring JEV_DAILY_CAP (2,500,000 Jev
+// IMAGE_DAILY_CAP (2,000/UTC day ≈ $10.60), new players PLAYER_DAILY_CAP (20,000/UTC day), and
+// IMAGE_MONTHLY_CAP (40,000 per 30-day window ≈ $212, the art budget; see server/env.ts).
+// Custom-sort scoring JEV_DAILY_CAP (2,500,000 Jev
 // questions/UTC day ≈ $10-13), charged by /api/sort and by the sort score /api/combine
 // piggybacks on a discovery; when it runs out only custom sorting stops.
 import { q, t } from "./db.ts";

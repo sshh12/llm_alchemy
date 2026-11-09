@@ -2,6 +2,7 @@
 // pure function so both layouts and the custom-sort engine (announcements) share it.
 import { SORT_FIT_THRESHOLD, SORT_MATCH_THRESHOLD, type ElementDTO, type ElementId, type SortSpec } from "../../shared/api.ts";
 import { RARITY_ORDER } from "../../shared/rarity.ts";
+import { starterRank } from "../../shared/starters.ts";
 import type { Owned } from "../state/game.ts";
 import type { LibraryFilter, LibrarySort } from "../state/ui.ts";
 import type { BuiltInSort } from "./customSort.ts";
@@ -113,6 +114,8 @@ interface Row {
   /** Index in RARITY_ORDER, and depth (rarity order only). */
   rarity: number;
   depth: number;
+  /** A starter's shelf position (STARTER_ORDER), -1 for every other element. */
+  starter: number;
   /** Custom: 0 = being weighed, 1 = scored, 2 = not scored and not pending (by the previous sort). */
   tier: number;
   /** Custom: the score, -1 when unscored. */
@@ -168,6 +171,7 @@ function prepare(i: LibraryOrderInput, countsOnly = false): Prepared {
       // Within a tier, deeper is rarer. Starters are always the least rare; elements whose depth
       // is unknown (no current path from the starters) sit just above them.
       depth: needRarity ? (el.starter ? -1 : (el.depth ?? 0.5)) : 0,
+      starter: el.starter ? starterRank(el.name) : -1,
       tier: 1,
       s: -1,
       group: undefined,
@@ -190,12 +194,15 @@ function prepare(i: LibraryOrderInput, countsOnly = false): Prepared {
   }
 
   const byName = (a: Row, b: Row) => a.name.localeCompare(b.name);
+  // Starters tie on time and rarity (they arrive together), so those orders show them in shelf
+  // order (STARTER_ORDER: the onboarding pair first) rather than alphabetically. A–Z stays A–Z.
+  const byShelf = (a: Row, b: Row) => (a.starter >= 0 && b.starter >= 0 ? a.starter - b.starter : 0);
   const bySort: (a: Row, b: Row) => number =
     base === "az"
       ? byName
       : base === "rarity"
-        ? (a, b) => b.rarity - a.rarity || b.depth - a.depth || byName(a, b)
-        : (a, b) => b.time - a.time || byName(a, b);
+        ? (a, b) => b.rarity - a.rarity || b.depth - a.depth || byShelf(a, b) || byName(a, b)
+        : (a, b) => b.time - a.time || byShelf(a, b) || byName(a, b);
 
   if (!c || !custom) {
     return { rows, counts: null, cmp: (a, b) => a.prefix - b.prefix || a.pin - b.pin || bySort(a, b) };
@@ -226,7 +233,7 @@ function prepare(i: LibraryOrderInput, countsOnly = false): Prepared {
   }
 
   const prev = bySort; // the previous sort orders the unscored tier
-  const newestFirst = (a: Row, b: Row) => b.time - a.time || byName(a, b);
+  const newestFirst = (a: Row, b: Row) => b.time - a.time || byShelf(a, b) || byName(a, b);
   if (!groupsMode) {
     const cmp = (a: Row, b: Row) => {
       const head = a.prefix - b.prefix || a.pin - b.pin || a.tier - b.tier;

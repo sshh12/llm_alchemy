@@ -169,7 +169,9 @@ export interface ImageRequest {
 export type ImageResponse =
   | { state: "ready"; img: string }
   | { state: "pending"; retryAfterMs: number }
-  | { state: "deferred"; retryAfterMs: number } // rate/budget limited; keep the placeholder
+  // Not now; keep the placeholder. `limited`: a rate limit or image budget, which applies to every
+  // element, so the client pauses its whole art queue for retryAfterMs (src/app/lib/images.ts).
+  | { state: "deferred"; retryAfterMs: number; limited?: true }
   | { state: "blocked" }; // safety system refused; keep the placeholder forever
 
 // ---------------------------------------------------------------- POST /api/player

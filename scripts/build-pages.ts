@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { esc, renderPage, tile, type PageArt } from "../src/shared/pages.ts";
+import { DEMO_RECIPE, STARTER_ORDER } from "../src/shared/starters.ts";
 import { runMain } from "./lib/cli.ts";
 import { createPool, resolveSchema } from "./lib/db.ts";
 import { REPO_ROOT, loadEnv } from "./lib/env.ts";
@@ -19,7 +20,6 @@ const GUIDE = [
   "Steam", "Mud", "Lava", "Ocean", "Obsidian", "Volcano", "Clay", "Phoenix", "Storm",
   "Cloud", "Swamp", "Desert", "Sand", "Glass", "Tree", "Rainbow", "Clock", "Dragon",
 ];
-const STARTERS = ["Earth", "Water", "Air", "Fire", "Time"];
 const MAX_ROUTE = 7;
 
 interface Step {
@@ -80,7 +80,7 @@ async function loadGuide(schema: string) {
       }
       guide.push({ ...art(id), slug: slug(name), description: meta.get(id)!.description, steps });
     }
-    const starterArt = STARTERS.map((n) => art(idByKey.get(n.toLowerCase())!));
+    const starterArt = STARTER_ORDER.map((n) => art(idByKey.get(n.toLowerCase())!));
     return { guide, starterArt, artByName: (n: string) => art(idByKey.get(n.toLowerCase())!) };
   } finally {
     await pool.end();
@@ -223,7 +223,7 @@ async function main() {
       path: "/how-to-play",
       title: "How to play Infinite Alchemy",
       description: "Combine Earth, Water, Air, Fire and Time to discover anything. Learn the controls, first discoveries, rarity, daily challenges and how your progress is saved.",
-      body: howToPlay(starterArt, { water: artByName("Water"), fire: artByName("Fire"), steam: artByName("Steam") }, guide),
+      body: howToPlay(starterArt, { water: artByName(DEMO_RECIPE.a), fire: artByName(DEMO_RECIPE.b), steam: artByName(DEMO_RECIPE.result) }, guide),
     }),
   );
   write(

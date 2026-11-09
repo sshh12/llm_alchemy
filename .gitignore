@@ -16,6 +16,9 @@ coverage/
 .env
 .env*.local
 
+# analytics snapshots (npm run analytics:pull / analytics:snapshot)
+.analytics/
+
 # misc
 .cache/
 .DS_Store
