@@ -13,10 +13,17 @@
 // Targets must be recognizable (elements.recognizable = true, set by `npm run db:classify`;
 // run it first) whenever a tier has at least MIN_RECOGNIZABLE_POOL of them; otherwise that tier
 // falls back to every eligible candidate with the recognizable ones preferred (logged below).
+// No tier uses blocked art or a school-unsafe name (scripts/lib/schoolSafety.ts); easy targets
+// need ≥ MIN_EASY_PATHS shallow paths (applied inside the recognizable set); each day's steps
+// increase easy < hard < expert (see buildPools / pickChallenges). Check stored days against
+// these rules with `npm run db:check-challenges`.
 //
 // --replace-generated: in ONE transaction, refuse if any challenge completion exists on/after
 // --from, delete the source='generated' rows in the range (--from, --days), and insert fresh picks.
-// Rows with any other source (e.g. 'legacy') are never touched.
+// Rows with any other source (e.g. 'legacy') are never touched. It also refuses (before loading
+// and again inside the transaction) when --from is on/before liveWindow().frozenThrough: that day
+// is "today" somewhere or is already shown as tomorrow's teaser, so players may have seen its
+// targets. --allow-frozen overrides that check only (an emergency swap of an unsafe target).
 //
 // Small pools: the no-repeat window is 120 days. If a tier's pool is smaller than that (the
 // tier-2 easy pool can be), targets come from the least-recently-used quarter of the pool, so
@@ -30,6 +37,9 @@ import {
   buildPools,
   dayRange,
   GENERATOR,
+  liveWindow,
+  MIN_DISCOVERABLE_POOL,
+  MIN_EASY_PATHS,
   MIN_RECOGNIZABLE_POOL,
   NO_REPEAT_DAYS,
   pickChallenges,
@@ -54,7 +64,10 @@ export function daysForYears(from: string, years: number): number {
 export function printPools(pools: Record<Tier, TierPool>, stats: Record<Tier, PoolStats>, tierSizes: Map<number, number>) {
   console.log("BFS tier sizes (active elements, 2-ingredient recipes):");
   printTable([...tierSizes].map(([tier, n]) => ({ tier, elements: fmt(n) })));
-  console.log(`\nCandidate pools (recognizable-only when >= ${MIN_RECOGNIZABLE_POOL} recognizable):`);
+  console.log(
+    `\nCandidate pools (recognizable-only when >= ${MIN_RECOGNIZABLE_POOL} recognizable; easy needs >= ${MIN_EASY_PATHS} shallow paths ` +
+      `while >= ${MIN_DISCOVERABLE_POOL} pass; school-unsafe names and blocked art left out):`,
+  );
   printTable(
     TIERS.map((t) => ({
       tier: t,
@@ -63,7 +76,10 @@ export function printPools(pools: Record<Tier, TierPool>, stats: Record<Tier, Po
       recognizable: fmt(stats[t].recognizable),
       not: fmt(stats[t].notRecognizable),
       unclassified: fmt(stats[t].unclassified),
+      unsafe: fmt(stats[t].unsafe),
+      art_blocked: fmt(stats[t].artBlocked),
       mode: stats[t].mode,
+      paths_rule: stats[t].pathRule === "off" ? "-" : `${stats[t].pathRule} (${fmt(stats[t].discoverable ?? 0)} pass)`,
       candidates: fmt(pools[t].candidates.length),
       preferred: pools[t].preferred?.length ? pools[t].preferred!.map((l) => fmt(l.size)).join(" > ") : "-",
       repeats_within_window: pools[t].candidates.length < NO_REPEAT_DAYS ? "unavoidable (LRU spacing)" : "avoided",
@@ -75,6 +91,12 @@ export function printPools(pools: Record<Tier, TierPool>, stats: Record<Tier, Po
       console.warn(
         `WARNING: ${t}: only ${s.recognizable} recognizable of ${s.eligible} eligible (< ${MIN_RECOGNIZABLE_POOL}); ` +
           `falling back to all eligible candidates, recognizable preferred.`,
+      );
+    }
+    if (s.pathRule === "preferred") {
+      console.warn(
+        `WARNING: ${t}: only ${s.discoverable} candidate(s) have >= ${MIN_EASY_PATHS} shallow paths (< ${MIN_DISCOVERABLE_POOL}); ` +
+          `preferring them instead of requiring them (check-challenges flags the "undiscoverable" days).`,
       );
     }
     if (s.unclassified > 0) console.warn(`WARNING: ${t}: ${fmt(s.unclassified)} candidate(s) not classified yet (run npm run db:classify).`);
@@ -125,6 +147,7 @@ if (isMain(import.meta.url)) {
         show: { type: "string" },
         "dry-run": { type: "boolean" },
         "replace-generated": { type: "boolean" },
+        "allow-frozen": { type: "boolean" },
       },
     });
     const schema = resolveSchema(values.schema);
@@ -136,10 +159,21 @@ if (isMain(import.meta.url)) {
     const end = addDays(from, count); // exclusive
     const dryRun = values["dry-run"] ?? false;
     const replace = values["replace-generated"] ?? false;
+    const allowFrozen = values["allow-frozen"] ?? false;
+    /** Contract C7: never rewrite a day players may already have seen (today anywhere, or the teaser day). */
+    const refuseFrozen = (when: string) => {
+      const { frozenThrough } = liveWindow(new Date());
+      if (allowFrozen || from > frozenThrough) return;
+      throw new Error(
+        `--replace-generated refused: --from ${from} is on/before ${frozenThrough} (live or tomorrow's teaser; ${when}). ` +
+          `Use --from after it, or --allow-frozen for an emergency swap.`,
+      );
+    };
 
     const pool = createPool(2);
     try {
       if (replace) {
+        refuseFrozen("checked at start");
         const n = await completionsFrom(pool, schema, from);
         if (n > 0) throw new Error(`--replace-generated refused: ${fmt(n)} challenge completion(s) on/after ${from} in ${schema}.challenge_completions`);
         console.log(`Replace mode: 0 challenge completions on/after ${from}; generated days on/after ${from} will be re-picked.\n`);
@@ -162,8 +196,8 @@ if (isMain(import.meta.url)) {
       const toReplace = stored.filter(replaced).length;
 
       const simDays = dayRange(CHALLENGE_CUTOVER_DAY, daysBetween(CHALLENGE_CUTOVER_DAY, end));
-      const picks = pickChallenges(simDays, pools, fixed, history);
       const steps = new Map(elements.map((e) => [e.id, e.steps]));
+      const picks = pickChallenges(simDays, pools, fixed, history, { steps });
       const names = new Map(elements.map((e) => [e.id, e.name]));
       const rows = simDays.filter((d) => d >= from && !fixed.has(d)).map((day) => ({ day, t: picks.get(day)! }));
 
@@ -193,6 +227,7 @@ if (isMain(import.meta.url)) {
         const client = await pool.connect();
         try {
           await client.query("BEGIN");
+          refuseFrozen("checked in the transaction");
           const n = await completionsFrom(client, schema, from);
           if (n > 0) throw new Error(`--replace-generated refused: ${fmt(n)} challenge completion(s) on/after ${from} (checked in the transaction)`);
           const del = await client.query(`DELETE FROM ${schema}.challenges WHERE source = 'generated' AND day >= $1::DATE AND day < $2::DATE`, [from, end]);

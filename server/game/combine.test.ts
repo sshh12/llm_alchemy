@@ -5,10 +5,12 @@ import type { CombineResponse, SortSpec } from "../../src/shared/api.ts";
 import { AiUnavailable, Fizzled, type ElementProposal, type ScoreOutcome } from "../ai/index.ts";
 import { BUDGETS } from "../ratelimit.ts";
 import { encodeSession, type PlayerRow } from "../session.ts";
-import { CombineSchema, combineElements, resolveElement, scoreDiscovery } from "./combine.ts";
+import { CombineSchema, combineElements, fizzleKind, resolveElement, scoreDiscovery } from "./combine.ts";
 
 const m = vi.hoisted(() => ({
   hit: vi.fn(),
+  bumpStat: vi.fn(),
+  proposeElement: vi.fn(),
   scoreElements: vi.fn(),
   playerForClaims: vi.fn(),
   completeTiers: vi.fn(),
@@ -20,8 +22,13 @@ vi.mock("../ratelimit.ts", async (orig) => ({
   ...(await orig<typeof import("../ratelimit.ts")>()),
   enforce: async () => {},
   hit: m.hit,
+  bumpStat: m.bumpStat,
 }));
-vi.mock("../ai/index.ts", async (orig) => ({ ...(await orig<typeof import("../ai/index.ts")>()), scoreElements: m.scoreElements }));
+vi.mock("../ai/index.ts", async (orig) => ({
+  ...(await orig<typeof import("../ai/index.ts")>()),
+  scoreElements: m.scoreElements,
+  proposeElement: m.proposeElement,
+}));
 vi.mock("../session.ts", async (orig) => ({ ...(await orig<typeof import("../session.ts")>()), playerForClaims: m.playerForClaims }));
 vi.mock("./challenges.ts", async (orig) => ({ ...(await orig<typeof import("./challenges.ts")>()), completeTiers: m.completeTiers }));
 vi.mock("../db.ts", async (orig) => {
@@ -333,5 +340,46 @@ describe("combine with an active custom sort", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(res).toMatchObject({ newForPlayer: true });
     expect(res!.sortScore).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------- fizzles
+
+describe("fizzle reasons", () => {
+  it("names each kind of fizzle", () => {
+    expect(fizzleKind('"Rain Forest" is quarantined')).toBe("quarantined_collision");
+    expect(fizzleKind("that is what Fire + Water already makes; the result must need every ingredient")).toBe("subset_collision");
+    expect(fizzleKind("the answer was incomplete (max_output_tokens)")).toBe("truncation");
+    expect(fizzleKind("the answer was incomplete (content_filter)")).toBe("refusal");
+    expect(fizzleKind("the answer was empty")).toBe("empty");
+    expect(fizzleKind("the answer was not a JSON object with a string `name`")).toBe("not_json");
+    expect(fizzleKind('"Fire" is one of the ingredients; the result must be something new')).toBe("validation");
+    expect(fizzleKind("the name just glues ingredient words together")).toBe("validation");
+    expect(fizzleKind("mock fizzle hook")).toBe("mock");
+  });
+
+  it("counts a fizzled invention and tells the player to try something new", async () => {
+    process.env.SESSION_SECRET = "test-secret-".padEnd(48, "x");
+    vi.clearAllMocks();
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    m.playerForClaims.mockResolvedValue({ id: "77", public_id: "pub-77", legacy_user_id: null, created_at: new Date(), session_version: 1, legacy_import_count: 0 });
+    m.proposeElement.mockRejectedValue(new Fizzled('"Rain Forest" is quarantined'));
+    m.db.mockImplementation(async (sql: string) => {
+      if (/FROM \S+discoveries d\s+JOIN/.test(sql)) return [row({ id: "1", name: "Water", status: "active" }), row({ id: "2", name: "Earth", status: "active" })];
+      // No recipe yet (ask the model), and nothing smaller to avoid.
+      if (/WHERE r\.ingredient_ids = \$\d+::INT8\[\]/.test(sql)) return [];
+      throw new Error(`unexpected query: ${sql}`);
+    });
+    const res = combineElements(
+      new Request("https://alchemy.test/api/combine", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-ia-client": "1", cookie: `ia_session=${encodeSession("77", 1)}` },
+        body: JSON.stringify({ ids: ["1", "2"], clientDate: "2026-11-07" }),
+      }),
+      { ip: "203.0.113.7" } as Context,
+    );
+    await expect(res).rejects.toMatchObject({ status: 422, code: "fizzled", message: "That mix fizzled. Try something new." });
+    expect(m.bumpStat).toHaveBeenCalledWith("fizzle:quarantined_collision");
+    vi.restoreAllMocks();
   });
 });

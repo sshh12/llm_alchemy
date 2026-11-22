@@ -19,7 +19,7 @@ export class ApiError extends Error {
     readonly status: number,
     readonly code: ApiErrorCode,
     message: string,
-    readonly extra: { retryAfterMs?: number; pow?: PowChallenge } = {},
+    readonly extra: { retryAfterMs?: number; pow?: PowChallenge; limit?: string } = {},
   ) {
     super(message);
     this.name = "ApiError";
@@ -35,18 +35,22 @@ export const errors = {
   forbidden: (message = "Not allowed.") => new ApiError(403, "forbidden", message),
   notOwned: () => new ApiError(403, "not_owned", "You can only combine elements in your library."),
   notFound: (message = "Not found.") => new ApiError(404, "not_found", message),
-  rateLimited: (retryAfterMs: number) =>
-    new ApiError(429, "rate_limited", "Easy there, alchemist. Try again in a moment.", { retryAfterMs }),
-  budgetExhausted: (retryAfterMs?: number) =>
+  /** `limit`: the tripped rule's name (server/ratelimit.ts), so clients and analytics can tell rules apart. */
+  rateLimited: (retryAfterMs: number, limit?: string) =>
+    new ApiError(429, "rate_limited", "Easy there, alchemist. Try again in a moment.", { retryAfterMs, ...(limit ? { limit } : {}) }),
+  budgetExhausted: (retryAfterMs?: number, limit?: string) =>
     new ApiError(503, "budget_exhausted", "The lab is out of fresh ideas for today. Known recipes still work.", {
       retryAfterMs,
+      ...(limit ? { limit } : {}),
     }),
   /** BUDGETS.jev ran out: only custom sorting stops (the combine copy would be wrong here). */
-  sortBudget: (retryAfterMs?: number) =>
+  sortBudget: (retryAfterMs?: number, limit?: string) =>
     new ApiError(503, "budget_exhausted", "Custom sorting is resting until tomorrow. Your other sorts still work.", {
       retryAfterMs,
+      ...(limit ? { limit } : {}),
     }),
-  fizzled: () => new ApiError(422, "fizzled", "That mix fizzled. Try again."),
+  // At temperature 0 the same mix gives the same answer, so "try again" would only fizzle again.
+  fizzled: () => new ApiError(422, "fizzled", "That mix fizzled. Try something new."),
   aiUnavailable: () => new ApiError(503, "ai_unavailable", "The alchemist is unavailable right now. Try again soon."),
   serverError: () => new ApiError(500, "server_error", "Something went wrong. Please try again."),
 };

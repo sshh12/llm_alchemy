@@ -24,7 +24,7 @@ import {
 } from "../ai/index.ts";
 import { safetyId } from "../crypto.ts";
 import { BODY_LIMIT_DEFAULT, checkCsrf, clientIp, errors, ipHash, json, readJson } from "../http.ts";
-import { BUDGETS, LIMITS, enforce, hit } from "../ratelimit.ts";
+import { BUDGETS, LIMITS, bumpStat, enforce, hit } from "../ratelimit.ts";
 import { playerForClaims, sessionClaims } from "../session.ts";
 import { completeTiers, resolveDay } from "./challenges.ts";
 import { ELEMENT_COLS, isElementId, sortIds, toElementDTO, type ElementRow } from "./dto.ts";
@@ -337,6 +337,28 @@ async function resultsToAvoid(key: string[], owned: ElementRow[]): Promise<Avoid
   }
 }
 
+/**
+ * Stable name for why a combine fizzled, for the daily "fizzle:<reason>" stats (Fizzled.reason is
+ * free text written as feedback for the model's corrective retry, server/ai/llm.ts):
+ *   quarantined_collision  the model named a quarantined element (resolveElement; no retry)
+ *   subset_collision       the answer is what a smaller combination of these already makes
+ *   truncation / refusal   the answer was cut off (max_output_tokens) / stopped by a filter
+ *   empty                  a completed answer with no text
+ *   not_json               the answer was not the JSON object the schema asks for
+ *   validation             any other game rule (name rules, ingredient echoes, starters)
+ *   mock                   the mock AI's "Mock Fizzle" hook (local dev, e2e)
+ * protected_unusable is counted where a protected recipe's result is unusable (combineElements).
+ */
+export function fizzleKind(reason: string): string {
+  if (/ is quarantined$/.test(reason)) return "quarantined_collision";
+  if (reason.includes("already makes")) return "subset_collision";
+  if (reason.startsWith("the answer was incomplete")) return /max_output_tokens/.test(reason) ? "truncation" : "refusal";
+  if (reason === "the answer was empty") return "empty";
+  if (reason.startsWith("the answer was not a JSON object")) return "not_json";
+  if (reason === "mock fizzle hook") return "mock";
+  return "validation";
+}
+
 async function invent(playerId: string, ip: string, key: string[], owned: ElementRow[]): Promise<Outcome> {
   await enforce([
     { limit: LIMITS.llmPlayer, subject: playerId },
@@ -355,6 +377,7 @@ async function invent(playerId: string, ip: string, key: string[], owned: Elemen
   } catch (e) {
     if (e instanceof Fizzled) {
       console.info("[combine] fizzled", e.reason);
+      await bumpStat(`fizzle:${fizzleKind(e.reason)}`);
       throw errors.fizzled();
     }
     if (e instanceof AiUnavailable) throw errors.aiUnavailable();
@@ -392,6 +415,7 @@ export async function combineElements(req: Request, context: Context): Promise<R
   } else if (recipe?.protected) {
     // Protected recipes (challenge paths) are never re-rolled; the backfill keeps their results active.
     console.error("[combine] protected recipe has an unusable result", recipe.recipe_id);
+    await bumpStat("fizzle:protected_unusable");
     throw errors.fizzled();
   } else {
     outcome = await invent(player.id, ip, key, owned);

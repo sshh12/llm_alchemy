@@ -52,7 +52,7 @@ export async function sortLibrary(req: Request, context: Context): Promise<Respo
     { limit: LIMITS.sortItemsIpDay, subject: ip, cost },
     { limit: BUDGETS.jev, subject: "all", cost }, // hit() charges it only after the four above pass
   ]);
-  if (!r.ok) throw isBudget(r.limit) ? errors.sortBudget(r.retryAfterMs) : errors.rateLimited(r.retryAfterMs);
+  if (!r.ok) throw isBudget(r.limit) ? errors.sortBudget(r.retryAfterMs, r.limit.name) : errors.rateLimited(r.retryAfterMs, r.limit.name);
 
   try {
     const out = await scoreElements(body.spec, items, { deadlineMs: SORT_DEADLINE_MS, retries: 1, split: true });

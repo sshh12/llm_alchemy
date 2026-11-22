@@ -166,12 +166,28 @@ export interface ImageRequest {
   id: ElementId;
 }
 
+/**
+ * Which art budget lane a request was served from (server/game/images.ts). fresh: discovered by
+ * this player in the last 20 minutes, or a challenge target that is "today" somewhere.
+ */
+export type ArtLane = "fresh" | "backlog";
+
+/**
+ * Why art was deferred. pace: the paced image budget is ahead of pace for this lane; budget: an
+ * image budget is spent for its window; player / ip: a per-player or per-IP art limit; gave_up:
+ * generation failed too often, check back much later.
+ */
+export type ArtDeferReason = "pace" | "budget" | "player" | "ip" | "gave_up";
+
 export type ImageResponse =
   | { state: "ready"; img: string }
-  | { state: "pending"; retryAfterMs: number }
-  // Not now; keep the placeholder. `limited`: a rate limit or image budget, which applies to every
-  // element, so the client pauses its whole art queue for retryAfterMs (src/app/lib/images.ts).
-  | { state: "deferred"; retryAfterMs: number; limited?: true }
+  // `failed`: the last generation failed and can be retried, so the next request starts a new
+  // one (it is not a poll of someone else's lease; the client counts it against its session cap).
+  | { state: "pending"; retryAfterMs: number; failed?: true }
+  // Not now; keep the placeholder (the emoji) and ask again later (src/app/lib/images.ts).
+  // `limited`: a rate limit or image budget said no (every reason but gave_up). `lane` and
+  // `reason` are optional so older servers and clients keep working.
+  | { state: "deferred"; retryAfterMs: number; limited?: true; lane?: ArtLane; reason?: ArtDeferReason }
   | { state: "blocked" }; // safety system refused; keep the placeholder forever
 
 // ---------------------------------------------------------------- POST /api/player
@@ -275,6 +291,8 @@ export interface ApiError {
   message: string;
   retryAfterMs?: number;
   pow?: PowChallenge; // with 'pow_required'
+  /** With 'rate_limited' / 'budget_exhausted': the rule that said no (e.g. "llm.player"). */
+  limit?: string;
 }
 
 export const API_HEADER = "x-ia-client";

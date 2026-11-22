@@ -1,10 +1,29 @@
-// HTML shell for the public content pages (/how-to-play, /about, /recipes, /daily, 404).
-// Used by scripts/build-pages.ts (static pages written to public/) and by the /daily
-// function, so every page shares one head, header and footer. Pure string templates:
-// the pages work without JavaScript and never touch a player session.
+// HTML shell for the public content pages (/how-to-play, /about, /recipes, /teachers, /privacy,
+// /daily, 404), plus the sitemap and IndexNow helpers that announce them.
+// Used by scripts/build-pages.ts (static pages written to public/), the /daily function and the
+// IndexNow functions, so every page shares one head, header and footer and one list of public
+// URLs. Pure string templates: the pages work without JavaScript and never touch a player session.
 
 export const SITE = "https://alchemy.sshh.io";
 export const ROBOTS = "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1";
+
+/**
+ * Every public, indexable URL: the sitemap lists them (scripts/build-pages.ts) and
+ * deploy-succeeded.mts tells IndexNow when one of them changes. "/" is index.html, "/daily" the
+ * daily function, the rest are static files the build script writes.
+ */
+export const PUBLIC_PAGES = ["/", "/how-to-play", "/recipes", "/daily", "/about", "/teachers", "/privacy"] as const;
+
+/**
+ * The link teachers share (QR code, Google Classroom). The UTM tags land in players.acq_utm_*
+ * through the page head's first-touch capture, so classroom-link players can be counted.
+ */
+export const CLASSROOM_URL = `${SITE}/?utm_source=classroom&utm_medium=teacher`;
+
+/** Google Classroom's share page for a link: a plain URL, so no Google script runs on our page. */
+export function classroomShareUrl(url: string): string {
+  return `https://classroom.google.com/share?url=${encodeURIComponent(url)}`;
+}
 
 export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -32,6 +51,8 @@ const NAV: [string, string][] = [
   ["/daily", "Today's challenge"],
   ["/recipes", "Recipes"],
   ["/about", "About"],
+  ["/teachers", "For teachers"],
+  ["/privacy", "Privacy"],
 ];
 
 const GA = `<script>
@@ -71,6 +92,8 @@ export interface PageOptions {
   jsonLd?: object[];
   /** Missing pages must not be indexed or canonicalized. */
   notFound?: boolean;
+  /** Page-specific CSS, inlined in the head (shared rules belong in public/pages.css). */
+  style?: string;
 }
 
 export function renderPage(o: PageOptions): string {
@@ -123,7 +146,7 @@ export function renderPage(o: PageOptions): string {
     <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/pages.css" />
+    <link rel="stylesheet" href="/pages.css" />${o.style ? `\n    <style>${o.style}</style>` : ""}
     ${GA}
   </head>
   <body>
@@ -144,4 +167,79 @@ ${o.body}
   </body>
 </html>
 `;
+}
+
+// ---------------------------------------------------------------- sitemap
+
+export interface SitemapEntry {
+  /** Path from PUBLIC_PAGES, e.g. "/teachers". */
+  path: string;
+  /** YYYY-MM-DD the page's content last changed, or null to omit <lastmod>. */
+  lastmod: string | null;
+}
+
+export function sitemapXml(entries: readonly SitemapEntry[]): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${entries.map((e) => `  <url>\n    <loc>${SITE}${e.path}</loc>${e.lastmod ? `\n    <lastmod>${e.lastmod}</lastmod>` : ""}\n  </url>`).join("\n")}
+</urlset>
+`;
+}
+
+/** The <lastmod> of each URL in a sitemap this module wrote, by path. */
+export function sitemapLastmods(xml: string): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const m of xml.matchAll(/<url>\s*<loc>([^<]+)<\/loc>\s*<lastmod>(\d{4}-\d{2}-\d{2})<\/lastmod>/g)) {
+    const loc = m[1]!.trim();
+    if (loc.startsWith(SITE)) out.set(loc.slice(SITE.length) || "/", m[2]!);
+  }
+  return out;
+}
+
+/**
+ * A rebuilt page's <lastmod>: its previous date while the HTML is byte-for-byte unchanged
+ * (line endings aside), otherwise the build date. Bing leans on lastmod to decide what to
+ * recrawl, so a date that moves on every build would teach it to ignore ours.
+ */
+export function pageLastmod(before: string | null, after: string, previous: string | undefined, buildDate: string): string {
+  const lf = (s: string) => s.replace(/\r\n/g, "\n");
+  const same = before !== null && lf(before) === lf(after);
+  return same && previous ? previous : buildDate;
+}
+
+// ---------------------------------------------------------------- IndexNow
+
+/** IndexNow key: the same value is served as /<key>.txt (public/), which proves we own the host. */
+export const INDEXNOW_KEY = "7fc8fe186af1a871241cd282c69fea92";
+const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
+
+/** One IndexNow POST, as logged in the "indexnow" blob store (see indexNowLogKey). */
+export interface IndexNowSubmission {
+  /** ISO time the request was sent. */
+  time: string;
+  /** Absolute URLs submitted. */
+  urls: string[];
+  /** HTTP status (200/202 = accepted; 0 = the request itself failed). */
+  status: number;
+}
+
+/** Blob key of a submission's record in the "indexnow" store: list the "log/" prefix to inspect them. */
+export const indexNowLogKey = (s: Pick<IndexNowSubmission, "time">) => `log/${s.time}`;
+
+/**
+ * Tell IndexNow (Bing and the other participating engines share submissions) that these
+ * paths changed. Never throws: a network failure or timeout comes back as status 0.
+ */
+export async function submitIndexNow(paths: readonly string[], now = new Date(), doFetch: typeof fetch = fetch): Promise<IndexNowSubmission> {
+  const urls = paths.map((p) => `${SITE}${p}`);
+  const res = await doFetch(INDEXNOW_ENDPOINT, {
+    method: "POST",
+    headers: { "content-type": "application/json; charset=utf-8" },
+    body: JSON.stringify({ host: new URL(SITE).host, key: INDEXNOW_KEY, keyLocation: `${SITE}/${INDEXNOW_KEY}.txt`, urlList: urls }),
+    signal: AbortSignal.timeout(10_000),
+  }).catch((e: unknown) => {
+    console.warn("[indexnow] request failed:", (e as Error)?.name, (e as Error)?.message);
+    return null;
+  });
+  return { time: now.toISOString(), urls, status: res?.status ?? 0 };
 }

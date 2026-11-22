@@ -68,6 +68,19 @@ describe("responses", () => {
     expect(await res.json()).toEqual({ error: "rate_limited", message: expect.any(String), retryAfterMs: 2_500 });
   });
 
+  it("names the rule that said no", async () => {
+    const limited = errorResponse(errors.rateLimited(60_000, "llm.player"));
+    expect(await limited.json()).toEqual({ error: "rate_limited", message: expect.any(String), retryAfterMs: 60_000, limit: "llm.player" });
+    const budget = errorResponse(errors.budgetExhausted(1_000, "budget.llm"));
+    expect(budget.status).toBe(503);
+    expect(await budget.json()).toMatchObject({ error: "budget_exhausted", limit: "budget.llm" });
+    expect(await errorResponse(errors.sortBudget(1_000, "budget.jev")).json()).toMatchObject({ limit: "budget.jev" });
+  });
+
+  it("tells players a fizzled mix needs a different one", async () => {
+    expect(await errorResponse(errors.fizzled()).json()).toEqual({ error: "fizzled", message: "That mix fizzled. Try something new." });
+  });
+
   it("streams very large bodies intact", async () => {
     const body = { rows: Array.from({ length: 60_000 }, (_, i) => ({ i, s: "x".repeat(60) })) };
     expect(await json(body).json()).toEqual(body);

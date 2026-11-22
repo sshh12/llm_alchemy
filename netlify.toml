@@ -121,5 +121,18 @@
   status = 301
   force = true
 
+[[redirects]]
+  from = "/teachers.html"
+  to = "/teachers"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/privacy.html"
+  to = "/privacy"
+  status = 301
+  force = true
+
 # No catch-all: the game lives at "/", content pages are static files (/how-to-play, /about,
-# /recipes) or functions (/daily), and anything else gets public/404.html with a real 404.
+# /recipes, /teachers, /privacy) or functions (/daily), and anything else gets public/404.html
+# with a real 404.

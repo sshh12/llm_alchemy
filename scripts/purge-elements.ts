@@ -12,16 +12,18 @@
 // Semantics (implemented in scripts/lib/purge.ts):
 // - Purge = soft delete: elements.status = 'quarantined', quarantine_reason = 'review', purge_run = <run id>.
 // - Never purged: starters, the target of any challenge day, the shortest derivations of the
-//   targets of every day that is "today" somewhere (plus a 2 h margin), protected recipes' elements.
+//   targets of every day that is "today" somewhere or is tomorrow's teaser (plus a 2 h margin;
+//   repickCutoff), protected recipes' elements.
 // - Recipes whose result is removed -> 'quarantined' unless protected (the next combine re-rolls
 //   them: the existing heal path). Recipes that use a removed element -> 'quarantined' (dormant).
 // - Leaf cascade: active non-starter elements that were reachable from the starters before and
 //   are not after are quarantined with reason 'orphaned' (until stable). Elements that were
 //   already unreachable are left alone. depth/steps are recomputed for everything still reachable.
 //   Never-purge elements are never orphaned; if one becomes unreachable it is reported.
-// - Generated challenge days after the latest plausible "today" whose targets are no longer
-//   active or no longer in their BFS-tier pools BECAUSE of the purge are re-picked (same picker as db:challenges
-//   --replace-generated, zero-completions check, one transaction). Today and the past are never touched.
+// - Generated challenge days after tomorrow's teaser day (repickCutoff) whose targets are no longer
+//   active or no longer in their BFS-tier pools BECAUSE of the purge are re-picked (same pools and
+//   picker as db:challenges --replace-generated, zero-completions check, one transaction). Today,
+//   the teaser day and the past are never touched.
 // - Each apply run gets an id (purge-YYYYMMDD-HHMMSS) in elements/recipes.purge_run and a summary
 //   in meta 'purge:<id>'. `restore --run <id>` reverses it (re-picked challenge days stay).
 //   If apply fails midway, `restore --run <id>` and then plan/apply again.
@@ -34,7 +36,7 @@ import type pg from "pg";
 import type { Tier } from "../src/shared/api.ts";
 import { addDays, CHALLENGE_CUTOVER_DAY } from "../src/shared/dates.ts";
 import { completionsFrom, daysBetween, insertDays } from "./generate-challenges.ts";
-import { buildPools, dayRange, NO_REPEAT_DAYS, pickChallenges, TIERS, type DayTargets, type TierPool } from "./lib/challenges.ts";
+import { buildPools, dayRange, liveWindow, NO_REPEAT_DAYS, pickChallenges, TIERS, type DayTargets, type TierPool } from "./lib/challenges.ts";
 import { isMain, printTable } from "./lib/cli.ts";
 import { chunk, createPool, fmt, resolveSchema, retrying, withTx } from "./lib/db.ts";
 import { depthOf, knuthFixpoint, stepsOf, type Metric } from "./lib/graph.ts";
@@ -172,6 +174,17 @@ interface DbElement {
   depth: number | null;
   steps: number | null;
   recognizable: boolean | null;
+  image_status: string | null;
+}
+
+/**
+ * The last day a purge may not re-pick (and whose targets' paths it protects): liveWindow's
+ * frozenThrough, the day after the last day that is "today" anywhere, because its easy target is
+ * already shown as tomorrow's teaser (contract C7), taken 2 h ahead (challengeWindow's margin) so
+ * a day cannot freeze while a run is going. Always challengeWindow().last + 1.
+ */
+function repickCutoff(now = new Date()): string {
+  return liveWindow(new Date(now.getTime() + 2 * 3_600_000)).frozenThrough;
 }
 
 interface State {
@@ -196,7 +209,7 @@ async function loadState(pool: pg.Pool, schema: string, { follower }: { follower
   const t0 = performance.now();
   const loadedAt = (await pool.query<{ now: Date }>("SELECT now() AS now")).rows[0]!.now;
   const [els, recs, chs] = await Promise.all([
-    pool.query<DbElement>(`SELECT id, name, status, is_starter, depth, steps, recognizable FROM ${schema}.elements ${aost}`),
+    pool.query<DbElement>(`SELECT id, name, status, is_starter, depth, steps, recognizable, image_status FROM ${schema}.elements ${aost}`),
     pool.query<{ id: string; ingredient_ids: string[]; result_id: string; protected: boolean }>(
       `SELECT id, ingredient_ids, result_id, protected FROM ${schema}.recipes ${aost} WHERE status = 'active'`,
     ),
@@ -214,7 +227,7 @@ async function loadState(pool: pg.Pool, schema: string, { follower }: { follower
   const starters = active.filter((e) => e.isStarter).map((e) => e.id);
   const before = { depth: knuthFixpoint(starters, graph, depthOf), steps: knuthFixpoint(starters, graph, stepsOf) };
   const challenges: ChallengeDay[] = chs.rows.map((c) => ({ day: c.day, source: c.source, targets: { easy: c.easy_id, hard: c.hard_id, expert: c.expert_id } }));
-  const window = challengeWindow();
+  const window = { first: challengeWindow().first, last: repickCutoff() };
   const protect = neverPurge({ elements: active, recipes, challenges, window, graph, metrics: before });
   console.log(
     `[${schema}] loaded ${fmt(all.size)} elements (${fmt(active.length)} active, ${fmt(before.depth.value.size)} reachable), ` +
@@ -499,12 +512,21 @@ interface Analysis {
 function analyze(s: State, direct: Iterable<string>, cascade = true): Analysis {
   const effect = computePurge({ elements: s.active, recipes: s.recipes, direct, protect: s.protect, cascade });
   const pairs = s.recipes.filter((r) => r.ingredients.length === 2);
-  const poolEl = (e: PurgeElement) => ({ id: e.id, name: e.name, isStarter: e.isStarter, recognizable: e.recognizable });
+  // The generator's full inputs (depth for the easy paths rule, blocked art), with depth from
+  // the metrics on each side of the purge, so pools match what db:challenges would build.
+  const poolEl = (depth: Metric) => (e: PurgeElement) => ({
+    id: e.id,
+    name: e.name,
+    isStarter: e.isStarter,
+    recognizable: e.recognizable,
+    depth: depth.value.get(e.id) ?? null,
+    imageStatus: s.all.get(e.id)?.image_status ?? null,
+  });
   const afterEls = s.active.filter((e) => !effect.removed.has(e.id));
   const afterIds = new Set(afterEls.map((e) => e.id));
-  const cutoff = s.window.last;
-  const poolsAfter = buildPools(afterEls.map(poolEl), pairs).pools;
-  const poolsBefore = buildPools(s.active.map(poolEl), pairs).pools;
+  const cutoff = repickCutoff();
+  const poolsAfter = buildPools(afterEls.map(poolEl(effect.after.depth)), pairs).pools;
+  const poolsBefore = buildPools(s.active.map(poolEl(s.before.depth)), pairs).pools;
   const brokenBefore = brokenFutureDays(s.challenges, cutoff, s.activeIds, poolsBefore);
   // Only what this purge breaks is re-picked; earlier drift is reported and left alone.
   const broken = newlyBroken(brokenBefore, brokenFutureDays(s.challenges, cutoff, afterIds, poolsAfter));
@@ -513,7 +535,7 @@ function analyze(s: State, direct: Iterable<string>, cascade = true): Analysis {
   let regen: RegenDay[] = [];
   let regenError: string | null = null;
   try {
-    regen = repick(s, broken, poolsAfter);
+    regen = repick(s, broken, poolsAfter, stepsAfter);
   } catch (e) {
     regenError = (e as Error).message;
     regen = broken.map((b) => ({ day: b.day, tiers: b.tiers, old: s.challenges.find((c) => c.day === b.day)!.targets, new: null }));
@@ -522,7 +544,7 @@ function analyze(s: State, direct: Iterable<string>, cascade = true): Analysis {
 }
 
 /** The generator's deterministic picks for the broken days only (all other stored days fixed). */
-function repick(s: State, broken: BrokenDay[], pools: Record<Tier, TierPool>): RegenDay[] {
+function repick(s: State, broken: BrokenDay[], pools: Record<Tier, TierPool>, steps: ReadonlyMap<string, number | null>): RegenDay[] {
   if (broken.length === 0) return [];
   const brokenDays = new Set(broken.map((b) => b.day));
   const history = s.challenges
@@ -530,7 +552,7 @@ function repick(s: State, broken: BrokenDay[], pools: Record<Tier, TierPool>): R
     .map((c) => ({ day: c.day, targets: c.targets }));
   const fixed = new Map(s.challenges.filter((c) => c.day >= CHALLENGE_CUTOVER_DAY && !brokenDays.has(c.day)).map((c) => [c.day, c.targets]));
   const last = broken.at(-1)!.day;
-  const picks = pickChallenges(dayRange(CHALLENGE_CUTOVER_DAY, daysBetween(CHALLENGE_CUTOVER_DAY, last) + 1), pools, fixed, history);
+  const picks = pickChallenges(dayRange(CHALLENGE_CUTOVER_DAY, daysBetween(CHALLENGE_CUTOVER_DAY, last) + 1), pools, fixed, history, { steps });
   return broken.map((b) => ({ day: b.day, tiers: b.tiers, old: s.challenges.find((c) => c.day === b.day)!.targets, new: picks.get(b.day)! }));
 }
 
@@ -895,8 +917,8 @@ async function cmdApply(args: string[]) {
     const lateDone = late.length ? await quarantineRecipes(pool, schema, run, "recipes (created during the run)", late) : 0;
     const depthDone = await writeDepthSteps(pool, schema, e.updates);
 
-    // ---- re-pick affected future challenge days (window re-checked now: never today or the past)
-    const cutoff = challengeWindow().last;
+    // ---- re-pick affected future challenge days (cutoff re-checked now: never today, the teaser day or the past)
+    const cutoff = repickCutoff();
     const regen = a.regen.filter((r) => r.day > cutoff && r.new);
     if (regen.length < a.regen.length) console.warn(`  ${a.regen.length - regen.length} affected day(s) entered the live window during the run and were NOT re-picked`);
     let regenerated = 0;

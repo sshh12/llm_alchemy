@@ -28,6 +28,11 @@ export class ApiFailure extends Error {
     readonly status = 0,
     readonly retryAfterMs?: number,
     readonly pow?: PowChallenge,
+    /**
+     * rate_limited / budget_exhausted: the server rule that said no (e.g. "llm.player"), or
+     * "platform" for a 429 without a JSON body (a Netlify platform rate limit).
+     */
+    readonly limit?: string,
   ) {
     super(message);
     this.name = "ApiFailure";
@@ -97,9 +102,16 @@ async function post<T>(path: string, body: unknown, opts: { signal?: AbortSignal
     }
     if (res.ok && data !== null) return data as T;
     if (isApiError(data)) {
-      throw new ApiFailure(data.error, data.message, res.status, data.retryAfterMs ?? retryAfterHeader(res), data.pow);
+      throw new ApiFailure(data.error, data.message, res.status, data.retryAfterMs ?? retryAfterHeader(res), data.pow, data.limit);
     }
-    throw new ApiFailure(res.ok ? "server_error" : codeForStatus(res.status), res.statusText || "Request failed", res.status, retryAfterHeader(res));
+    throw new ApiFailure(
+      res.ok ? "server_error" : codeForStatus(res.status),
+      res.statusText || "Request failed",
+      res.status,
+      retryAfterHeader(res),
+      undefined,
+      res.status === 429 ? "platform" : undefined,
+    );
   } finally {
     if (timer) clearTimeout(timer);
     opts.signal?.removeEventListener("abort", onAbort);

@@ -1,17 +1,27 @@
 // Share card: a 1080×1350 PNG drawn client-side (art or placeholder, name, recipe, Origin
 // badge, date, site), shared via the Web Share API when files are supported, otherwise
-// downloaded with the link copied to the clipboard.
+// downloaded with the link copied to the clipboard. An element without art yet asks for it with
+// fresh priority and waits a few seconds before the card falls back to the placeholder.
 import type { ElementDTO } from "../../shared/api.ts";
 import { track } from "./analytics.ts";
 import { SITE_HOST, SITE_URL } from "../content.ts";
 import { thumbUrl } from "./api.ts";
 import { formatDay } from "./format.ts";
+import { noteFresh, waitForArt } from "./images.ts";
 import { BLOB_PATHS, FALLBACK_EMOJI, placeholderFor } from "./placeholder.ts";
 
 const W = 1080;
 const H = 1350;
 const INK = "#2A2118";
 const MUTED = "#6B5D4E";
+/** Longest wait for missing art (a generation takes ~8 s) before drawing the placeholder card. */
+const ART_WAIT_MS = 10_000;
+/**
+ * The wait when the share sheet will open. navigator.share needs the tap's transient user
+ * activation, which browsers drop about 5 s after the tap; waiting longer would turn the share
+ * into a download.
+ */
+const ART_WAIT_SHARE_SHEET_MS = 3_000;
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
@@ -180,11 +190,28 @@ export function shareUrl(surface: ShareSurface): string {
   return u.toString();
 }
 
+/** Will this browser offer the share sheet for an image file? (Checked before the card exists.) */
+function canShareFiles(): boolean {
+  try {
+    return !!navigator.canShare?.({ files: [new File([], "card.png", { type: "image/png" })] });
+  } catch {
+    return false;
+  }
+}
+
+/** `element` with its art, if it can be painted in time; else as it is (the placeholder card). */
+async function withArt(element: ElementDTO): Promise<ElementDTO> {
+  if (element.img || element.art !== "missing") return element;
+  noteFresh(element.id);
+  const img = await waitForArt(element.id, canShareFiles() ? ART_WAIT_SHARE_SHEET_MS : ART_WAIT_MS);
+  return img ? { ...element, img, art: "ready" } : element;
+}
+
 async function shareCard(input: ShareInput, url: string): Promise<ShareOutcome> {
   const { element, first } = input;
   const text = first ? `I was the first person ever to discover ${element.name} in Infinite Alchemy!` : `I made ${element.name} in Infinite Alchemy.`;
   try {
-    const blob = await renderShareCard(input);
+    const blob = await renderShareCard({ ...input, element: await withArt(element) });
     if (!blob) return "failed";
     const file = new File([blob], `${element.name.replace(/[^\w-]+/g, "-").toLowerCase()}.png`, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {

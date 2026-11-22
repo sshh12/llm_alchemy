@@ -163,23 +163,35 @@ Errors use `ApiError` with the right HTTP status (400/401/403/404/429/503/422).
 1. Netlify platform rate limits (per IP): `/api/combine` and `/api/image` — rejected
    requests never invoke a function. `/api/sort` has no platform rule (the Starter plan's two
    are used), so its app limits below are the only gate.
-2. App-level fixed-window limits (counters): per player and per IP for bootstrap, player
-   creation, combine, new recipes (LLM), images, reset, transfer, and sort (requests, plus
-   items counted in Jev questions).
+2. App-level fixed-window limits (counters; the table is in `server/ratelimit.ts`): per player
+   and per IP for bootstrap, player creation, combine, new recipes (LLM), images, reset,
+   transfer, and sort (requests, plus items counted in Jev questions). A request over a limit
+   keeps its charge only on the rule it broke and the other counters are refunded, so a
+   1-minute throttle never turns into an hour or day lock. 429 and 503 bodies name the rule
+   (`limit`, e.g. `llm.player`); the client reports a 429 without a JSON body (the platform
+   rule) as `platform`.
 3. Global budgets: `JEV_DAILY_CAP` (default 2,500,000 Jev questions/day ≈ $10-13; when it runs
    out only custom sort stops, everything else keeps working), `LLM_DAILY_CAP` (default 100,000 new recipes/day ≈ $10),
    `IMAGE_DAILY_CAP` (default 2,000 images/day ≈ $10.60, ~1.5× the monthly average so no single
    week can spend the month), and `IMAGE_MONTHLY_CAP` (default 40,000 generations per 30 days
-   ≈ $212, sized to ~1,100-1,400/day). Over budget → combine of *known*
+   ≈ $212, sized to ~1,100-1,400/day). The two image budgets are **paced** through their
+   windows (see "Images"). Over budget → combine of *known*
    recipes still works; new recipes return `budget_exhausted`; images return `deferred`.
    Budgets are charged only after the per-player/per-IP limits pass (and, for new players,
-   after the PoW salt is spent), so rejected requests never consume them.
+   after the PoW salt is spent), and a budget denial refunds every counter of that request
+   (budgets and per-player/per-IP alike), so rejected requests never consume them and a
+   daily-cap denial no longer charges the monthly budget. Budget rows are kept 90 days past
+   their window, as spending history.
+   Daily stats (counters `stat:<name>:<UTC day index>`, kept 90 days, `bumpStat`):
+   `denied:<rule>` for every limit or budget denial, `fizzle:<reason>` (`fizzleKind` in
+   `server/game/combine.ts`), and `art:<lane>:started` / `art:<lane>:deferred_<reason>`.
 4. PoW on player creation; per-IP creation limits; global daily player cap.
 5. Ingredient ownership is enforced, so automation must play legitimately to reach new recipes.
    Custom sort scores only the player's own active elements, with names read from the DB (the
    client sends ids), so it can't be used as a free scoring proxy.
 6. Images are only generated for elements the player owns or today's challenge targets,
-   for tiles actually on screen, with per-player hourly/daily caps.
+   for tiles actually on screen, with per-player hourly/daily caps (and a smaller daily cap on
+   backlog art).
 7. Input validation with zod; strict body-size caps; LLM output re-validated; ingredient
    names are passed as JSON-quoted data, never as instructions. Custom-sort prompts and group
    labels are cleaned (control/format characters, length) and passed to Jev only as JSON data
@@ -197,6 +209,64 @@ element's hint, or for hint-less legacy rows a generic "a stylized <name>, the e
 phrase); a second refusal → `blocked` permanently.
 The client shows the procedural placeholder (emoji on a name-hashed gradient) until art is ready, then
 fades it in. Tiles use `/.netlify/images?url=<img>&w=192&h=192&fit=contain` and fall back to the raw path.
+
+**Lanes and pacing** (`server/game/images.ts`; `imageBudgets` in `server/ratelimit.ts`). Before
+the lease, a request is put in a lane: **fresh** if this player discovered the element in the last
+20 minutes (`discoveries.discovered_at`, so a client can't jump the queue) or it is a challenge
+target that is "today" somewhere; **backlog** otherwise. Both lanes charge the same
+`budget.image` (UTC day) and `budget.image.month` (30-day epoch window) counters, each against
+an allowance that grows through its window:
+
+- daily: `IMAGE_DAILY_CAP × min(1, CDF(t) + lead)`, CDF = the cumulative weekday share of
+  world-first discoveries by UTC hour (GA 2026-11-16..20: 28% by 12:00, 91% by 21:00), linear
+  within the hour; lead +0.10 for fresh, −0.05 for backlog;
+- monthly: `IMAGE_MONTHLY_CAP × min(1, (elapsed + lead) / 30 days)`, linear accrual (~1,333/day
+  at 40,000); lead 1 day for fresh, 0 for backlog.
+
+So fresh art may run a little ahead of pace and backlog art only spends while spending is behind
+it: the day's art lasts into US school hours (an unpaced 2,000 ran out around 12:00 UTC on
+weekdays) and the month's lasts the month. Per player: `image.player.hour` 30 and
+`image.player.day` 60 (generations started), plus `image.backlog.player.day` 20 on backlog art;
+per IP: `image.ip.hour` 300 and `image.ip.day` 1,500. Any denial gives the lease and the attempt
+back and answers `{state: "deferred", retryAfterMs, limited: true, lane, reason}` (`pace` |
+`budget` | `player` | `ip`); for a pace denial `retryAfterMs` is the time until the allowance
+reaches the count (at least a minute), otherwise the window end, capped at 15 minutes in the
+backlog lane (clients from before the lanes paused their whole art queue for that hint). A failed
+generation that can be retried answers `{state: "pending", retryAfterMs, failed: true}`.
+
+The client (`src/app/lib/images.ts`) never waits out a window. A deferred element keeps its emoji
+and rests: backlog art is asked for again only when a tile showing it next comes into view after
+max(`retryAfterMs`, 10 min), or on the next page load, never from a timer. An over-pace budget
+then costs one request per tile view, the art it can't pay for today is spread over the
+following hours and days, and players who scroll through thousands of tiles meet a soft, visual
+limit instead of an error. After any limited deferral, backlog requests wait `retryAfterMs`
+clamped to 2-15 minutes, so a library scroll can't fire a burst of doomed requests. Fresh art
+(discoveries of the last 20 minutes, from `noteFresh` or the library's `discoveredAt`, so a
+reload keeps them fresh; today's targets) goes to the front of the queue,
+skips the backlog hold and the session cap (150 backlog requests that could have started a
+generation, including retries after a `failed` one; polls of a held lease and deferrals don't
+count), and is retried on a timer after
+max(`retryAfterMs`, 2 min) while on screen, up to 3 deferrals, then rests like backlog. An HTTP
+429 pauses the whole queue for at least 10 s; 300 deferred replies end art requests for the
+session. A share card asks for missing art with fresh priority and waits up to 10 s (3 s when
+the share sheet will open, since `navigator.share` needs the tap's transient activation, which
+lasts about 5 s) before drawing the placeholder, and draws it at once when the art can't come in
+time: a deferral, a settled element or a queue pause ends the wait, and after a `budget`,
+`player`, `ip` or given-up deferral it does not ask again until that hint has passed.
+
+`elements.image_ready_at` (migration `0008_art_limits.sql`) stamps when art became ready, so art
+latency is `image_ready_at − created_at` (world-firsts) or `− discoveries.discovered_at`.
+**Apply migration 0008 before deploying the code that writes it** (the endpoint falls back to
+an update without the column, so a late migration loses timestamps, never art).
+
+Changing a cap mid-window moves its whole allowance line at once: raising `IMAGE_MONTHLY_CAP`
+lifts the accrual line (and frees art) immediately; lowering it can leave spending above the new
+line, which defers art until the accrual catches up. `IMAGE_MONTHLY_CAP=55000` is a **temporary**
+Netlify override for the window that ends 2026-12-03 00:00 UTC: by 11-22 the default 40,000 was
+~86% spent (34.4k, partly on charges the old limiter made on daily-cap denials), which is ~6 days
+ahead of a 40,000 accrual line, so pacing without the override would defer nearly all art until
+~11-28. Set it before (or with) the pacing deploy, and remove it, or choose the permanent budget,
+when that window ends; otherwise the next window accrues at 55,000 too.
 
 ## Legacy migration (idempotent)
 
@@ -233,7 +303,7 @@ two review passes of small models and never by the script itself:
    `purge_review`; a second `verify` pass (`export --pass verify`) re-judges the review's purges.
 3. `plan` (read-only) = review purge AND verify purge, minus the never-purge set (starters, every
    challenge target, the shortest derivations of the targets of every day that is "today"
-   somewhere, protected recipes' elements), plus the cascade: active elements that were reachable
+   somewhere and of tomorrow's teaser day, protected recipes' elements), plus the cascade: active elements that were reachable
    from the starters and are not any more become `orphaned` (already-unreachable ones are left
    alone; never-purge ones are kept and reported). `--no-cascade` keeps those survivors active but
    unreachable instead (used for the first production run: most "orphans" were real names that
@@ -241,8 +311,10 @@ two review passes of small models and never by the script itself:
    unless protected (the next combine heals them); recipes using a removed element are quarantined.
 4. `apply --plan` re-validates, quarantines in batched transactions (run id `purge-YYYYMMDD-HHMMSS`
    in `elements/recipes.purge_run`, summary in meta `purge:<id>`), recomputes depth/steps, and
-   re-picks generated days after the live window whose targets the purge made inactive or moved
-   out of their BFS-tier pool. `restore --run <id>` reverses a run (re-picked days stay).
+   re-picks generated days after tomorrow's teaser day (`liveWindow().frozenThrough` 2 h ahead;
+   that day's easy target is already shown) whose targets the purge made inactive or moved out of
+   their tier pool (the generator's pools: recognizable, school-safe, art not blocked, easy paths
+   rule, steps order). `restore --run <id>` reverses a run (re-picked days stay).
 
 Combine reactivates an `orphaned` element when the model names it again; any other quarantined
 name still fizzles.

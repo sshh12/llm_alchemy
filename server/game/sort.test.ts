@@ -253,14 +253,18 @@ describe("POST /api/sort failures", () => {
       status: 503,
       code: "budget_exhausted",
       message: "Custom sorting is resting until tomorrow. Your other sorts still work.",
-      extra: { retryAfterMs: 3_600_000 },
+      extra: { retryAfterMs: 3_600_000, limit: "budget.jev" },
     });
     expect(m.scoreElements).not.toHaveBeenCalled();
   });
 
   it("answers 429 when an item limit is hit", async () => {
     m.hit.mockResolvedValue({ ok: false, limit: LIMITS.sortItemsPlayerHour, retryAfterMs: 60_000 });
-    await expect(request({ spec: rank })).rejects.toMatchObject({ status: 429, code: "rate_limited", extra: { retryAfterMs: 60_000 } });
+    await expect(request({ spec: rank })).rejects.toMatchObject({
+      status: 429,
+      code: "rate_limited",
+      extra: { retryAfterMs: 60_000, limit: "sort.items.player.hour" },
+    });
     expect(m.scoreElements).not.toHaveBeenCalled();
   });
 

@@ -7,6 +7,7 @@ import { track, trackOncePerSession } from "../../lib/analytics.ts";
 import { ApiFailure, combine } from "../../lib/api.ts";
 import { findSpawn, type Pt } from "../../lib/geometry.ts";
 import { haptic } from "../../lib/haptics.ts";
+import { noteFresh } from "../../lib/images.ts";
 import { recipeCache } from "../../lib/recipes.ts";
 import { playSound } from "../../lib/sound.ts";
 import { SPRING } from "../../lib/spring.ts";
@@ -323,6 +324,7 @@ function failMerge(pendingUid: string, saved: SavedTile[], at: Pt, e: unknown, u
 function succeedMerge(pendingUid: string, ids: ElementId[], res: CombineResponse, local: boolean): void {
   const result = res.result;
   if (!local) applyCombine(res);
+  if (res.newForPlayer) noteFresh(result.id); // its art jumps the queue (src/app/lib/images.ts)
   recipeCache.set(ids, result.id);
   writeString(KEYS.merged, "1");
 

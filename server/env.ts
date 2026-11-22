@@ -54,23 +54,33 @@ export const env = {
   },
   /**
    * Image generations per UTC day (≈ $0.0053 each, so 2,000 ≈ $10.60/day). About 1.5× the monthly
-   * cap's daily average: a busy school day is absorbed, but no single week can spend the month,
-   * so art pauses for the rest of a day instead of for the rest of the month.
+   * cap's daily average: a busy school day is absorbed, but no single week can spend the month.
+   * Paced by when players discover things (server/ratelimit.ts imageBudgets), so the day's art
+   * lasts into US school hours instead of running out around 12:00 UTC.
    */
   get imageDailyCap() {
     return int("IMAGE_DAILY_CAP", 2_000);
   },
   /**
    * Image generations per 30-day window: the OpenAI art budget (40,000 ≈ $212). Sized to the
-   * observed ~1,100-1,400/day (2026-11). Netlify run time is not the constraint: the site is on
-   * Functions Level 1 (1,000 h/month; each generation holds a function ~8-10 s), see
-   * docs/ARCHITECTURE.md "Stack".
+   * observed ~1,100-1,400/day (2026-11). Paced: it accrues linearly over the window (~1,333/day
+   * at 40,000), so a change mid-window moves the whole accrual line at once (docs/ARCHITECTURE.md
+   * "Images"). Netlify run time is not the constraint: the site is on Functions Level 1
+   * (1,000 h/month; each generation holds a function ~8-10 s), see docs/ARCHITECTURE.md "Stack".
    */
   get imageMonthlyCap() {
     return int("IMAGE_MONTHLY_CAP", 40_000);
   },
+  /**
+   * New-player proof-of-work difficulty (only player creation asks for it). 16 bits is ~0.05 s mean
+   * (p90 ~0.14 s) at the ~1M hash/s of a fast machine and several times that on school Chromebooks,
+   * where 18 bits added ~2 s to the first visit.
+   * Lowering it is backward compatible (server/pow.ts checks solutions against the current
+   * value, and an 18-bit solution has 16 zero bits too); raising it rejects in-flight solutions
+   * for up to the 10-minute challenge TTL.
+   */
   get powBits() {
-    return int("POW_BITS", 18);
+    return int("POW_BITS", 16);
   },
   /** Global cap on new (non-legacy) players per UTC day. */
   get playerDailyCap() {

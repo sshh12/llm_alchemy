@@ -5,6 +5,9 @@ what you made, then paints it. Start with Earth, Water, Air, Fire and Time, and 
 
 **Play at [alchemy.sshh.io](https://alchemy.sshh.io).** Free, no account, works on phones.
 
+[How to play](https://alchemy.sshh.io/how-to-play) · [Recipes](https://alchemy.sshh.io/recipes) ·
+[Today's challenge](https://alchemy.sshh.io/daily) · [For teachers](https://alchemy.sshh.io/teachers)
+
 ![Infinite Alchemy](public/og-image.png)
 
 Infinite Alchemy launched in May 2023 as one of the first AI-powered alchemy games to invent
