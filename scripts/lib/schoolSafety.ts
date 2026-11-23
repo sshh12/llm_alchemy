@@ -200,6 +200,11 @@ export const CHALLENGE_DENY: ReadonlySet<string> = new Set(
     // generated live): Amazon, Discord, Star Wars, DC, Toho, Terminator, Marvel, Skyrim.
     "Amazon", "Discord", "Jedi", "Sith", "Lightsaber", "Batmobile", "Aquaman", "Godzilla", "Terminator",
     "Sharknado", "Adamantium", "Dragonborn", "Jacuzzi",
+    // Rollout review of the review-emoji list (2026-11-23): gore, weapons drawn as weapons (axe,
+    // swords, gun, bomb), champagne imagery, and demons/religious objects. Medicine, Cure,
+    // Antibiotic, Monster and Pendant stay allowed.
+    "Blood", "Double-Axe", "Duel", "Laser", "Cannonball", "Bottle", "Glassware",
+    "Pandemonium", "Underworld", "Bogeyman", "Altar",
   ].map((n: string) => foldKey(nameKey(n))),
 );
 
