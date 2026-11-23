@@ -5,7 +5,7 @@ import { FALLBACK_EMOJI } from "../../lib/placeholder.ts";
 import { SPRING } from "../../lib/spring.ts";
 import { removeTiles, setFocus, type Tile as TileState } from "../../state/canvas.ts";
 import { useGame } from "../../state/game.ts";
-import { openDetails } from "../../state/ui.ts";
+import { openDetails, useUi } from "../../state/ui.ts";
 import { Tile, tileLabel } from "../../components/Tile.tsx";
 import { consumeFocusOnMount } from "./actions.ts";
 import { pressCanvasTile } from "./drag.ts";
@@ -87,6 +87,8 @@ export const CanvasTile = memo(function CanvasTile({ tile, T, selected, tabbable
   const { uid } = tile;
   const element = useGame((s) => (tile.elementId ? s.elements[tile.elementId] : undefined));
   const first = useGame((s) => (tile.elementId ? !!s.owned[tile.elementId]?.first : false));
+  // One of the first-run demo pair while the coach is up: it pulses (firstRun.ts).
+  const coached = useUi((s) => s.coach?.a === uid || s.coach?.b === uid);
   const ref = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
   const [fx, setFx] = useState<{ kind: "pop" | "new" | "first"; key: number } | null>(null);
@@ -176,6 +178,7 @@ export const CanvasTile = memo(function CanvasTile({ tile, T, selected, tabbable
       data-selected={selected ? "true" : "false"}
       data-leaving={tile.leaving ? "" : undefined}
       data-pending={tile.pending ? "true" : undefined}
+      data-coach={coached ? "" : undefined}
       style={{ zIndex: tile.z, width: T, height: T }}
       role="button"
       tabIndex={tabbable && !tile.pending && !tile.leaving ? 0 : -1}

@@ -173,7 +173,8 @@ describe("cohortSections", () => {
     expect((out.cohorts_by_day as { key: string; nsd_day: string }[])[0]).toMatchObject({ key: "2026-11-10", nsd_day: "2026-11-11", nsd_closure: "partial" });
     expect(out.by_device_touch).toEqual([expect.objectContaining({ key: "ipad", players: 1 })]);
     expect(out.day0_timing_summary).toMatchObject({ players: 1, activated_10min_pct: 100, activated_2plus_sessions_pct: 100 });
-    expect(out.experiments).toBeUndefined(); // EXPERIMENTS_FROM is null
+    // EXPERIMENTS_FROM is set (wave-2 deploy): every fixture player predates it, so arms exist but are empty.
+    expect((out.experiments as { players: number }[]).every((r) => r.players === 0)).toBe(true);
     expect(JSON.stringify(out)).not.toMatch(/ip_hash|public_id|player_id/);
   });
 

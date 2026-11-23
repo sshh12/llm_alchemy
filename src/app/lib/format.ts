@@ -12,6 +12,49 @@ export function formatPercent(mine: number, known: number): string {
 const nf = new Intl.NumberFormat("en-US");
 export const formatCount = (n: number) => nf.format(n);
 
+// ------------------------------------------------------------------ goals ladder (experiment goals)
+
+/**
+ * Library-size goals: these rungs, then every 250. Day-0 return rates are flat below ~80
+ * discoveries and climb from there, so the ladder is weighted toward 100 and up rather than
+ * stepping through the flat region (docs/ARCHITECTURE.md "Experiments").
+ */
+export const MILESTONES = [25, 50, 100, 150, 250, 500] as const;
+const STEP_AFTER = 250;
+const LAST = MILESTONES[MILESTONES.length - 1]!;
+
+/** The next goal above `n` (a library of exactly 50 is working toward 100). */
+export function nextMilestone(n: number): number {
+  for (const r of MILESTONES) if (n < r) return r;
+  return LAST + (Math.floor((n - LAST) / STEP_AFTER) + 1) * STEP_AFTER;
+}
+
+/** The highest goal at or below `n` (0 below the first rung). */
+export function prevMilestone(n: number): number {
+  if (n < MILESTONES[0]) return 0;
+  if (n >= LAST) return LAST + Math.floor((n - LAST) / STEP_AFTER) * STEP_AFTER;
+  let out = 0;
+  for (const r of MILESTONES) if (n >= r) out = r;
+  return out;
+}
+
+/** The highest rung crossed going from `before` to `after` elements, or null (none, or not an increase). */
+export function milestoneReached(before: number, after: number): number | null {
+  if (!(after > before)) return null;
+  const r = prevMilestone(after);
+  return r > before ? r : null;
+}
+
+/** "47/50": the library toward its next goal. */
+export const formatGoal = (n: number) => `${formatCount(n)}/${formatCount(nextMilestone(n))}`;
+
+/** Progress from the last goal reached to the next one, in [0, 1). */
+export function goalProgress(n: number): number {
+  const lo = prevMilestone(n);
+  const hi = nextMilestone(n);
+  return Math.min(1, Math.max(0, (n - lo) / (hi - lo)));
+}
+
 /** "5h 12m", "12m", "45s" until `target`. */
 export function formatCountdown(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000));

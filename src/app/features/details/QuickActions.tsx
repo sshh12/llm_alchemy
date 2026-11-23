@@ -1,10 +1,13 @@
 // Quick actions / details for an element (long-press, right-click, context-menu key, or a
 // tapped toast/feed item): description, rarity (and its place in an active custom sort),
-// how you made it, Add / Pin / Share / Put away. Anchored next to the tile (Radix Popover
-// with a virtual anchor).
+// how you made it, Add / Pin / Share / Put away / Report. Anchored next to the tile (Radix
+// Popover with a virtual anchor).
 import { Popover } from "radix-ui";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ElementId, ReportReason } from "../../../shared/api.ts";
 import { RARITY_LABEL } from "../../../shared/rarity.ts";
+import { track } from "../../lib/analytics.ts";
+import { ApiFailure, reportElement } from "../../lib/api.ts";
 import { formatDay } from "../../lib/format.ts";
 import { recipeCache } from "../../lib/recipes.ts";
 import { shareElement } from "../../lib/share.ts";
@@ -15,13 +18,54 @@ import { Tile } from "../../components/Tile.tsx";
 import { CustomSortLine } from "../library/CustomSortBar.tsx";
 import { clearSelection, recipeLabel, removeTile, spawnElement } from "../workbench/actions.ts";
 
+const REPORT_CHOICES: { reason: ReportReason; label: string }[] = [
+  { reason: "inappropriate", label: "Not appropriate" },
+  { reason: "wrong", label: "Doesn't make sense" },
+  { reason: "other", label: "Something else" },
+];
+
+const FlagIcon = ({ size = 19 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+  </svg>
+);
+
+/** Send a report; the outcome is a toast either way (the menu has closed by then). */
+async function sendReport(id: ElementId, reason: ReportReason): Promise<void> {
+  try {
+    await reportElement({ id, reason });
+    showToast({ kind: "info", text: "Thanks. We'll take a look.", duration: 3_500 });
+    track("report", { reason, outcome: "sent" });
+  } catch (e) {
+    const limited = e instanceof ApiFailure && e.code === "rate_limited";
+    showToast({
+      kind: "error",
+      text: limited ? "Thanks for all your reports today. You can send more tomorrow." : "Couldn't send the report. Please try again later.",
+      duration: 4_000,
+    });
+    track("report", { reason, outcome: limited ? "limited" : "failed" });
+  }
+}
+
 export default function QuickActions() {
   const details = useUi((s) => s.details);
   const el = useGame((s) => (details ? s.elements[details.elementId] : undefined));
   const owned = useGame((s) => (details ? s.owned[details.elementId] : undefined));
+  // Today's targets are shown to everyone, so they can be reported without owning them.
+  const target = useGame((s) => (details ? (s.challenge?.targets.some((t) => t.element.id === details.elementId) ?? false) : false));
   const pinned = useUi((s) => (details ? s.pins.has(details.elementId) : false));
   const [sharing, setSharing] = useState(false);
+  /** The element whose "Report" choices are open (an in-menu confirmation step, not a dialog). */
+  const [reportingId, setReportingId] = useState<ElementId | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const reportRef = useRef<HTMLButtonElement>(null);
+  /** Cancel unmounts the focused choices: hand focus back to "Report this element" (else it falls to <body>). */
+  const refocusReport = useRef(false);
+  useEffect(() => {
+    if (reportingId !== null || !refocusReport.current) return;
+    refocusReport.current = false;
+    reportRef.current?.focus({ preventScroll: true });
+  }, [reportingId]);
   const recipes = useMemo(() => (details ? recipeCache.recipesFor(details.elementId, 2) : []), [details]);
 
   const anchor = details?.anchor;
@@ -150,6 +194,42 @@ export default function QuickActions() {
               <CloseIcon size={19} /> Remove from workbench
             </button>
           )}
+          {(owned || target) &&
+            (reportingId === el.id ? (
+              <div className="border-t border-border px-4 pb-3 pt-2.5" role="group" aria-label={`Report ${el.name}`} data-testid="report-choices">
+                <p className="text-[13.5px] font-semibold text-ink">What's wrong with it?</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {REPORT_CHOICES.map((c, i) => (
+                    <button
+                      key={c.reason}
+                      type="button"
+                      className="btn btn-quiet btn-sm"
+                      autoFocus={i === 0}
+                      onClick={() => {
+                        close();
+                        void sendReport(el.id, c.reason);
+                      }}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="btn btn-sm text-ink-muted"
+                    onClick={() => {
+                      refocusReport.current = true;
+                      setReportingId(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button ref={reportRef} type="button" className="menu-item text-ink-muted" data-testid="quick-action-report" onClick={() => setReportingId(el.id)}>
+                <FlagIcon /> Report this element
+              </button>
+            ))}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

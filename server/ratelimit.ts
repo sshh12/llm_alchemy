@@ -51,6 +51,10 @@
 // |                         |         |           |        | used 431k of a day's 523k questions (2026-11-22)           |
 // | sort.items.ip.hour      | ip      | 400,000   | 1 h    |                                                            |
 // | sort.items.ip.day       | ip      | 1,000,000 | 1 d    |                                                            |
+// | report.player           | player  | 20        | 1 d    | "Report this element"; duplicates are already ignored      |
+// | beacon.ip               | ip      | 120       | 1 h    | boot-abandon beacons: one per hide before the game is      |
+// |                         |         |           |        | ready, plus its take-back if the page comes back, so a     |
+// |                         |         |           |        | classroom behind one NAT stays far below it                |
 //
 // Global budgets (all players): new recipes LLM_DAILY_CAP (100,000/UTC day ≈ $10), images
 // IMAGE_DAILY_CAP (2,000/UTC day ≈ $10.60), new players PLAYER_DAILY_CAP (20,000/UTC day), and
@@ -122,6 +126,8 @@ export const LIMITS = {
   sortItemsPlayerDay: rule("sort.items.player.day", 150_000, DAY),
   sortItemsIpHour: rule("sort.items.ip.hour", 400_000, HOUR),
   sortItemsIpDay: rule("sort.items.ip.day", 1_000_000, DAY),
+  reportPlayer: rule("report.player", 20, DAY),
+  beaconIp: rule("beacon.ip", 120, HOUR),
 } satisfies Record<string, Limit>;
 
 /** Global budgets, read lazily so env overrides apply. Subject is always "all". */

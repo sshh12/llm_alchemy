@@ -1,10 +1,10 @@
 // Wide screens (≥1280 px): today's challenge, stats, and "fresh from the lab": elements
 // other alchemists discovered recently.
 import type { Tier } from "../../../shared/api.ts";
-import { formatCount, formatCountdown, formatPercent, msUntilLocalMidnight } from "../../lib/format.ts";
+import { formatCount, formatCountdown, formatGoal, formatPercent, msUntilLocalMidnight } from "../../lib/format.ts";
 import { useNow } from "../../lib/hooks.ts";
 import { useGame } from "../../state/game.ts";
-import { openDetails, openSheet } from "../../state/ui.ts";
+import { openDetails, openSheet, useArm } from "../../state/ui.ts";
 import { DrawnCheckIcon, FlameIcon } from "../../components/Icons.tsx";
 import { ElementArt } from "../../components/ElementArt.tsx";
 import { clearSelection, spawnElement } from "../workbench/actions.ts";
@@ -72,17 +72,20 @@ function TodayCard() {
 
 function StatsCard() {
   const stats = useGame((s) => s.stats);
+  // Experiment goals: progress toward the next goal replaces "% of known".
+  const goals = useArm("goals") === "treatment";
   return (
     <Card title="Your lab" action={{ label: "Stats", run: () => openSheet("stats") }}>
       <dl className="grid grid-cols-3 gap-2 text-center">
         {[
           [formatCount(stats.mine), "elements"],
-          [formatPercent(stats.mine, stats.known), "of known"],
+          goals ? [formatGoal(stats.mine), "next goal"] : [formatPercent(stats.mine, stats.known), "of known"],
           [formatCount(stats.firsts), "firsts"],
         ].map(([v, l]) => (
           <div key={l} className="rounded-2xl bg-surface-2 px-1 py-2.5">
             <dt className="sr-only">{l}</dt>
-            <dd className="font-display tabular text-[20px] font-semibold leading-none">{v}</dd>
+            {/* "1,247/1,250" needs a smaller size to fit a third of the panel. */}
+            <dd className={`font-display tabular font-semibold leading-none ${v!.length > 7 ? "text-[15px]" : "text-[20px]"}`}>{v}</dd>
             <dd className="mt-1 text-[11.5px] font-medium text-ink-muted">{l}</dd>
           </div>
         ))}

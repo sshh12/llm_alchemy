@@ -43,7 +43,7 @@ export const MIX_TO = "2026-11-20";
  * day after the deploy so no player created before it counts). null = no experiment is live and
  * the section is skipped.
  */
-export const EXPERIMENTS_FROM: string | null = null;
+export const EXPERIMENTS_FROM: string | null = "2026-11-24"; // wave-2 deploy 2026-11-23 + 1 day
 /** Arm = parity of one hex digit of players.public_id (0-based index into the 36-char string). */
 export const EXPERIMENTS = [
   { name: "firstRun", index: 35 },

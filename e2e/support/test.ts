@@ -6,7 +6,7 @@ import path from "node:path";
 import { test as base, expect, type Page, type TestInfo } from "@playwright/test";
 import { ARTIFACTS_PATH, projectIndex } from "./env.ts";
 import { loadFixtures, type Fixtures } from "./fixtures.ts";
-import { Game, type Device } from "./game.ts";
+import { armsInitScript, CONTROL_ARMS, Game, type Device } from "./game.ts";
 
 export { expect };
 
@@ -86,7 +86,10 @@ export const test = base.extend<Fx>({
     },
     { auto: true },
   ],
+  // Experiment arms default to control so every journey is deterministic; a test that wants a
+  // treatment calls game.forceArms() before opening the game.
   game: async ({ page, device }, use) => {
+    await page.addInitScript(armsInitScript, { arms: JSON.stringify(CONTROL_ARMS), force: false });
     await use(new Game(page, device));
   },
   snap: async ({ page }, use, testInfo) => {

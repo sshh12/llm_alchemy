@@ -10,11 +10,14 @@ const m = vi.hoisted(() => ({
   createPlayer: vi.fn(),
   importLegacy: vi.fn(),
   legacyPlayerExists: vi.fn(),
+  touchPlayer: vi.fn(),
+  bumpStat: vi.fn(),
+  dailyChallenges: vi.fn(),
   calls: [] as string[],
 }));
 
 vi.mock("../session.ts", async (orig) => ({ ...(await orig<typeof import("../session.ts")>()), sessionPlayer: m.sessionPlayer }));
-vi.mock("../ratelimit.ts", async (orig) => ({ ...(await orig<typeof import("../ratelimit.ts")>()), enforce: m.enforce }));
+vi.mock("../ratelimit.ts", async (orig) => ({ ...(await orig<typeof import("../ratelimit.ts")>()), enforce: m.enforce, bumpStat: m.bumpStat }));
 vi.mock("../pow.ts", async (orig) => ({
   ...(await orig<typeof import("../pow.ts")>()),
   checkPowSolution: () => "ok",
@@ -22,7 +25,7 @@ vi.mock("../pow.ts", async (orig) => ({
 }));
 vi.mock("./challenges.ts", () => ({
   resolveDay: () => "2026-11-07",
-  dailyChallenge: async () => null,
+  dailyChallenges: m.dailyChallenges,
   challengeStats: async () => ({ completed: 0, streak: { current: 0, best: 0 }, history: [] }),
 }));
 vi.mock("./players.ts", async (orig) => ({
@@ -36,7 +39,7 @@ vi.mock("./players.ts", async (orig) => ({
   countFirsts: async () => 0,
   knownCount: async () => 100,
   recentElements: async () => [],
-  touchPlayer: async () => {},
+  touchPlayer: m.touchPlayer,
 }));
 
 const { bootstrap } = await import("./bootstrap.ts");
@@ -80,6 +83,9 @@ beforeEach(() => {
     return "ok";
   });
   m.createPlayer.mockResolvedValue(freshRow);
+  m.touchPlayer.mockResolvedValue(undefined);
+  m.bumpStat.mockResolvedValue(undefined);
+  m.dailyChallenges.mockResolvedValue({ challenge: null, tomorrow: null });
   m.importLegacy.mockResolvedValue({ imported: 2, skipped: 0 });
   m.legacyPlayerExists.mockResolvedValue(false);
 });
@@ -174,5 +180,116 @@ describe("first-touch acquisition", () => {
     const res = await call({ acq });
     expect(res.status).toBe(200);
     expect(m.createPlayer).not.toHaveBeenCalled();
+  });
+});
+
+describe("client hints", () => {
+  it("stores touch, layout and prior local state on the player this bootstrap creates", async () => {
+    const hint = { touch: true, standalone: false, wide: true, prior: false, persisted: false, entry: "search" };
+    const res = await call({ hint });
+    expect(res.status).toBe(200);
+    expect(m.createPlayer).toHaveBeenCalledWith(expect.any(String), {
+      acq: undefined,
+      uaClass: "unknown",
+      hint: { touch: true, wide: true, prior: false },
+    });
+  });
+
+  it("drops each malformed field on its own, and a malformed hint entirely, never a 400", async () => {
+    let res = await call({ hint: { touch: "yes", wide: true, entry: "bookmark", prior: 1 } });
+    expect(res.status).toBe(200);
+    expect(m.createPlayer).toHaveBeenLastCalledWith(expect.any(String), {
+      acq: undefined,
+      uaClass: "unknown",
+      hint: { touch: undefined, wide: true, prior: undefined },
+    });
+    expect(m.touchPlayer).toHaveBeenLastCalledWith("20", "2026-11-07", { standalone: undefined, entry: undefined });
+    res = await call({ hint: "garbage" });
+    expect(res.status).toBe(200);
+    expect(m.createPlayer).toHaveBeenLastCalledWith(expect.any(String), { acq: undefined, uaClass: "unknown" });
+  });
+
+  it("passes standalone and entry to the load count for every player", async () => {
+    m.sessionPlayer.mockResolvedValue(freshRow);
+    await call({ hint: { standalone: true, entry: "standalone" } });
+    expect(m.createPlayer).not.toHaveBeenCalled();
+    expect(m.touchPlayer).toHaveBeenCalledWith("20", "2026-11-07", { standalone: true, entry: "standalone" });
+  });
+});
+
+describe("PoW funnel stats", () => {
+  const stats = () => m.bumpStat.mock.calls.map((c) => c[0] as string);
+
+  it("counts every challenge it issues, by audience", async () => {
+    await expect(call({ pow: undefined })).rejects.toMatchObject({ code: "pow_required" });
+    await expect(
+      call({ pow: undefined }, { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" }),
+    ).rejects.toMatchObject({ code: "pow_required" });
+    m.verifyPow.mockResolvedValue("replayed");
+    await expect(call({})).rejects.toMatchObject({ code: "pow_required" });
+    expect(stats()).toEqual(["pow:issued:browser", "pow:issued:bot", "pow:issued:browser"]);
+  });
+
+  it("counts a redemption with its latency", async () => {
+    const issued = Date.now() - 5_000;
+    const salt = `${issued.toString(36)}.AAAAAAAAAAAAAAAA.BBBBBBBBBBBBBBBB`;
+    await call({ pow: { salt, nonce: "n" } });
+    expect(stats().sort()).toEqual(["pow:latency:4-8s", "pow:redeemed:browser"]);
+  });
+
+  it("counts nothing for a returning player", async () => {
+    m.sessionPlayer.mockResolvedValue(freshRow);
+    await call({});
+    expect(stats()).toEqual([]);
+  });
+
+  it("sends the challenge without waiting for the issue count (context.waitUntil)", async () => {
+    m.bumpStat.mockReturnValue(new Promise(() => {})); // a counter write that never finishes
+    const waitUntil = vi.fn();
+    const req = new Request("https://alchemy.test/api/bootstrap", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-ia-client": "1" },
+      body: JSON.stringify({ clientDate: "2026-11-07" }),
+    });
+    await expect(bootstrap(req, { ip: "203.0.113.7", waitUntil } as unknown as Context)).rejects.toMatchObject({ code: "pow_required" });
+    expect(stats()).toEqual(["pow:issued:browser"]);
+    expect(waitUntil).toHaveBeenCalledWith(expect.any(Promise));
+  });
+});
+
+describe("resumed-tab refresh", () => {
+  it("is not counted as a load", async () => {
+    m.sessionPlayer.mockResolvedValue(freshRow);
+    const res = await call({ pow: undefined, refresh: true });
+    expect(res.status).toBe(200);
+    expect(m.touchPlayer).toHaveBeenCalledWith("20", "2026-11-07", { standalone: undefined, entry: undefined, refresh: true });
+    await call({ pow: undefined });
+    expect(m.touchPlayer).toHaveBeenLastCalledWith("20", "2026-11-07", { standalone: undefined, entry: undefined });
+  });
+
+  it("never creates a player or issues a challenge without a session", async () => {
+    await expect(call({ pow: undefined, refresh: true })).rejects.toMatchObject({ status: 401, code: "unauthorized" });
+    await expect(call({ refresh: true })).rejects.toMatchObject({ code: "unauthorized" }); // even with a solution
+    expect(m.createPlayer).not.toHaveBeenCalled();
+    expect(m.bumpStat).not.toHaveBeenCalled();
+  });
+
+  it("a malformed flag is dropped, never a 400", async () => {
+    m.sessionPlayer.mockResolvedValue(freshRow);
+    const res = await call({ refresh: "yes" });
+    expect(res.status).toBe(200);
+    expect(m.touchPlayer).toHaveBeenLastCalledWith("20", "2026-11-07", { standalone: undefined, entry: undefined });
+  });
+});
+
+describe("tomorrow's teaser", () => {
+  it("is in the response when tomorrow has a challenge, and absent otherwise", async () => {
+    m.sessionPlayer.mockResolvedValue(freshRow);
+    m.dailyChallenges.mockResolvedValue({ challenge: null, tomorrow: { img: null, letters: 7 } });
+    let body = (await (await call({})).json()) as { tomorrow?: unknown };
+    expect(body.tomorrow).toEqual({ img: null, letters: 7 });
+    m.dailyChallenges.mockResolvedValue({ challenge: null, tomorrow: null });
+    body = (await (await call({})).json()) as { tomorrow?: unknown };
+    expect("tomorrow" in body).toBe(false);
   });
 });

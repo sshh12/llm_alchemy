@@ -6,6 +6,7 @@ import { useLayoutTier } from "./lib/hooks.ts";
 import { bootGame, useGame } from "./state/game.ts";
 import { useSettings } from "./state/settings.ts";
 import { useUi } from "./state/ui.ts";
+import { IdleCard } from "./features/idle/IdleCard.tsx";
 import { Rail } from "./features/library/Rail.tsx";
 import { Shelf } from "./features/library/Shelf.tsx";
 import { Overlays } from "./features/shell/Overlays.tsx";
@@ -41,6 +42,8 @@ export function App() {
             {!rail && <Shelf />}
             {wide && <RightPanel />}
           </main>
+          {/* Inside .app so the shelf, the selection pill and the Undo snackbar stack above it. */}
+          <IdleCard />
         </div>
         <TopToasts />
         <DragLayer />

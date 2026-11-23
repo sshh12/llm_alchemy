@@ -1,17 +1,19 @@
 // Workbench actions: spawning, selection, merging (with the optimistic pending tile and
 // all feedback tiers), removal, clear, tidy and undo/redo. The drag engine, keyboard
 // handlers and buttons all funnel through here.
-import type { CombineResponse, ElementId, Tier } from "../../../shared/api.ts";
+import type { CombineResponse, ElementDTO, ElementId, Tier } from "../../../shared/api.ts";
 import { localDay } from "../../../shared/dates.ts";
 import { track, trackOncePerSession } from "../../lib/analytics.ts";
 import { ApiFailure, combine } from "../../lib/api.ts";
+import { arm } from "../../lib/experiments.ts";
+import { formatCount, milestoneReached, nextMilestone } from "../../lib/format.ts";
 import { findSpawn, type Pt } from "../../lib/geometry.ts";
 import { haptic } from "../../lib/haptics.ts";
 import { noteFresh } from "../../lib/images.ts";
 import { recipeCache } from "../../lib/recipes.ts";
 import { playSound } from "../../lib/sound.ts";
 import { SPRING } from "../../lib/spring.ts";
-import { KEYS, writeString } from "../../lib/storage.ts";
+import { KEYS, readString, writeString } from "../../lib/storage.ts";
 import {
   addTile,
   isSettled,
@@ -33,6 +35,8 @@ import {
 import { customSortForCombine, ingestSortScore } from "../../state/customSort.ts";
 import { applyCombine, openTargetIds, useGame } from "../../state/game.ts";
 import { announce, celebrate, dismissToast, showToast, useUi } from "../../state/ui.ts";
+import { chooseCelebration, combineFailedParams, FollowupTracker } from "./celebrate.ts";
+import { noteCombine } from "./firstRun.ts";
 import { canvasRect, layoutEls, libraryEdge } from "./layout.ts";
 import { nextMove } from "./poses.ts";
 
@@ -218,7 +222,7 @@ export function clearSelection(): void {
 
 const ERROR_COPY: Partial<Record<ApiFailure["code"], string>> = {
   budget_exhausted: "The lab is out of fresh reagents for today. Known recipes still work!",
-  fizzled: "That mix fizzled. Try it again, or try something new.",
+  fizzled: "That mix fizzled. Try something new.",
   ai_unavailable: "The alchemist is catching their breath. Try again in a moment.",
   not_owned: "You don't have one of those yet.",
   timeout: "That took too long. Give it another try.",
@@ -258,6 +262,7 @@ export async function mergeTiles(uids: readonly string[], at: Pt, opts: MergeOpt
     .filter((t): t is NonNullable<typeof t> => !!t && !t.pending && !t.leaving && !!t.elementId)
     .slice(0, 4);
   if (inputs.length < 2) return;
+  followup.combine(); // the outcome of a pending world-first: play continued
   if (opts.snapshot !== false) commit();
   const undoEntry = useCanvas.getState().undo.at(-1);
 
@@ -296,7 +301,7 @@ export async function mergeTiles(uids: readonly string[], at: Pt, opts: MergeOpt
   const minPending = local ? 420 : 260;
   const elapsed = performance.now() - started;
   if (elapsed < minPending) await sleep(minPending - elapsed);
-  succeedMerge(pendingUid, ids, res, local);
+  succeedMerge(pendingUid, ids, saved.map((t) => t.uid), res, local);
 }
 
 function failMerge(pendingUid: string, saved: SavedTile[], at: Pt, e: unknown, undoEntry: SavedTile[] | undefined): void {
@@ -307,7 +312,8 @@ function failMerge(pendingUid: string, saved: SavedTile[], at: Pt, e: unknown, u
     removeTiles([pendingUid]);
     for (const t of saved) addTile({ ...t, enterFrom: at, fx: "restore", fxKey: nextFxKey() });
   }
-  track("combine_failed", { code: e instanceof ApiFailure ? e.code : "network" });
+  // code, plus the rule that refused (limit) and the server's retry hint, bucketed (retry_s).
+  track("combine_failed", combineFailedParams(e));
   const { text, until } = failureMessage(e);
   showToast({
     kind: "error",
@@ -321,9 +327,13 @@ function failMerge(pendingUid: string, saved: SavedTile[], at: Pt, e: unknown, u
   announce(until ? `${text} a few seconds.` : text, true);
 }
 
-function succeedMerge(pendingUid: string, ids: ElementId[], res: CombineResponse, local: boolean): void {
+function succeedMerge(pendingUid: string, ids: ElementId[], inputs: string[], res: CombineResponse, local: boolean): void {
   const result = res.result;
+  // Before the pending tile turns into the result, while the inputs still count as on the board.
+  noteCombine(inputs);
+  const mineBefore = useGame.getState().stats.mine;
   if (!local) applyCombine(res);
+  const rung = milestoneReached(mineBefore, useGame.getState().stats.mine);
   if (res.newForPlayer) noteFresh(result.id); // its art jumps the queue (src/app/lib/images.ts)
   recipeCache.set(ids, result.id);
   writeString(KEYS.merged, "1");
@@ -335,17 +345,18 @@ function succeedMerge(pendingUid: string, ids: ElementId[], res: CombineResponse
   const recipe = `${ids.map(nameOf).join(" + ")} → ${result.name}`;
   track("combine", { inputs: ids.length, cached: local, new: res.newForPlayer });
   trackOncePerSession("first_combine", { inputs: ids.length });
+  const goal = rung ? reachedMilestone(rung) : "";
   if (res.firstEver) {
     haptic("first");
     playSound("first");
-    announce(`First discovery in the world: ${result.name}!`);
-    celebrate({ kind: "first", elementId: result.id, ingredients: ids, at: new Date().toISOString() });
+    announce(`First discovery in the world: ${result.name}!${goal}`);
+    celebrateFirst(result, ids);
     track("first_discovery", { rarity: result.rarity, notable: result.notable });
     track("discovery", { first: true, rarity: result.rarity });
   } else if (res.newForPlayer) {
     haptic("new");
     playSound("new");
-    announce(`New: ${result.name}.`);
+    announce(`New: ${result.name}.${goal}`);
     showToast({ kind: "new", text: result.name, elementId: result.id, notable: result.notable, duration: 2_500 });
     track("discovery", { first: false, rarity: result.rarity });
   } else {
@@ -364,6 +375,67 @@ function succeedMerge(pendingUid: string, ids: ElementId[], res: CombineResponse
       action: { label: "Refresh", run: () => location.reload() },
     });
   }
+}
+
+// ------------------------------------------------------------------ world-firsts and goals
+
+/** One wf_followup per world-first (celebrate.ts): did play continue within 60 s? */
+const followup = new FollowupTracker((p) => track("wf_followup", p));
+let watchingHide = false;
+
+function watchHide(): void {
+  if (watchingHide || typeof document === "undefined") return;
+  watchingHide = true;
+  addEventListener("pagehide", () => followup.hidden());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") followup.hidden();
+  });
+}
+
+/** sessionStorage: this tab session has had its first world-first (always the full card). */
+const SESSION_FIRST_KEY = "ia:wfSeen";
+let sessionFirstSeen = false;
+
+function takeSessionFirst(): boolean {
+  if (sessionFirstSeen || readString(SESSION_FIRST_KEY, "session") === "1") return false;
+  sessionFirstSeen = true;
+  writeString(SESSION_FIRST_KEY, "1", "session");
+  return true;
+}
+
+/**
+ * The full card for the tab session's first world-first, notable names and epic or legendary
+ * finds; every other world-first draws Math.random() between the card and an inline gold toast
+ * (celebrate.ts). Either way the tile keeps its gold seal and Share stays in its menu.
+ */
+function celebrateFirst(result: ElementDTO, ids: ElementId[]): void {
+  const choice = chooseCelebration({ sessionFirst: takeSessionFirst(), notable: result.notable, rarity: result.rarity });
+  if (choice.kind === "card") {
+    celebrate({ kind: "first", elementId: result.id, ingredients: ids, at: new Date().toISOString() });
+  } else {
+    showToast({ kind: "first", text: `First discovery! You're the first to make ${result.name}`, elementId: result.id, notable: result.notable, duration: 5_000 });
+  }
+  track("celebration", { kind: choice.kind, reason: choice.reason, rarity: result.rarity });
+  watchHide();
+  followup.start(choice);
+}
+
+/**
+ * A library goal was reached (experiment goals). Tracked in both arms, so GA can compare how
+ * many players reach each rung; only treatment shows it, as an inline toast (never a modal).
+ * Returns a sentence for the screen-reader announcement ("" in control).
+ */
+function reachedMilestone(rung: number): string {
+  track("milestone", { rung });
+  if (arm("goals") !== "treatment") return "";
+  const next = nextMilestone(rung);
+  showToast({
+    kind: "milestone",
+    text: `Goal reached: ${formatCount(rung)} elements! Next goal: ${formatCount(next)}.`,
+    milestone: { rung, next },
+    duration: 3_500,
+  });
+  return ` Goal reached: ${formatCount(rung)} elements.`;
 }
 
 // ------------------------------------------------------------------ remove / clear / tidy

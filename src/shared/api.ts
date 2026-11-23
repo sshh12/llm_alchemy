@@ -108,12 +108,54 @@ export interface Acquisition {
 /** Field caps for Acquisition: the client truncates to these, the server drops anything longer. */
 export const ACQ_MAX = { ref: 253, path: 200, utm: 100 } as const;
 
+/**
+ * How this page load was reached, from document.referrer at page load (never the URL itself):
+ * a known search engine, no referrer, an installed app, or anything else.
+ */
+export const BOOT_ENTRIES = ["search", "direct", "standalone", "other"] as const;
+export type BootEntry = (typeof BOOT_ENTRIES)[number];
+
+/**
+ * Coarse client hints for first-party analytics (docs/ARCHITECTURE.md "Analytics"). Every field
+ * is optional and the server drops a malformed one, never a 400. Stored: touch / wide / prior on
+ * the player this bootstrap creates (players.acq_*), standalone as players.standalone_at, entry
+ * on the day's player_days row.
+ */
+export interface BootstrapHint {
+  /** navigator.maxTouchPoints > 1 (tells an iPad from a Mac, which share a User-Agent). */
+  touch?: boolean;
+  /** Running as an installed app (display-mode: standalone). */
+  standalone?: boolean;
+  /** The right panel (today's challenge card) is on screen. */
+  wide?: boolean;
+  /** v2 game state (canvas, recipe cache, ...) was already in localStorage before this load. */
+  prior?: boolean;
+  /** navigator.storage.persisted(), when the browser answered quickly. */
+  persisted?: boolean;
+  entry?: BootEntry;
+}
+
 export interface BootstrapRequest {
   /** Player's local calendar date (used for daily challenges); server validates ±1 day. */
   clientDate: string;
   pow?: PowSolution;
   legacy?: LegacyPayload;
   acq?: Acquisition;
+  hint?: BootstrapHint;
+  /**
+   * A resumed tab fetching the new day (game.ts refreshIfNewDay), not a page load: the server
+   * counts no load for it (player_days), so a tab merely shown again is not a return day.
+   */
+  refresh?: boolean;
+}
+
+/**
+ * Tomorrow's easy challenge target (the player's local day + 1), as a teaser: its art when it is
+ * ready and the length of its name without spaces. Never its name or id.
+ */
+export interface TomorrowTeaser {
+  img: string | null;
+  letters: number;
 }
 
 export interface BootstrapResponse {
@@ -129,6 +171,60 @@ export interface BootstrapResponse {
    * bound to another browser, so this one got a new player with a copy of the elements only.
    */
   legacyImport?: { imported: number; skipped: number; adopted: boolean; claimed?: boolean };
+  /** Absent when tomorrow has no challenge row (or from servers before the teaser). */
+  tomorrow?: TomorrowTeaser;
+}
+
+/**
+ * Where a page load was when it ended before the game was playable (POST /api/beacon), or where
+ * a failed boot failed (GA load_failed `phase`). bootstrap1: the first POST; pow: solving the
+ * proof-of-work; bootstrap2: the POST carrying the solution; render: applying the response;
+ * wait: the pause before the one automatic retry; error: on the error screen.
+ */
+export const BOOT_PHASES = ["bootstrap1", "pow", "bootstrap2", "render", "wait", "error"] as const;
+export type BootPhase = (typeof BOOT_PHASES)[number];
+
+/**
+ * POST /api/beacon body, sent with navigator.sendBeacon as text/plain (a beacon can't set the
+ * API header). `ms`: time since navigation start. `resumed`: the page came back (visible again)
+ * after sending this abandon, before it was playable or not: it takes that abandon back, with
+ * the same phase and ms, so abandons minus resumes counts the pages that really ended pre-ready.
+ */
+export interface BootBeacon {
+  phase: BootPhase;
+  ms: number;
+  resumed?: boolean;
+}
+
+/**
+ * Time bands shared by GA app_ready `boot_band` and the server stats boot_abandon:<phase>:<band>
+ * and pow:latency:<band>, so the GA and first-party boot funnels line up band for band.
+ */
+export const LATENCY_BANDS = ["<2s", "2-4s", "4-8s", "8-15s", "15-30s", "30s+"] as const;
+export type LatencyBand = (typeof LATENCY_BANDS)[number];
+
+export function latencyBand(ms: number): LatencyBand {
+  if (!(ms >= 0) || ms < 2_000) return "<2s"; // includes small clock skew below zero
+  if (ms < 4_000) return "2-4s";
+  if (ms < 8_000) return "4-8s";
+  if (ms < 15_000) return "8-15s";
+  if (ms < 30_000) return "15-30s";
+  return "30s+";
+}
+
+// ---------------------------------------------------------------- POST /api/report
+
+export const REPORT_REASONS = ["inappropriate", "wrong", "other"] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+
+/** Flag an element the player owns (or a target of today's challenge) for review. */
+export interface ReportRequest {
+  id: ElementId;
+  reason?: ReportReason;
+}
+
+export interface ReportResponse {
+  ok: true;
 }
 
 // ---------------------------------------------------------------- POST /api/combine

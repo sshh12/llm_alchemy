@@ -1,0 +1,173 @@
+/* "Today in your lab" idle card (features/idle/IdleCard.tsx). It sits in .app's stacking
+   context at z-index 11: above the workbench tools (10), below the canvas bottom row (12: the
+   selection pill and the Undo snackbar), the shelf and rail (20) and every overlay. It floats
+   one row above the workbench's bottom controls so it never covers Undo or the tools. */
+
+:root {
+  /* Tomorrow's target as a silhouette: its art's shape (alpha mask) in this color on a light plate. */
+  --idle-silhouette: rgb(0 0 0 / 0.8);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --idle-silhouette: rgb(235 235 235 / 0.85);
+  }
+}
+:root[data-theme="dark"] {
+  --idle-silhouette: rgb(235 235 235 / 0.85);
+}
+
+@layer components {
+  /* The always-mounted live region: out of .app's grid flow, no box of its own (the card is fixed). */
+  .idle-live {
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+
+  .idle-card {
+    position: fixed;
+    z-index: 11;
+    /* Phones: left of the tool column, above the peek shelf (160px, .main --peek) and the canvas's bottom row. */
+    left: max(12px, env(safe-area-inset-left));
+    bottom: calc(160px + env(safe-area-inset-bottom) + 68px);
+    width: min(400px, calc(100vw - max(12px, env(safe-area-inset-left)) - 68px));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 14px 14px 16px;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    box-shadow:
+      0 2px 0 var(--border),
+      0 22px 40px -22px var(--tile-shadow);
+    animation: idle-in 0.34s var(--ease-out);
+  }
+  @media (min-width: 640px) {
+    .idle-card {
+      /* Rail layouts: the canvas starts after the 288px rail; the tools row is at the bottom. */
+      left: calc(288px + 16px + env(safe-area-inset-left));
+      bottom: calc(max(16px, env(safe-area-inset-bottom)) + 56px);
+      width: min(400px, calc(100vw - 288px - 32px - env(safe-area-inset-left)));
+    }
+  }
+  @media (min-width: 1024px) {
+    .idle-card {
+      left: calc(320px + 16px + env(safe-area-inset-left));
+      width: min(400px, calc(100vw - 320px - 32px - env(safe-area-inset-left)));
+    }
+  }
+  @media (min-width: 1280px) {
+    .idle-card {
+      /* The right panel takes 300px. */
+      width: min(400px, calc(100vw - 320px - 300px - 32px - env(safe-area-inset-left)));
+    }
+  }
+  @keyframes idle-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+
+  .idle-close {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    color: var(--ink-muted);
+    transition: background-color 0.15s, color 0.15s;
+  }
+  /* A 44px touch target around the 36px face. */
+  .idle-close::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+  }
+  @media (hover: hover) {
+    .idle-close:hover {
+      background: var(--surface-2);
+      color: var(--ink);
+    }
+  }
+
+  .idle-eyebrow {
+    margin: 0;
+    padding-right: 36px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .idle-stats {
+    margin: -4px 0 0;
+    padding-right: 36px;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .idle-firsts {
+    color: var(--gold);
+  }
+
+  .idle-teaser {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .idle-silhouette {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--plate);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  /* A mask, not a filtered <img>: there is no image to long-press, drag or "Open image in new
+     tab", which would show the full-color art and spoil tomorrow's target for the class. */
+  .idle-silhouette-art {
+    width: 44px;
+    height: 44px;
+    background-color: var(--idle-silhouette);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    pointer-events: none;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+  .idle-silhouette-q {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ink-muted);
+  }
+
+  .idle-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .idle-tip {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+}

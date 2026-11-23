@@ -3,13 +3,13 @@
 import crypto from "node:crypto";
 import type { Context } from "@netlify/functions";
 import { z } from "zod";
-import { ACQ_MAX, type BootstrapResponse, type PowSolution } from "../../src/shared/api.ts";
+import { ACQ_MAX, BOOT_ENTRIES, type BootstrapResponse, type PowSolution } from "../../src/shared/api.ts";
 import { BODY_LIMIT_BOOTSTRAP, checkCsrf, clientIp, errors, ipHash, json, readJson } from "../http.ts";
-import { checkPowSolution, issuePow, verifyPow, type PowCheck } from "../pow.ts";
+import { checkPowSolution, issuePow, recordPowIssued, recordPowRedeemed, verifyPow, type PowCheck } from "../pow.ts";
 import { BUDGETS, LIMITS, enforce } from "../ratelimit.ts";
 import { encodeSession, sessionCookie, sessionPlayer, type PlayerRow } from "../session.ts";
 import { classifyUserAgent } from "../ua.ts";
-import { challengeStats, dailyChallenge, resolveDay } from "./challenges.ts";
+import { challengeStats, dailyChallenges, resolveDay } from "./challenges.ts";
 import { toElementDTO, toLibraryEntry } from "./dto.ts";
 import {
   claimLegacyPlayer,
@@ -50,6 +50,21 @@ export const BootstrapSchema = z.object({
     })
     .optional()
     .catch(undefined),
+  // Analytics only (BootstrapHint): each malformed field is dropped on its own, never a 400.
+  hint: z
+    .object({
+      touch: z.boolean().optional().catch(undefined),
+      standalone: z.boolean().optional().catch(undefined),
+      wide: z.boolean().optional().catch(undefined),
+      prior: z.boolean().optional().catch(undefined),
+      // Accepted for the contract; not stored (it reads false unless the site asked to persist).
+      persisted: z.boolean().optional().catch(undefined),
+      entry: z.enum(BOOT_ENTRIES).optional().catch(undefined),
+    })
+    .optional()
+    .catch(undefined),
+  // A resumed tab's silent new-day refresh (BootstrapRequest.refresh): no load is counted.
+  refresh: z.boolean().optional().catch(undefined),
 });
 
 /** Earth, Water, Air, Fire and Time. */
@@ -64,20 +79,35 @@ const POW_MESSAGES: Record<Exclude<PowCheck, "ok">, string> = {
 };
 
 /**
+ * Finish `p` after the response is sent (context.waitUntil), so a best-effort write never delays
+ * it. Without waitUntil (tests) it still runs, unawaited. Only for promises that never reject.
+ */
+function afterResponse(context: Context, p: Promise<unknown>): void {
+  if (typeof context.waitUntil === "function") context.waitUntil(p);
+}
+
+/**
  * New players must present a fresh, unspent PoW solution and fit the creation limits. The
  * global player budget is charged last, so a replayed salt or an over-limit IP never spends it.
+ * Every challenge sent and every solution spent is counted (server/pow.ts, the PoW funnel). The
+ * issue count finishes after the 401 is sent and the redemption stats run alongside the budget
+ * charge, so neither adds a round trip to the boot.
  */
-async function createWithPow(pow: PowSolution | undefined, ip: string, origin: PlayerOrigin): Promise<PlayerRow> {
-  if (!pow) throw errors.powRequired(issuePow());
+async function createWithPow(pow: PowSolution | undefined, ip: string, origin: PlayerOrigin, context: Context): Promise<PlayerRow> {
+  const challenge = (message?: string) => {
+    afterResponse(context, recordPowIssued(origin.uaClass)); // bumpStat never throws
+    return errors.powRequired(issuePow(), message);
+  };
+  if (!pow) throw challenge();
   const stateless = checkPowSolution(pow);
-  if (stateless !== "ok") throw errors.powRequired(issuePow(), POW_MESSAGES[stateless]);
+  if (stateless !== "ok") throw challenge(POW_MESSAGES[stateless]);
   await enforce([
     { limit: LIMITS.createIp, subject: ip },
     { limit: LIMITS.createIpDay, subject: ip },
   ]);
   const spent = await verifyPow(pow);
-  if (spent !== "ok") throw errors.powRequired(issuePow(), POW_MESSAGES[spent]);
-  await enforce([{ limit: BUDGETS.players, subject: "all" }]);
+  if (spent !== "ok") throw challenge(POW_MESSAGES[spent]);
+  await Promise.all([enforce([{ limit: BUDGETS.players, subject: "all" }]), recordPowRedeemed(pow, origin.uaClass)]);
   return createPlayer(ip, origin);
 }
 
@@ -108,7 +138,19 @@ export async function bootstrap(req: Request, context: Context): Promise<Respons
     claimed = claim.claimed;
     legacyExists = claim.player !== undefined || claim.claimed;
   }
-  player ??= await createWithPow(body.pow, ip, { acq: body.acq, uaClass: classifyUserAgent(req.headers.get("user-agent")) });
+  // A refresh never creates a player (the client never solves PoW for one), so it gets no
+  // challenge either: one would count as issued in the PoW funnel and never be redeemed.
+  if (!player && body.refresh) throw errors.unauthorized();
+  player ??= await createWithPow(
+    body.pow,
+    ip,
+    {
+      acq: body.acq,
+      uaClass: classifyUserAgent(req.headers.get("user-agent")),
+      ...(body.hint ? { hint: { touch: body.hint.touch, wide: body.hint.wide, prior: body.hint.prior } } : {}),
+    },
+    context,
+  );
 
   let legacyImport: BootstrapResponse["legacyImport"];
   if (body.legacy) {
@@ -133,14 +175,14 @@ export async function bootstrap(req: Request, context: Context): Promise<Respons
     await ensureStarters(playerId);
     return library(playerId);
   };
-  const [lib, firsts, known, challenge, chStats, recent] = await Promise.all([
+  const [lib, firsts, known, { challenge, tomorrow }, chStats, recent] = await Promise.all([
     libraryWithStarters(),
     countFirsts(playerId),
     knownCount(),
-    dailyChallenge(playerId, today),
+    dailyChallenges(playerId, today),
     challengeStats(playerId, today),
     recentElements(),
-    touchPlayer(playerId, today),
+    touchPlayer(playerId, today, { standalone: body.hint?.standalone, entry: body.hint?.entry, ...(body.refresh ? { refresh: true } : {}) }),
   ]);
 
   const response: BootstrapResponse = {
@@ -157,6 +199,7 @@ export async function bootstrap(req: Request, context: Context): Promise<Respons
     history: chStats.history,
     recent: recent.map(toElementDTO),
     ...(legacyImport ? { legacyImport } : {}),
+    ...(tomorrow ? { tomorrow } : {}),
   };
   return json(response, { headers: { "set-cookie": sessionCookie(req, encodeSession(playerId, player.session_version)) } });
 }

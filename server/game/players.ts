@@ -1,5 +1,5 @@
 // Player lifecycle: creation, legacy adoption + inventory import, library, stats.
-import { MAX_LEGACY_IDS, type Acquisition } from "../../src/shared/api.ts";
+import { MAX_LEGACY_IDS, type Acquisition, type BootEntry } from "../../src/shared/api.ts";
 import type { UaClass } from "../ua.ts";
 import { q, q1, t, withTx } from "../db.ts";
 import { PLAYER_COLS, type PlayerRow } from "../session.ts";
@@ -21,26 +21,47 @@ export interface PlayerOrigin {
   acq?: Acquisition;
   /** Coarse platform of the creating browser (server/ua.ts). */
   uaClass?: UaClass;
+  /**
+   * Client hints (BootstrapHint, migration 0009): touch screen, right panel on screen, and v2
+   * game state already in this browser's localStorage. Unknown = NULL.
+   */
+  hint?: { touch?: boolean; wide?: boolean; prior?: boolean };
 }
+
+/** Postgres undefined_column: a migration this code writes to is not applied yet. */
+const isUndefinedColumn = (e: unknown): boolean => (e as { code?: string } | null)?.code === "42703";
 
 /** Create a player (with its origin, if known) and give them the starters, in one statement. */
 export async function createPlayer(ipHash: string, origin: PlayerOrigin = {}): Promise<PlayerRow> {
-  const { acq, uaClass } = origin;
-  const row = await q1<PlayerRow>(
-    `WITH p AS (
-       INSERT INTO ${t("players")}
-         (created_ip_hash, last_seen_at, acq_referrer, acq_landing, acq_utm_source, acq_utm_medium, acq_utm_campaign, acq_ua_class)
-       VALUES ($1, now(), $2, $3, $4, $5, $6, $7)
-       RETURNING ${PLAYER_COLS}
-     ), s AS (
-       INSERT INTO ${t("discoveries")} (player_id, element_id, source)
-       SELECT p.id, e.id, 'starter' FROM p, ${t("elements")} e WHERE e.is_starter
-       ON CONFLICT DO NOTHING
-       RETURNING element_id -- CockroachDB requires RETURNING in data-modifying CTEs
-     )
-     SELECT * FROM p`,
-    [ipHash, acq?.ref || null, acq?.path ?? null, acq?.src || null, acq?.med || null, acq?.cmp || null, uaClass ?? null],
-  );
+  const { acq, uaClass, hint } = origin;
+  const params = [ipHash, acq?.ref || null, acq?.path ?? null, acq?.src || null, acq?.med || null, acq?.cmp || null, uaClass ?? null];
+  const insert = (withHints: boolean) =>
+    q1<PlayerRow>(
+      `WITH p AS (
+         INSERT INTO ${t("players")}
+           (created_ip_hash, last_seen_at, acq_referrer, acq_landing, acq_utm_source, acq_utm_medium, acq_utm_campaign, acq_ua_class${
+             withHints ? ", acq_touch, acq_wide, acq_prior_local" : ""
+           })
+         VALUES ($1, now(), $2, $3, $4, $5, $6, $7${withHints ? ", $8::BOOL, $9::BOOL, $10::BOOL" : ""})
+         RETURNING ${PLAYER_COLS}
+       ), s AS (
+         INSERT INTO ${t("discoveries")} (player_id, element_id, source)
+         SELECT p.id, e.id, 'starter' FROM p, ${t("elements")} e WHERE e.is_starter
+         ON CONFLICT DO NOTHING
+         RETURNING element_id -- CockroachDB requires RETURNING in data-modifying CTEs
+       )
+       SELECT * FROM p`,
+      withHints ? [...params, hint?.touch ?? null, hint?.wide ?? null, hint?.prior ?? null] : params,
+    );
+  let row: PlayerRow | undefined;
+  try {
+    row = await insert(true);
+  } catch (e) {
+    // Migration 0009 not applied yet (a deploy that raced it): create the player without the
+    // hints rather than fail. One statement, so the failed attempt left nothing behind.
+    if (!isUndefinedColumn(e)) throw e;
+    row = await insert(false);
+  }
   if (!row) throw new Error("player insert returned no row");
   return row;
 }
@@ -97,27 +118,91 @@ export async function ensureStarters(playerId: string): Promise<void> {
   );
 }
 
+/** What a bootstrap knows about this page load (BootstrapHint), for the player's analytics rows. */
+export interface LoadSignals {
+  /** Running as an installed app: stamps players.standalone_at the first time. */
+  standalone?: boolean;
+  /** How the page was reached: player_days.entry, kept from the day's first load that sent one. */
+  entry?: BootEntry;
+  /**
+   * A resumed tab's silent new-day refresh, not a page load: last_seen_at moves but no load is
+   * counted, so a tab that is merely shown again on a new day writes no player_days row (that
+   * would count as a return day). The day is counted by the next combine or real load.
+   */
+  refresh?: boolean;
+}
+
 /** `day`: the player's local calendar day (resolveDay of the client date), for player_days. */
-export async function touchPlayer(playerId: string, day: string): Promise<void> {
+export async function touchPlayer(playerId: string, day: string, signals: LoadSignals = {}): Promise<void> {
   await Promise.all([
-    q(`UPDATE ${t("players")} SET last_seen_at = now() WHERE id = $1`, [playerId]),
-    countActivity(playerId, "loads", day),
+    markSeen(playerId, signals.standalone === true),
+    ...(signals.refresh ? [] : [countActivity(playerId, "loads", day, signals.entry)]),
   ]);
+}
+
+/**
+ * last_seen_at on every load. An installed-app load also stamps standalone_at, once (COALESCE),
+ * in the same statement, since the row is written anyway: no extra write per load.
+ */
+async function markSeen(playerId: string, standalone: boolean): Promise<void> {
+  const plain = `UPDATE ${t("players")} SET last_seen_at = now() WHERE id = $1`;
+  if (!standalone) {
+    await q(plain, [playerId]);
+    return;
+  }
+  try {
+    await q(`UPDATE ${t("players")} SET last_seen_at = now(), standalone_at = COALESCE(standalone_at, now()) WHERE id = $1`, [playerId]);
+  } catch (e) {
+    if (!isUndefinedColumn(e)) throw e; // 0009 not applied yet: lose the stamp, not the load
+    await q(plain, [playerId]);
+  }
+}
+
+/** player_days timing (migration 0009): a pause longer than this starts a new session that day. */
+export const SESSION_GAP = "30 minutes";
+/** Gaps up to this between two counted events count as active time; longer ones as idle. */
+export const ACTIVE_GAP = "5 minutes";
+
+/**
+ * The player_days upsert. On the day's first event: first_at = last_at = now(), sessions = 1.
+ * After that each event moves last_at, opens a new session after a pause over SESSION_GAP, adds
+ * the gap to active_secs when it is at most ACTIVE_GAP, and keeps the first entry it was given
+ * (only bootstraps know one). A row begun before 0009 has no first_at or last_at: it gets a
+ * last_at but no sessions or active time, and analyses skip rows without first_at.
+ * Exported for tests.
+ */
+export function activitySql(what: "loads" | "combines", timed: boolean): string {
+  if (!timed) {
+    return `INSERT INTO ${t("player_days")} AS pd (player_id, day, ${what}) VALUES ($1, $2::DATE, 1)
+       ON CONFLICT (player_id, day) DO UPDATE SET ${what} = pd.${what} + 1`;
+  }
+  return `INSERT INTO ${t("player_days")} AS pd (player_id, day, ${what}, first_at, last_at, sessions, entry)
+       VALUES ($1, $2::DATE, 1, now(), now(), 1, $3::STRING)
+       ON CONFLICT (player_id, day) DO UPDATE SET
+         ${what} = pd.${what} + 1,
+         sessions = pd.sessions + CASE WHEN now() - pd.last_at > INTERVAL '${SESSION_GAP}' THEN 1 ELSE 0 END,
+         active_secs = pd.active_secs + CASE
+           WHEN now() - pd.last_at BETWEEN INTERVAL '0 seconds' AND INTERVAL '${ACTIVE_GAP}'
+           THEN extract(epoch FROM now() - pd.last_at)::INT4 ELSE 0 END,
+         last_at = greatest(pd.last_at, now()),
+         entry = COALESCE(pd.entry, excluded.entry)`;
 }
 
 /**
  * Count one load or combine in the player's player_days row for `day`, their LOCAL calendar day
  * (the validated client date, as daily challenges use): a US evening session is one day, not
- * split at UTC midnight. Cohort day = a player's first player_days.day; D1/D7 = activity on
- * that day + 1 / + 7. Analytics must never affect gameplay: a failure is logged, not thrown.
+ * split at UTC midnight, with the day's timing (activitySql). Cohort day = a player's first
+ * player_days.day; D1/D7 = activity on that day + 1 / + 7. One statement, no extra round trip.
+ * Analytics must never affect gameplay: a failure is logged, not thrown.
  */
-export async function countActivity(playerId: string, what: "loads" | "combines", day: string): Promise<void> {
+export async function countActivity(playerId: string, what: "loads" | "combines", day: string, entry?: BootEntry): Promise<void> {
   try {
-    await q(
-      `INSERT INTO ${t("player_days")} AS pd (player_id, day, ${what}) VALUES ($1, $2::DATE, 1)
-       ON CONFLICT (player_id, day) DO UPDATE SET ${what} = pd.${what} + 1`,
-      [playerId, day],
-    );
+    try {
+      await q(activitySql(what, true), [playerId, day, entry ?? null]);
+    } catch (e) {
+      if (!isUndefinedColumn(e)) throw e;
+      await q(activitySql(what, false), [playerId, day]); // 0009 not applied yet: count, untimed
+    }
   } catch (e) {
     console.error(`[activity] ${what} not counted`, e instanceof Error ? e.message : e);
   }
@@ -243,12 +328,19 @@ const RECENT_LIMIT = 20;
 const RECENT_MS = 60_000;
 let recentCache: { rows: ElementRow[]; until: number } | null = null;
 
-/** Newest elements discovered by anyone (the "fresh from the lab" feed), cached ~60 s. */
+/**
+ * Newest elements discovered by anyone that already have art (the "fresh from the lab" feed),
+ * cached ~60 s. Art-ready only: the newest elements usually have none yet (art is painted on
+ * demand, and feed tiles the player doesn't own may not ask for it), so the raw newest 20 showed
+ * only emoji placeholders. The partial covering index elements_fresh_idx (migration 0009) holds
+ * exactly these rows newest first, so this reads about 20 of them. Without it the query is a full
+ * scan of elements (the 20 newest painted ones sit ~1,700 rows into elements_created_at_idx).
+ */
 export async function recentElements(): Promise<ElementRow[]> {
   if (recentCache && recentCache.until > Date.now()) return recentCache.rows;
   const rows = await q<ElementRow>(
     `SELECT ${ELEMENT_COLS} FROM ${t("elements")} e
-      WHERE e.status = 'active' AND NOT e.is_starter
+      WHERE e.status = 'active' AND NOT e.is_starter AND e.image_status = 'ready' AND e.image_key IS NOT NULL
       ORDER BY e.created_at DESC LIMIT $1`,
     [RECENT_LIMIT],
   );

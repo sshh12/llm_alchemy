@@ -1,5 +1,5 @@
 // Daily challenges: day resolution, the (immutable) per-day targets, completions and streaks.
-import type { ChallengeHistoryDay, ChallengeTarget, DailyChallengeDTO, Tier } from "../../src/shared/api.ts";
+import type { ChallengeHistoryDay, ChallengeTarget, DailyChallengeDTO, Tier, TomorrowTeaser } from "../../src/shared/api.ts";
 import { addDays, isPlausibleClientDay, utcDay } from "../../src/shared/dates.ts";
 import { q, t, type Queryable } from "../db.ts";
 import { ELEMENT_COLS, toElementDTO, type ElementRow } from "./dto.ts";
@@ -55,6 +55,15 @@ export function tiersFor(c: ChallengeRow, elementId: string): Tier[] {
   return TIERS.filter((tier) => targetId(c, tier) === elementId);
 }
 
+/**
+ * Whether `elementId` is a target of a challenge that is "today" somewhere (cached rows): players
+ * may ask for its art and report it without owning it.
+ */
+export async function isTodayTarget(elementId: string, now = new Date()): Promise<boolean> {
+  const challenges = await Promise.all(plausibleDays(now).map(getChallenge));
+  return challenges.some((c) => c != null && tiersFor(c, elementId).length > 0);
+}
+
 /** Record completions for any target produced by a combine; returns the newly completed tiers. */
 export async function completeTiers(playerId: string, day: string, resultId: string, client?: Queryable): Promise<Tier[]> {
   const c = await getChallenge(day);
@@ -71,16 +80,40 @@ export async function completeTiers(playerId: string, day: string, resultId: str
   return TIERS.filter((tier) => rows.some((r) => r.tier === tier));
 }
 
-/** Today's challenge for the bootstrap response (fresh element rows so art state is current). */
-export async function dailyChallenge(playerId: string, day: string): Promise<DailyChallengeDTO | null> {
-  const c = await getChallenge(day);
-  if (!c) return null;
+/**
+ * The teaser for a day's easy target: its art only when ready, and its name's length without
+ * spaces. Nothing that names it (no name, no id). Exported for tests.
+ */
+export function teaserFor(row: ElementRow): TomorrowTeaser {
+  return { img: toElementDTO(row).img, letters: [...row.name.replace(/\s+/g, "")].length };
+}
+
+export interface DailyChallenges {
+  challenge: DailyChallengeDTO | null;
+  /** Tomorrow's (day + 1) easy target as a teaser, or null without a row for that day. */
+  tomorrow: TomorrowTeaser | null;
+}
+
+/**
+ * Today's challenge and tomorrow's teaser for the bootstrap response, in the same two queries
+ * today's challenge alone took (challenge rows are cached; element rows are read fresh so art
+ * state is current).
+ */
+export async function dailyChallenges(playerId: string, day: string): Promise<DailyChallenges> {
+  const [c, next] = await Promise.all([getChallenge(day), getChallenge(addDays(day, 1))]);
+  const ids = [...(c ? TIERS.map((tier) => targetId(c, tier)) : []), ...(next ? [next.easy_id] : [])];
+  if (ids.length === 0) return { challenge: null, tomorrow: null };
   const [elements, done] = await Promise.all([
-    q<ElementRow>(`SELECT ${ELEMENT_COLS} FROM ${t("elements")} e WHERE e.id = ANY($1::INT8[])`, [
-      TIERS.map((tier) => targetId(c, tier)),
-    ]),
-    q<{ tier: Tier }>(`SELECT tier FROM ${t("challenge_completions")} WHERE player_id = $1 AND day = $2`, [playerId, day]),
+    q<ElementRow>(`SELECT ${ELEMENT_COLS} FROM ${t("elements")} e WHERE e.id = ANY($1::INT8[])`, [ids]),
+    c
+      ? q<{ tier: Tier }>(`SELECT tier FROM ${t("challenge_completions")} WHERE player_id = $1 AND day = $2`, [playerId, day])
+      : Promise.resolve([]),
   ]);
+  const teaser = next ? elements.find((e) => e.id === next.easy_id) : undefined;
+  return { challenge: c ? toChallenge(c, day, elements, done) : null, tomorrow: teaser ? teaserFor(teaser) : null };
+}
+
+function toChallenge(c: ChallengeRow, day: string, elements: readonly ElementRow[], done: readonly { tier: Tier }[]): DailyChallengeDTO | null {
   const targets: ChallengeTarget[] = [];
   for (const tier of TIERS) {
     const el = elements.find((e) => e.id === targetId(c, tier));
@@ -93,6 +126,11 @@ export async function dailyChallenge(playerId: string, day: string): Promise<Dai
     });
   }
   return { day, targets };
+}
+
+/** Today's challenge alone (see dailyChallenges). */
+export async function dailyChallenge(playerId: string, day: string): Promise<DailyChallengeDTO | null> {
+  return (await dailyChallenges(playerId, day)).challenge;
 }
 
 /**

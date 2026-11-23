@@ -1,6 +1,7 @@
 // The free-form workbench canvas: measures itself (bounds + safe areas), renders tiles,
-// the toolbar (Undo / Tidy / Clear), the selection pill, empty-state hint and keyboard
-// support (spatial arrow navigation, Space/Enter combine, Delete, move mode).
+// the toolbar (Undo / Tidy / Clear), the selection pill, empty-state hint, the first-run
+// welcome card and coach (experiment firstRun) and keyboard support (spatial arrow
+// navigation, Space/Enter combine, Delete, move mode).
 import { AnimatePresence, m } from "motion/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { clampPt, needsTidy, nearestInDirection, type Dir } from "../../lib/geometry.ts";
@@ -14,11 +15,17 @@ import { GhostDemo } from "../../components/GhostDemo.tsx";
 import { clearCanvas, clearSelection, combineSelection, doUndo, mergeTiles, removeTile, setMultiSelect, tidyCanvas } from "./actions.ts";
 import { Snackbar } from "../shell/Toasts.tsx";
 import { CanvasTile } from "./CanvasTile.tsx";
+import { Coach } from "./Coach.tsx";
 import { layoutEls } from "./layout.ts";
+import { WelcomeCard } from "./WelcomeCard.tsx";
 
 const ARROWS: Record<string, Dir> = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" };
 
 function useCanvasMeasure(ref: React.RefObject<HTMLDivElement | null>) {
+  const remeasure = useRef<(() => void) | null>(null);
+  // The collapsed welcome card is an obstacle too: measure again when it comes or goes.
+  const welcome = useUi((s) => s.welcome);
+  useLayoutEffect(() => remeasure.current?.(), [welcome]);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -45,11 +52,15 @@ function useCanvasMeasure(ref: React.RefObject<HTMLDivElement | null>) {
       const obstacles = tools
         ? [{ x: tools.left - r.left - 6, y: tools.top - r.top + lift - 6, w: tools.width + 12, h: tools.height + 12 }]
         : [];
+      // (Expanded, the card is read and closed again: tiles needn't move out from under it.)
+      const card = el.parentElement?.querySelector<HTMLElement>('.welcome-card[data-state="collapsed"]')?.getBoundingClientRect();
+      if (card) obstacles.push({ x: card.left - r.left - 6, y: card.top - r.top - 6, w: card.width + 12, h: card.height + 12 });
       // The on-screen keyboard shrinks the viewport while searching: don't reflow tiles.
       const typing = document.activeElement instanceof HTMLInputElement;
       setBounds(bounds, T, obstacles, typing);
     };
     measure();
+    remeasure.current = measure;
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     const onBlur = () => setTimeout(measure, 350);
@@ -57,6 +68,7 @@ function useCanvasMeasure(ref: React.RefObject<HTMLDivElement | null>) {
     return () => {
       ro.disconnect();
       document.removeEventListener("focusout", onBlur);
+      remeasure.current = null;
       if (layoutEls.canvas === el) layoutEls.canvas = null;
     };
   }, [ref]);
@@ -276,6 +288,10 @@ export function Workbench() {
         </div>
         <Toolbar empty={!showTiles || settled.length === 0} />
       </div>
+      {/* Siblings of the canvas (same box, so canvas coordinates): text stays selectable and
+          scrollable outside the canvas's touch-action: none. */}
+      {showTiles && <Coach />}
+      <WelcomeCard />
     </div>
   );
 }

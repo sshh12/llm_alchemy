@@ -1,7 +1,7 @@
 // Optional Google Analytics events (gtag is installed by the page head when configured).
 // Params stay compact and bounded: never element names or other generated text.
 // What each event counts: docs/ARCHITECTURE.md "Analytics".
-type EventName =
+export type EventName =
   | "app_ready"
   | "load_failed"
   | "combine"
@@ -20,7 +20,22 @@ type EventName =
   // First tile placed on the workbench this session: via = tap | drag.
   | "first_tile"
   // A sheet opened: sheet = challenges | stats | settings | about | customSort.
-  | "sheet_open";
+  | "sheet_open"
+  // The page was hidden or left before the game was playable (once per page): phase (BootPhase),
+  // boot_ms since navigation start (as app_ready's). Arrives only if gtag loaded; the
+  // first-party /api/beacon counts every one, and takes it back when the page comes back.
+  | "boot_abandon"
+  // "Report this element" sent from the details menu (reason).
+  | "report"
+  // Wave-2 product events (names reserved here so feature code never edits this list):
+  | "milestone"
+  | "celebration"
+  | "wf_followup"
+  | "idle_card"
+  | "install_eligible"
+  | "install_prompt"
+  | "install"
+  | "coach";
 
 export type EventParams = Record<string, string | number | boolean>;
 
@@ -71,17 +86,40 @@ export function trackOncePerSession(name: EventName, params?: EventParams): void
   track(name, params);
 }
 
+/** identify() has run this page load. */
+let identified = false;
+const waiting: (() => void)[] = [];
+
+/**
+ * Run `send` once identify() has run this page load (now, if it has): for an event that can fire
+ * before bootstrap but must carry user_id and the experiment user properties (install_eligible).
+ * Never sent when the boot never succeeds.
+ */
+export function afterIdentify(send: () => void): void {
+  if (identified) send();
+  else waiting.push(send);
+}
+
 /**
  * Tie this browser's GA events to the player: `user_id` is the player's random public id (the
  * same id the database has as players.public_id, so GA exports join to server data; no PII).
- * Call before the session's first event so every event carries it.
+ * Call before the session's first event so every event carries it. `experiments`: the player's
+ * arms as user properties (exp_first_run, ...; src/shared/experiments.ts).
  */
-export function identify(playerPublicId: string, props: { legacy: boolean }): void {
+export function identify(playerPublicId: string, props: { legacy: boolean; experiments?: Record<string, string> }): void {
   try {
     const g = gtag();
     g?.("set", { user_id: playerPublicId });
-    g?.("set", "user_properties", { legacy_player: props.legacy });
+    g?.("set", "user_properties", { legacy_player: props.legacy, ...props.experiments });
   } catch {
     // Analytics must never affect gameplay.
+  }
+  identified = true;
+  for (const send of waiting.splice(0)) {
+    try {
+      send();
+    } catch {
+      // Analytics must never affect gameplay.
+    }
   }
 }

@@ -2,10 +2,10 @@
 import { AnimatePresence, m } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { Tier } from "../../../shared/api.ts";
-import { formatCount, formatPercent } from "../../lib/format.ts";
+import { formatCount, formatPercent, goalProgress, nextMilestone } from "../../lib/format.ts";
 import { useGame } from "../../state/game.ts";
-import { openSheet } from "../../state/ui.ts";
-import { FlameIcon, LayersIcon, LogoMark, SettingsIcon } from "../../components/Icons.tsx";
+import { openSheet, useArm } from "../../state/ui.ts";
+import { FlameIcon, LayersIcon, LogoMark, SettingsIcon, SparkleIcon } from "../../components/Icons.tsx";
 
 const TIERS: Tier[] = ["easy", "hard", "expert"];
 export const TIER_COLOR: Record<Tier, string> = { easy: "var(--easy)", hard: "var(--hard)", expert: "var(--expert)" };
@@ -85,21 +85,45 @@ function ChallengeChip() {
   );
 }
 
+/** Progress from the last goal to the next as a small ring (experiment goals). */
+export function GoalRing({ progress, size = 18 }: { progress: number; size?: number }) {
+  const r = 7;
+  const c = 2 * Math.PI * r;
+  return (
+    <svg width={size} height={size} viewBox="0 0 18 18" className="goal-ring flex-none text-accent" aria-hidden="true" focusable="false">
+      <circle cx="9" cy="9" r={r} fill="none" stroke="var(--border-strong)" strokeWidth="2.4" />
+      <circle
+        cx="9"
+        cy="9"
+        r={r}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeDasharray={`${(Math.max(0.04, progress) * c).toFixed(2)} ${c.toFixed(2)}`}
+        transform="rotate(-90 9 9)"
+      />
+    </svg>
+  );
+}
+
 function StatsChip() {
   const mine = useGame((s) => s.stats.mine);
   const known = useGame((s) => s.stats.known);
+  const firsts = useGame((s) => s.stats.firsts);
   const ready = useGame((s) => s.status === "ready");
+  // Experiment goals: the next goal ("47/50") and the world-firsts count replace "% of known",
+  // which reads "<0.1%" for any library under ~60 elements.
+  const goals = useArm("goals") === "treatment";
   const pct = formatPercent(mine, known);
+  const next = nextMilestone(mine);
+  const label = goals
+    ? `Your elements: ${mine}. Next goal: ${next}.${firsts > 0 ? ` World firsts: ${firsts}.` : ""}`
+    : `Your elements: ${mine}, ${pct} of all known`;
   return (
-    <button
-      type="button"
-      className="pill-hit"
-      aria-label={`Your elements: ${mine}, ${pct} of all known`}
-      data-testid="stats-chip"
-      onClick={() => openSheet("stats")}
-    >
+    <button type="button" className="pill-hit" aria-label={label} data-testid="stats-chip" data-goals={goals ? "" : undefined} onClick={() => openSheet("stats")}>
       <span className="pill">
-        <LayersIcon size={16} className="text-accent" />
+        {goals && ready ? <GoalRing progress={goalProgress(mine)} /> : <LayersIcon size={16} className="text-accent" />}
         {ready ? (
           <span data-testid="library-count" data-count={mine}>
             <Rolling value={formatCount(mine)} />
@@ -107,7 +131,18 @@ function StatsChip() {
         ) : (
           <span className="shimmer h-3 w-8 rounded" />
         )}
-        {ready && <span className="hidden text-ink-muted min-[430px]:inline">· {pct}</span>}
+        {ready && !goals && <span className="hidden text-ink-muted min-[430px]:inline">· {pct}</span>}
+        {ready && goals && (
+          <span className="-ml-1 hidden text-ink-muted min-[430px]:inline" data-testid="goal-next">
+            /{formatCount(next)}
+          </span>
+        )}
+        {ready && goals && firsts > 0 && (
+          <span className="hidden items-center gap-0.5 text-gold min-[480px]:inline-flex" data-testid="firsts-count">
+            <SparkleIcon size={13} />
+            <Rolling value={formatCount(firsts)} />
+          </span>
+        )}
       </span>
     </button>
   );

@@ -1,15 +1,20 @@
-// Stats: your elements, share of everything known, world firsts (+ list), challenges.
+// Stats: your elements, share of everything known (or, in experiment goals, progress toward
+// the next goal), world firsts (+ list), challenges.
 import { useMemo } from "react";
-import { formatCount, formatPercent } from "../../lib/format.ts";
+import { formatCount, formatGoal, formatPercent, nextMilestone } from "../../lib/format.ts";
 import { useGame } from "../../state/game.ts";
-import { openDetails, openSheet } from "../../state/ui.ts";
+import { openDetails, openSheet, useArm } from "../../state/ui.ts";
 import { Tile } from "../../components/Tile.tsx";
 import { Sheet } from "./Sheet.tsx";
 
-function Stat({ value, label, accent }: { value: string; label: string; accent?: string }) {
+function Stat({ value, label, accent, testId }: { value: string; label: string; accent?: string; testId?: string }) {
   return (
-    <div className="rounded-[18px] bg-surface-2 px-4 py-3">
-      <p className="font-display tabular text-[28px] font-semibold leading-none tracking-[-0.02em]" style={{ color: accent }}>
+    <div className="rounded-[18px] bg-surface-2 px-4 py-3" data-testid={testId}>
+      {/* Long goal values ("1,247/1,250") step down a size to fit half a phone sheet. */}
+      <p
+        className={`font-display tabular font-semibold leading-none tracking-[-0.02em] ${value.length > 8 ? "text-[21px]" : "text-[28px]"}`}
+        style={{ color: accent }}
+      >
         {value}
       </p>
       <p className="mt-1.5 text-[13px] font-medium text-ink-muted">{label}</p>
@@ -22,6 +27,7 @@ const FIRSTS_SHOWN = 60;
 export default function StatsSheet({ open }: { open: boolean }) {
   const stats = useGame((s) => s.stats);
   const owned = useGame((s) => s.owned);
+  const goals = useArm("goals") === "treatment";
   const firsts = useMemo(() => {
     const els = useGame.getState().elements;
     return Object.entries(owned)
@@ -34,7 +40,11 @@ export default function StatsSheet({ open }: { open: boolean }) {
     <Sheet open={open} onOpenChange={(o) => !o && openSheet(null)} title="Your stats" description="Your elements, world firsts and challenge record." testId="stats-sheet">
       <div className="grid grid-cols-2 gap-2.5">
         <Stat value={formatCount(stats.mine)} label="Your elements" />
-        <Stat value={formatPercent(stats.mine, stats.known)} label={`of ${formatCount(stats.known)} known`} />
+        {goals ? (
+          <Stat value={formatGoal(stats.mine)} label={`Next goal: ${formatCount(nextMilestone(stats.mine))} elements`} testId="stat-goal" />
+        ) : (
+          <Stat value={formatPercent(stats.mine, stats.known)} label={`of ${formatCount(stats.known)} known`} />
+        )}
         <Stat value={formatCount(stats.firsts)} label="World firsts" accent="var(--gold)" />
         <Stat value={formatCount(stats.challengesCompleted)} label="Challenges completed" />
       </div>

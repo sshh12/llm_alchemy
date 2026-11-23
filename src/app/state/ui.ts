@@ -1,10 +1,15 @@
 // Transient UI state: open sheet, phone shelf snap, toasts, celebration queue, quick
-// actions, library view (filter/sort/search), pins and screen-reader announcements.
+// actions, library view (filter/sort/search), pins, the first-run welcome card and coach,
+// and screen-reader announcements.
+import { useMemo } from "react";
 import { create } from "zustand";
 import type { ElementId, Tier } from "../../shared/api.ts";
+import type { Arm, ExperimentName } from "../../shared/experiments.ts";
 import { track } from "../lib/analytics.ts";
 import { readStoredSort, type BuiltInSort } from "../lib/customSort.ts";
+import { arm } from "../lib/experiments.ts";
 import { KEYS, readJSON, writeJSON } from "../lib/storage.ts";
+import { useGame } from "./game.ts";
 
 export type SheetName = "challenges" | "stats" | "settings" | "about" | "customSort";
 export type ShelfSnap = "peek" | "half" | "full";
@@ -19,7 +24,11 @@ export interface ToastAction {
 
 export interface Toast {
   id: number;
-  kind: "new" | "info" | "error" | "undo";
+  /**
+   * new: a discovery (element chip). first: a world-first shown inline instead of the full card
+   * (gold chip). milestone: a library goal reached (experiment goals). undo: the bottom snackbar.
+   */
+  kind: "new" | "first" | "milestone" | "info" | "error" | "undo";
   text: string;
   /** Element chip shown in the toast (tappable → details). */
   elementId?: ElementId;
@@ -31,6 +40,8 @@ export interface Toast {
   until?: number;
   /** Overrides data-testid="toast" (e.g. the one-time "welcome-back" notice). */
   testId?: string;
+  /** milestone: the goal just reached and the next one. */
+  milestone?: { rung: number; next: number };
 }
 
 export type Celebration =
@@ -65,6 +76,13 @@ interface UiState {
   live: { polite: string; assertive: string; n: number };
   /** A drag is hovering the shelf/rail (canvas tile → "return to library" zone). */
   shelfDropActive: boolean;
+  /**
+   * First-run treatment (experiment firstRun): the non-blocking welcome card that replaces the
+   * modal welcome sheet; null when it isn't shown (features/workbench/firstRun.ts).
+   */
+  welcome: "collapsed" | "expanded" | null;
+  /** First-run coach: the seeded demo pair's canvas tile uids, until the first combine. */
+  coach: { a: string; b: string; at: number } | null;
 }
 
 const view = readJSON<Partial<LibraryView>>(KEYS.libraryView, {});
@@ -84,6 +102,8 @@ export const useUi = create<UiState>(() => ({
   pins: new Set(Array.isArray(pins) ? pins.filter((p): p is string => typeof p === "string") : []),
   live: { polite: "", assertive: "", n: 0 },
   shelfDropActive: false,
+  welcome: null,
+  coach: null,
 }));
 
 let toastSeq = 1;
@@ -149,4 +169,14 @@ export function announce(text: string, assertive = false): void {
       n: s.live.n + 1,
     },
   }));
+}
+
+/**
+ * The current player's arm in an experiment, for rendering: re-read when bootstrap names the
+ * player (control until then) or a transfer switches it.
+ */
+export function useArm(name: ExperimentName): Arm {
+  const id = useGame((s) => s.player?.id ?? null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `arm` reads the player id itself
+  return useMemo(() => arm(name), [id, name]);
 }

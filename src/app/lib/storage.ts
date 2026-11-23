@@ -71,4 +71,14 @@ export const KEYS = {
   customSortScores: "ia:customSortScores",
   /** First-touch acquisition; written only by the inline page-head script (index.html, src/shared/pages.ts). */
   acq: "ia:acq",
+  /**
+   * Experiment arm overrides for e2e and dev, e.g. {"firstRun":"treatment"} (lib/experiments.ts).
+   * Ignored on the production host; never written by the game.
+   */
+  exp: "ia:exp",
+  /**
+   * The experiment arms of the last player this browser booted as, e.g. {"idleCard":"treatment"}
+   * (lib/experiments.ts earlyArm): arms only, never the id. Read only before bootstrap answers.
+   */
+  arms: "ia:arms",
 } as const;

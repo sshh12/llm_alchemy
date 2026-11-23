@@ -5,8 +5,10 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { bootGame, useGame } from "../../state/game.ts";
 import { openSheet, showToast, useUi, type SheetName } from "../../state/ui.ts";
 import { KEYS, readString, writeString } from "../../lib/storage.ts";
+import { arm } from "../../lib/experiments.ts";
 import { useOnline } from "../../lib/hooks.ts";
 import { capturedTransferLink } from "../../lib/transferLink.ts";
+import { enterFirstRun } from "../workbench/firstRun.ts";
 
 const loaders = {
   challenges: () => import("../sheets/ChallengesSheet.tsx"),
@@ -48,7 +50,12 @@ function SheetHost() {
   );
 }
 
-/** First-run onboarding + the one-time legacy "welcome back" message. */
+/**
+ * First-run onboarding + the one-time legacy "welcome back" message. Experiment firstRun:
+ * control opens the modal welcome sheet; treatment gets the non-blocking welcome card, and a
+ * brand-new player the seeded demo pair with its coach (features/workbench/firstRun.ts).
+ * Neither applies to legacy arrivals or a transfer link.
+ */
 function useFirstRun(): void {
   const ready = useGame((s) => s.status === "ready");
   const welcome = useGame((s) => s.legacyWelcome);
@@ -75,11 +82,16 @@ function useFirstRun(): void {
         duration: 8_000,
       });
       writeString(KEYS.onboarded, "1");
-    } else if (readString(KEYS.onboarded) !== "1" && !capturedTransferLink()) {
+    } else if (!capturedTransferLink()) {
       // (Opened from a transfer link: the visitor is continuing their own game, so the
       // switch prompt comes first and there is no onboarding on this load.)
-      useUi.setState({ onboarding: true });
-      openSheet("about");
+      const notOnboarded = readString(KEYS.onboarded) !== "1";
+      if (arm("firstRun") === "treatment") {
+        enterFirstRun({ welcome: notOnboarded });
+      } else if (notOnboarded) {
+        useUi.setState({ onboarding: true });
+        openSheet("about");
+      }
     }
     const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
     if (idle) idle(prefetchOverlays);
@@ -122,6 +134,16 @@ function BootStatus() {
                 ? "Lots of alchemists right now. Try again in a moment."
                 : "We couldn't reach the lab. Please try again."}
           </p>
+          {error === "network" && !offline && (
+            // School web filters often let the page load but block the game's requests.
+            <p className="mt-2 text-[14px] leading-snug text-ink-muted" data-testid="school-network-hint">
+              On a school network? It may be blocking the game. Ask your teacher. Schools can find setup info at{" "}
+              <a className="text-accent underline-offset-2 hover:underline" href="/teachers">
+                alchemy.sshh.io/teachers
+              </a>
+              .
+            </p>
+          )}
           <button
             type="button"
             className="btn btn-primary mt-5 w-full"

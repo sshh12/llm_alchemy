@@ -1,9 +1,10 @@
-// Non-blocking feedback: a top stack (discoveries, errors, info) and the bottom undo
-// snackbar (rendered inside the workbench so it never covers the library).
+// Non-blocking feedback: a top stack (discoveries, inline world-firsts, goals, errors, info)
+// and the bottom undo snackbar (rendered inside the workbench so it never covers the library).
 import { AnimatePresence, m } from "motion/react";
 import { useShallow } from "zustand/react/shallow";
 import { useGame } from "../../state/game.ts";
 import { dismissToast, openDetails, useUi, type Toast } from "../../state/ui.ts";
+import { formatCount } from "../../lib/format.ts";
 import { useNow } from "../../lib/hooks.ts";
 import { ElementArt } from "../../components/ElementArt.tsx";
 import { SparkleIcon } from "../../components/Icons.tsx";
@@ -37,6 +38,53 @@ function NewChip({ toast }: { toast: Toast }) {
   );
 }
 
+/**
+ * A world-first shown inline instead of the full card (celebration throttle, actions.ts). Tap
+ * opens the element's menu, where Share lives.
+ */
+function FirstChip({ toast }: { toast: Toast }) {
+  const el = useGame((s) => (toast.elementId ? s.elements[toast.elementId] : undefined));
+  if (!el) return null;
+  return (
+    <button
+      type="button"
+      className="flex min-w-0 items-center gap-2.5 text-left"
+      data-testid="first-toast"
+      onClick={() => {
+        dismissToast(toast.id);
+        openDetails({ elementId: el.id, source: "library", anchor: null });
+      }}
+    >
+      <span className="first-chip-art">
+        <ElementArt element={el} box={30} />
+      </span>
+      <span className="flex min-w-0 flex-col leading-tight">
+        <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.12em] text-gold">
+          <SparkleIcon size={11} /> First discovery!
+        </span>
+        <span className="truncate font-semibold">You're the first to make {el.name}</span>
+      </span>
+    </button>
+  );
+}
+
+/** A library goal reached (experiment goals). */
+function MilestoneView({ goal }: { goal: NonNullable<Toast["milestone"]> }) {
+  return (
+    <span className="flex min-w-0 items-center gap-2.5 py-0.5" data-testid="milestone-toast" data-rung={goal.rung}>
+      <span className="goal-badge tabular" aria-hidden="true">
+        {formatCount(goal.rung)}
+      </span>
+      <span className="flex min-w-0 flex-col leading-tight">
+        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-accent">Goal reached</span>
+        <span className="truncate font-semibold">
+          {formatCount(goal.rung)} elements! Next goal: {formatCount(goal.next)}
+        </span>
+      </span>
+    </span>
+  );
+}
+
 function ToastView({ toast }: { toast: Toast }) {
   return (
     <m.div
@@ -52,6 +100,10 @@ function ToastView({ toast }: { toast: Toast }) {
     >
       {toast.kind === "new" ? (
         <NewChip toast={toast} />
+      ) : toast.kind === "first" ? (
+        <FirstChip toast={toast} />
+      ) : toast.kind === "milestone" && toast.milestone ? (
+        <MilestoneView goal={toast.milestone} />
       ) : (
         <span className="min-w-0 py-1.5">
           {toast.text}

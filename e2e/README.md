@@ -41,7 +41,8 @@ E2E_REUSE_SERVER=1 npm run e2e
 
 | Spec | Journey |
 |---|---|
-| `first-visit` | onboarding, 401 `pow_required` then 200 (PoW in a worker), five starters, dismissal persists across reload |
+| `first-visit` | onboarding, 401 `pow_required` then 200 (PoW in a worker), five starters, dismissal persists across reload; experiment `firstRun` treatment: the demo pair waits on the board with the coach, the welcome card never blocks it, a drag (or tap Water, tap Fire) combines |
+| `idle-card` | (Chromium projects) experiment `idleCard`: in treatment, after 10 discoveries today and a pause (short timers via `ia:idleTest`), "Today in your lab" shows once that local day, dismisses, stays gone after a reload, steps aside for a sheet, offers the held-back install prompt (or the iPad tip); "Play at home" opens the transfer code in Settings (desktop-chrome + pixel-7); control never shows it and keeps the browser's install prompt |
 | `combine-drag` | drag Water to the canvas and Fire onto it: Steam, inputs consumed, "new" toast, library +1; an unknown combo (mock AI): first-ever card |
 | `tap-select` | tap to place, tap to select/deselect, tap another to combine (WCAG 2.5.7 alternative) |
 | `daily-challenge` | today's easy target from known recipes: tier complete, celebration, persists after reload |
@@ -57,6 +58,11 @@ E2E_REUSE_SERVER=1 npm run e2e
 | `transfer-qr` | (desktop-chrome + iphone-15) Settings shows the code as a QR `/#transfer=<code>` link (~200 px, whole-pixel modules) and Copy link copies it; a fresh device opening it bootstraps, sees the confirm (no onboarding), switches and has player A's library; the hash is gone at once; Cancel keeps the device's player; garbage gets the friendly error with no request; a forged code is refused after Switch; your own link only says you're already that player |
 
 Every test also fails on any uncaught page error.
+
+Every test runs in the control arm of every experiment (`e2e/support/test.ts` writes an
+all-control `ia:exp` override before the app loads; the override is ignored on the production
+host). A test that needs a treatment calls `game.forceArms({ firstRun: "treatment" })` before
+`game.open()`.
 
 ### The returning legacy player
 
@@ -103,8 +109,8 @@ e2e/.artifacts/               screens/<project>/<test>--<step>.png (taken once s
   then calls the running server's `/api/bootstrap` without a cookie and **aborts the run** unless
   the PoW challenge asks for exactly 8 bits (the server got the E2E env) and the world it reports is
   the small seeded one (it reads `alchemy_e2e`, not the production world).
-- Each test is a fresh browser context, i.e. a fresh anonymous player (about 92 players per full
-  run). The E2E env raises the per-IP hourly creation limit (`CREATE_IP_HOURLY=1000`); the daily
+- Each test is a fresh browser context, i.e. a fresh anonymous player (about 111 players per full
+  run, measured 2026-11-22). The E2E env raises the per-IP hourly creation limit (`CREATE_IP_HOURLY=1000`); the daily
   one (`create.ip.day`, 300) still applies, and the reseed clears the e2e counters. A new suite
   that creates players must stay inside that budget: past it, the last tests to run get `429` on
   bootstrap ("Lots of alchemists right now").
@@ -128,7 +134,13 @@ Implemented by the frontend; `e2e/support/game.ts` is the single place that uses
 | `onboarding` | first-run onboarding | dismiss button `onboarding-dismiss`; never again after dismissal |
 | `welcome-back` | one-time notice after a legacy import | non-blocking |
 | `legacy-claimed` | one-time notice: the legacy player is bound to another browser, elements were copied | non-blocking toast |
-| `toast` | each toast | `data-kind` = `new` \| `error` \| `undo` \| `info`; actions are buttons ("Undo") |
+| `toast` | each toast | `data-kind` = `new` \| `error` \| `undo` \| `info` \| `first` (a world-first shown inline instead of the card) \| `milestone`; actions are buttons ("Undo") |
+| `first-toast`, `milestone-toast` | the body of a `first` toast; of a `milestone` toast (`data-rung`) | |
+| `welcome-card` | experiment `firstRun` treatment: the collapsed welcome card | `data-state`; `welcome-expand`, `welcome-body`, `welcome-start`, `welcome-dismiss` |
+| `coach` | experiment `firstRun` treatment: the pill on the seeded demo pair | `data-mode` = `drag` \| `tap`, `data-place` = `above` \| `below`; `coach-dismiss` |
+| `idle-card` | experiment `idleCard` treatment: "Today in your lab" | `data-via` = `idle` \| `active`; `idle-card-stats` (`data-discoveries`, `data-firsts`), `idle-card-teaser` (`data-art`), `idle-card-install`, `idle-card-tip`, `idle-card-home`, `idle-card-dismiss` |
+| `goal-next`, `stat-goal`, `firsts-count` | experiment `goals` treatment: the stats chip's "/next goal" and world-firsts count; the Stats sheet's goal stat | the chip carries `data-goals` |
+| `quick-action-report`, `report-choices` | "Report this element" in the details menu and its reason choices | |
 | `discovery-card` | first-ever discovery card (dialog) | element name + "first" wording |
 | `challenge-complete` | challenge-completed card (dialog) | `data-tier` |
 | `challenge-chip`, `challenges-sheet` | top bar button and its sheet | |

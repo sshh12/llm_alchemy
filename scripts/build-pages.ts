@@ -292,7 +292,7 @@ function teachers(steam: { water: PageArt; fire: PageArt; steam: PageArt }): str
         <li><strong>Cleaned-up history.</strong> Elements from the original version of the game were filtered for spam and reviewed for junk, and names removed that way can't come back.</li>
         <li><strong>No contact between players.</strong> There is no chat, no profiles and no way for players to message each other or name elements themselves.</li>
       </ul>
-      <p>Expect everyday grown-up things as plain nouns (a sword, wine), friendly monsters from classic tales, and famous people, places and brands. If you spot an element that shouldn't be in the game, tell us in a <a href="${issues}">GitHub issue</a> with the element's name (and nothing about your students).</p>
+      <p>Expect everyday grown-up things as plain nouns (a sword, wine), friendly monsters from classic tales, and famous people, places and brands. If you spot an element that shouldn't be in the game, long-press or right-click it in the game and choose <strong>Report this element</strong>. You can also tell us in a <a href="${issues}">GitHub issue</a> with the element's name (and nothing about your students).</p>
 
       <h2>Privacy</h2>
       <p>There are no accounts, and the game never asks for a name, email or age. Progress is tied to an anonymous player kept in a cookie, and the site uses Google Analytics with a random id to see how the game is played. The <a href="/privacy">privacy page</a> lists everything that is collected.</p>
@@ -321,11 +321,12 @@ function privacy(): string {
 
       <h2>What the game stores</h2>
       <ul>
-        <li><strong>Gameplay:</strong> the elements you discover and when, the new recipes and first discoveries you make, your daily challenge completions, how often you play each day (for example how many times you open the game and how many combinations you make), and any element reports you send.</li>
-        <li><strong>How you found the game</strong>, saved once when your player is created: the website that sent you (its domain only, like google.com), the first page you opened, and any <code>utm_</code> tags in that link, such as a teacher's classroom link.</li>
-        <li><strong>Your kind of device:</strong> a coarse platform from your browser (like Chrome OS, iOS, Android, Windows or Mac), never the full browser details, plus a few coarse hints such as whether it has a touch screen, whether the game was opened as an installed app, and which layout it showed.</li>
+        <li><strong>Gameplay:</strong> the elements you discover and when, the new recipes and first discoveries you make, your daily challenge completions, how you play each day (how many times you open the game and how many combinations you make, roughly when you start and stop playing, how many separate sessions and about how long you're active), and any element reports you send.</li>
+        <li><strong>How you found the game</strong>, saved once when your player is created: the website that sent you (its domain only, like google.com), the first page you opened, and any <code>utm_</code> tags in that link, such as a teacher's classroom link. Each day the game also notes what kind of visit you first opened it from that day: a search engine, a direct visit, the installed app or another site (the kind only, never the page or link).</li>
+        <li><strong>Your kind of device:</strong> a coarse platform from your browser (like Chrome OS, iOS, Android, Windows or Mac), never the full browser details, plus a few coarse hints such as whether it has a touch screen, whether the game was opened as an installed app, which layout it showed, and whether this browser already had saved game data when your player was created.</li>
         <li><strong>A scrambled network address, against abuse.</strong> The game never stores your IP address. To stop bots and runaway costs, the server counts requests against a keyed hash of your network address, which can't be turned back into the address without our secret key; those counters expire on their own. The hash from when your player was created stays with your player, and we use it to count, in aggregate, players who start on the same network, like a school.</li>
       </ul>
+      <p>The server also keeps anonymous daily counts with nothing that says who they came from, such as how many page loads ended before the game was ready to play (by loading step, rough time and coarse platform) and how many anti-bot checks were started and finished.</p>
       <p>New elements you create join the shared world and can show up in other players' list of recent discoveries, with nothing that says who made them. Game data is stored in a CockroachDB database, and the site runs on Netlify.</p>
 
       <h2>Google Analytics</h2>
@@ -338,7 +339,7 @@ function privacy(): string {
       </ul>
 
       <h2>In your browser</h2>
-      <p>The game keeps your settings, pinned elements, workbench layout, recent sorts and a cache of recipes in this browser's storage so it loads fast. They stay on your device. If you played the original version of the game in this browser, the game reads what that version saved to bring your progress over.</p>
+      <p>The game keeps your settings, pinned elements, workbench layout, recent sorts, a cache of recipes and a few small notes (tips you've finished, the day the "Today in your lab" card last showed, which of the game's trial changes your player gets) in this browser's storage so it loads fast. They stay on your device. The one thing the server learns about them is whether any game data was already there, and it keeps that only when it creates a new player. If you played the original version of the game in this browser, the game reads what that version saved to bring your progress over.</p>
 
       <h2>Your choices</h2>
       <ul>

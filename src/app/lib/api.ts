@@ -6,6 +6,8 @@ import {
   API_HEADER,
   type ApiError,
   type ApiErrorCode,
+  type BootBeacon,
+  type BootPhase,
   type BootstrapRequest,
   type BootstrapResponse,
   type CombineRequest,
@@ -15,6 +17,8 @@ import {
   type PlayerAction,
   type PlayerResponse,
   type PowChallenge,
+  type ReportRequest,
+  type ReportResponse,
   type SortRequest,
   type SortResponse,
 } from "../../shared/api.ts";
@@ -151,24 +155,86 @@ async function solvePowChallenge(ch: PowChallenge): Promise<string> {
 let bootPromise: Promise<BootstrapResponse> | null = null;
 
 /**
- * POST /api/bootstrap, at most once per page load (a failed attempt may be retried).
- * `onPow` fires when the server asks this browser to solve a proof-of-work first.
+ * Where one bootstrap attempt is and how long its parts took (for app_ready / load_failed and
+ * the abandon beacon). `bootstrap` updates it as it goes; "render" means the response is in.
  */
-export function bootstrap(req: BootstrapRequest, onPow?: () => void): Promise<BootstrapResponse> {
+export interface BootTrace {
+  phase: BootPhase;
+  /** Time spent solving the proof-of-work (0 when none was asked for). */
+  powMs: number;
+  /** Time spent waiting on /api/bootstrap responses, both POSTs together. */
+  apiMs: number;
+}
+
+export const newBootTrace = (): BootTrace => ({ phase: "bootstrap1", powMs: 0, apiMs: 0 });
+
+const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+
+async function timedBootstrap(req: BootstrapRequest, trace: BootTrace): Promise<BootstrapResponse> {
+  const t0 = now();
+  try {
+    return await post<BootstrapResponse>("/api/bootstrap", req, { timeoutMs: 30_000 });
+  } finally {
+    trace.apiMs += now() - t0;
+  }
+}
+
+/**
+ * POST /api/bootstrap, at most once per page load (a failed attempt may be retried).
+ * `onPow` fires when the server asks this browser to solve a proof-of-work first. `trace`
+ * follows the attempt through its phases: bootstrap1 -> pow -> bootstrap2 -> render.
+ */
+export function bootstrap(req: BootstrapRequest, onPow?: () => void, trace: BootTrace = newBootTrace()): Promise<BootstrapResponse> {
   bootPromise ??= (async () => {
+    trace.phase = "bootstrap1";
     try {
-      return await post<BootstrapResponse>("/api/bootstrap", req, { timeoutMs: 30_000 });
+      const res = await timedBootstrap(req, trace);
+      trace.phase = "render";
+      return res;
     } catch (e) {
       if (!(e instanceof ApiFailure) || e.code !== "pow_required" || !e.pow) throw e;
+      trace.phase = "pow";
       onPow?.();
+      const p0 = now();
       const nonce = await solvePowChallenge(e.pow);
-      return await post<BootstrapResponse>("/api/bootstrap", { ...req, pow: { salt: e.pow.salt, nonce } }, { timeoutMs: 30_000 });
+      trace.powMs = now() - p0;
+      trace.phase = "bootstrap2";
+      const res = await timedBootstrap({ ...req, pow: { salt: e.pow.salt, nonce } }, trace);
+      trace.phase = "render";
+      return res;
     }
   })().catch((e: unknown) => {
     bootPromise = null;
     throw e;
   });
   return bootPromise;
+}
+
+/**
+ * A fresh POST /api/bootstrap for a page that is already playing (a resumed tab on a new local
+ * day). Never solves a proof-of-work: without a valid session it fails (unauthorized, or
+ * pow_required from a server before `refresh`), so it can never create a player. `refresh` also
+ * tells the server not to count it as a load.
+ */
+export const refreshBootstrap = (req: BootstrapRequest) =>
+  post<BootstrapResponse>("/api/bootstrap", { ...req, pow: undefined, refresh: true }, { timeoutMs: 30_000 });
+
+/** POST /api/report: flag an element for review. */
+export const reportElement = (req: ReportRequest) => post<ReportResponse>("/api/report", req, { timeoutMs: 15_000 });
+
+/**
+ * POST /api/beacon with navigator.sendBeacon, which survives the page unloading. The body goes
+ * as text/plain (a beacon can't set the API header; the endpoint checks same-origin instead).
+ * Returns false when the browser has no beacon or refused to queue it.
+ */
+export function sendBootBeacon(body: BootBeacon): boolean {
+  try {
+    return typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function"
+      ? navigator.sendBeacon("/api/beacon", JSON.stringify(body))
+      : false;
+  } catch {
+    return false;
+  }
 }
 
 export const combine = (req: CombineRequest, signal?: AbortSignal) =>

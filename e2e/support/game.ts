@@ -2,7 +2,30 @@
 // they describe, and the data-testid contract (e2e/README.md) has one home.
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
 import type { BootstrapResponse, CombineResponse, SortRequest, SortResponse } from "../../src/shared/api.ts";
+import { EXPERIMENT_NAMES, type Arm, type ExperimentName } from "../../src/shared/experiments.ts";
 import { center, drag, pressAndHold, tap, touchLongPress, type Point } from "./gestures.ts";
+
+/** Experiment arms by name (the app's localStorage "ia:exp" override, honored off production). */
+export type Arms = Partial<Record<ExperimentName, Arm>>;
+
+/** Every test runs in control unless it asks for an arm (arms otherwise follow the random player id). */
+export const CONTROL_ARMS: Record<ExperimentName, Arm> = Object.fromEntries(EXPERIMENT_NAMES.map((n) => [n, "control"])) as Record<
+  ExperimentName,
+  Arm
+>;
+
+/**
+ * Init script: write the arm override before the app reads it. `force` overwrites what is there;
+ * otherwise only an empty override is filled, so a test's forced arms win whichever script runs
+ * first (Playwright does not order init scripts).
+ */
+export function armsInitScript({ arms, force }: { arms: string; force: boolean }): void {
+  try {
+    if (force || localStorage.getItem("ia:exp") === null) localStorage.setItem("ia:exp", arms);
+  } catch {
+    // about:blank and opaque origins have no storage
+  }
+}
 
 export interface Device {
   project: string;
@@ -26,6 +49,9 @@ export type CustomSortInput = string | { groups: string[]; other?: boolean };
 export class Game {
   readonly app: Locator;
   readonly onboarding: Locator;
+  /** Experiment firstRun (treatment): the non-blocking welcome card and the coach on the demo pair. */
+  readonly welcomeCard: Locator;
+  readonly coach: Locator;
   readonly welcomeBack: Locator;
   readonly search: Locator;
   readonly canvas: Locator;
@@ -42,6 +68,8 @@ export class Game {
   ) {
     this.app = page.getByTestId("app");
     this.onboarding = page.getByTestId("onboarding");
+    this.welcomeCard = page.getByTestId("welcome-card");
+    this.coach = page.getByTestId("coach");
     this.welcomeBack = page.getByTestId("welcome-back");
     this.search = page.getByTestId("library-search");
     this.canvas = page.getByTestId("canvas");
@@ -76,6 +104,14 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ lifecycle
+
+  /**
+   * Put this page's player in these experiment arms (the rest stay control) from the next
+   * navigation on: call before open(). Overrides are honored on any host but production.
+   */
+  async forceArms(arms: Arms): Promise<void> {
+    await this.page.addInitScript(armsInitScript, { arms: JSON.stringify({ ...CONTROL_ARMS, ...arms }), force: true });
+  }
 
   /** Navigate and wait until bootstrap (incl. PoW for new players) has succeeded. */
   async open(path = "/"): Promise<BootstrapResponse> {
