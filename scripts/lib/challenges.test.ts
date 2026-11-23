@@ -5,12 +5,16 @@ import {
   buildPools,
   checkDays,
   dayRange,
+  GENERATOR,
+  inBand,
   liveWindow,
+  MIN_BANDED_POOL,
   MIN_RECOGNIZABLE_POOL,
   NO_REPEAT_DAYS,
   pickChallenges,
   repickDeadline,
   splitRepickable,
+  STEP_BANDS,
   TIERS,
   type DayTargets,
   type PoolElement,
@@ -127,7 +131,7 @@ describe("pickChallenges", () => {
       expect(free.some((t) => steps.get(t.expert)! <= steps.get(t.hard)! || steps.get(t.hard)! <= steps.get(t.easy)!)).toBe(true);
     });
 
-    it("is a lower bound only: the hardest experts are still drawn (no step cap)", () => {
+    it("is a lower bound only: the picker itself has no step cap (STEP_BANDS live in buildPools)", () => {
       const out = pickChallenges(days, pools(100, 200, 300), new Map(), [], { steps });
       const expertSteps = [...out.values()].map((t) => steps.get(t.expert)!);
       expect(Math.max(...expertSteps)).toBe(20);
@@ -169,7 +173,7 @@ function world(verdicts: Record<string, boolean | null>, names: Record<string, s
   return { elements, recipes };
 }
 
-const NO_RULES = { bfsTier: 2, unsafe: 0, artBlocked: 0, discoverable: null, pathRule: "off" } as const;
+const NO_RULES = { bfsTier: 2, unsafe: 0, artBlocked: 0, discoverable: null, pathRule: "off", band: null, inBand: null, bandRule: "off" } as const;
 
 describe("buildPools", () => {
   // 20, 22, 23 recognizable; 24 not; the rest unclassified.
@@ -339,34 +343,255 @@ describe("buildPools easy path rule", () => {
   });
 });
 
+/**
+ * A chain of BFS tiers 1..6 with `n` elements per tier (easy/hard/expert draw from 2/4/6), each
+ * with the given current steps; recognizable unless `recognizable` says otherwise. No depth, so
+ * the easy path rule is off and only the step bands are exercised.
+ */
+function bandWorld(
+  n: number,
+  steps: (bfsTier: number, i: number) => number | null | undefined,
+  recognizable: (bfsTier: number, i: number) => boolean = () => true,
+) {
+  const elements: PoolElement[] = ["1", "2", "3", "4", "5"].map((id) => ({ id, name: `Starter ${id}`, isStarter: true }));
+  const recipes: GraphRecipe[] = [];
+  const at: Record<number, string[]> = {};
+  let prev = ["1", "2"];
+  for (let tier = 1; tier <= 6; tier++) {
+    const cur = Array.from({ length: n }, (_, i) => String(tier * 10_000 + i));
+    cur.forEach((id, i) => {
+      const e: PoolElement = { id, name: `Thing ${id}`, isStarter: false, recognizable: recognizable(tier, i) };
+      const s = steps(tier, i);
+      if (s !== undefined) e.steps = s;
+      elements.push(e);
+      recipes.push({ ingredients: [prev[0]!, prev[1]!], result: id });
+    });
+    at[tier] = cur;
+    prev = cur.slice(0, 2);
+  }
+  const stepsOf = new Map(elements.map((e) => [e.id, e.steps]));
+  return { elements, recipes, at, stepsOf };
+}
+
+/** Easy 1-3 steps, hard 1-10 (every 10th unknown), expert 2-21: wide enough that unbanded draws leave the bands. */
+const spread = (tier: number, i: number) => (tier === 2 ? 1 + (i % 3) : tier === 4 ? (i % 10 === 9 ? null : 1 + (i % 10)) : tier === 6 ? 2 + (i % 20) : 1);
+
+describe("buildPools step bands (v5)", () => {
+  it("are hard 3-5 and expert 6-11, easy has none, generator bfs-v5", () => {
+    expect(STEP_BANDS).toEqual({ hard: [3, 5], expert: [6, 11] });
+    expect(GENERATOR).toBe("bfs-v5");
+    expect(MIN_BANDED_POOL).toBe(MIN_RECOGNIZABLE_POOL);
+  });
+
+  it("keeps only hard and expert targets whose current steps are inside the band", () => {
+    const { elements, recipes, at, stepsOf } = bandWorld(200, spread);
+    const { pools: p, stats } = buildPools(elements, recipes);
+    expect(stats.hard).toMatchObject({ mode: "recognizable", recognizable: 200, band: [3, 5], inBand: 60, bandRule: "required" });
+    expect(stats.expert).toMatchObject({ mode: "recognizable", recognizable: 200, band: [6, 11], inBand: 60, bandRule: "required" });
+    expect(p.hard.candidates).toEqual(at[4]!.filter((id) => [3, 4, 5].includes(stepsOf.get(id)!)));
+    expect(p.expert.candidates).toEqual(at[6]!.filter((id) => (stepsOf.get(id) ?? 0) >= 6 && stepsOf.get(id)! <= 11));
+    expect(p.hard.preferred).toEqual([]);
+    // Unknown steps are outside every band.
+    for (const id of p.hard.candidates) expect(stepsOf.get(id)).not.toBeNull();
+    // Easy is untouched (no band; no depth loaded, so no path rule either).
+    expect(stats.easy).toMatchObject({ band: null, inBand: null, bandRule: "off" });
+    expect(p.easy.candidates).toEqual(at[2]);
+  });
+
+  it("degrades to a preference layer when fewer than MIN_BANDED_POOL pass", () => {
+    const few = (tier: number, i: number) => (tier === 4 ? (i < 10 ? 4 : 7) : spread(tier, i));
+    const { elements, recipes, at } = bandWorld(200, few);
+    const { pools: p, stats } = buildPools(elements, recipes);
+    expect(stats.hard).toMatchObject({ inBand: 10, bandRule: "preferred" });
+    expect(p.hard.candidates).toEqual(at[4]); // the tier never runs dry
+    expect(p.hard.preferred?.map((l) => [...l])).toEqual([at[4]!.slice(0, 10)]);
+    expect(stats.expert.bandRule).toBe("required"); // decided per tier
+    // The picker draws the 10 in-band targets first, then (all used inside the window) the rest.
+    const out = [...pickChallenges(dayRange("2026-11-06", 12), p, new Map()).values()].map((t) => t.hard);
+    expect(new Set(out.slice(0, 10))).toEqual(new Set(at[4]!.slice(0, 10)));
+    for (const id of out.slice(10)) expect(at[4]!.slice(0, 10)).not.toContain(id);
+  });
+
+  it("in fallback mode keeps in-band targets only, recognizable ones first", () => {
+    const { elements, recipes, at, stepsOf } = bandWorld(200, spread, (tier, i) => tier !== 4 || i % 2 === 0);
+    const { pools: p, stats } = buildPools(elements, recipes, { minRecognizable: 150 });
+    expect(stats.hard).toMatchObject({ mode: "fallback", recognizable: 100, inBand: 60, bandRule: "required" });
+    const band = at[4]!.filter((id) => inBand(stepsOf.get(id), [3, 5]));
+    expect(p.hard.candidates).toEqual(band);
+    expect(p.hard.preferred?.map((l) => [...l])).toEqual([band.filter((id) => Number(id) % 2 === 0)]);
+  });
+
+  it("can be widened per tier, and is off when steps are not loaded (scripts/purge-elements.ts)", () => {
+    const { elements, recipes } = bandWorld(200, spread);
+    const wide = buildPools(elements, recipes, { stepBands: { hard: [3, 6] } });
+    expect(wide.stats.hard).toMatchObject({ band: [3, 6], inBand: 80, bandRule: "required" });
+    expect(wide.stats.expert).toMatchObject({ band: null, bandRule: "off" });
+    const noSteps = bandWorld(200, () => undefined);
+    const off = buildPools(noSteps.elements, noSteps.recipes);
+    for (const t of TIERS) expect(off.stats[t]).toMatchObject({ band: null, inBand: null, bandRule: "off" });
+    expect(off.pools.hard.candidates).toEqual(noSteps.at[4]);
+  });
+
+  it("feeds pickChallenges: every day in band and strictly ordered easy < hard < expert", () => {
+    const { elements, recipes, stepsOf } = bandWorld(500, spread);
+    const { pools: p, stats } = buildPools(elements, recipes);
+    expect(stats.hard.inBand).toBe(150); // >= NO_REPEAT_DAYS: no repeats inside the window either
+    const days = dayRange("2026-11-25", 400);
+    const out = pickChallenges(days, p, new Map(), [], { steps: stepsOf });
+    const s = (id: string) => stepsOf.get(id)!;
+    for (const t of out.values()) {
+      expect(inBand(s(t.hard), STEP_BANDS.hard)).toBe(true);
+      expect(inBand(s(t.expert), STEP_BANDS.expert)).toBe(true);
+      expect(s(t.hard)).toBeGreaterThan(s(t.easy));
+      expect(s(t.expert)).toBeGreaterThan(s(t.hard));
+    }
+    // 3-step easy days exist, and the floor lifts their hard to 4-5 (3 is inside the band).
+    const threeStep = [...out.values()].filter((t) => s(t.easy) === 3);
+    expect(threeStep.length).toBeGreaterThan(0);
+    for (const t of threeStep) expect(s(t.hard)).toBeGreaterThanOrEqual(4);
+    expect([...out.values()].some((t) => s(t.hard) === 3)).toBe(true);
+    const last = new Map<string, number>();
+    days.forEach((d, i) => {
+      for (const id of [out.get(d)!.hard, out.get(d)!.expert]) {
+        const prev = last.get(id);
+        if (prev !== undefined) expect(i - prev).toBeGreaterThanOrEqual(NO_REPEAT_DAYS);
+        last.set(id, i);
+      }
+    });
+  });
+});
+
+/**
+ * Every rule at once, for the generator -> checker round trip: depth (easy path rule on), steps
+ * (bands and tier order on), school-unsafe names and blocked art. BFS tiers 1..6; easy (tier 2)
+ * has 40 targets with 3 shallow paths and 20 with 1, steps 2 or 3; hard (4) and expert (6) have
+ * `n` targets each with steps from `hardSteps` / `spread`, plus one unsafe name and one blocked
+ * image per tier, both in band.
+ */
+function fullWorld(n: number, hardSteps: (i: number) => number | null = (i) => spread(4, i)) {
+  const elements: PoolElement[] = ["1", "2", "3", "4", "5"].map((id) => ({ id, name: `Starter ${id}`, isStarter: true, depth: 0, steps: 0 }));
+  const recipes: GraphRecipe[] = [];
+  const add = (id: string, depth: number, steps: number | null, from: [string, string][], extra: Partial<PoolElement> = {}) => {
+    elements.push({ id, name: `Thing ${id}`, isStarter: false, recognizable: true, depth, steps, ...extra });
+    for (const ingredients of from) recipes.push({ ingredients, result: id });
+  };
+  const t1 = Array.from({ length: 20 }, (_, i) => String(100 + i));
+  t1.forEach((id, i) => add(id, 1, 1, [[String((i % 5) + 1), String(((i + 1 + Math.floor(i / 5)) % 5) + 1)]]));
+  const t1Pairs: [string, string][] = [];
+  for (let a = 0; a < t1.length; a++) for (let b = a + 1; b < t1.length; b++) t1Pairs.push([t1[a]!, t1[b]!]);
+  let next = 0;
+  const easy = Array.from({ length: 60 }, (_, i) => String(1000 + i));
+  easy.forEach((id, i) => add(id, 2, 2 + (i % 2), Array.from({ length: i < 40 ? 3 : 1 }, () => t1Pairs[next++]!)));
+  const chain = (prev: string[], start: number, depth: number, count: number, steps: (i: number) => number | null) => {
+    const ids = Array.from({ length: count }, (_, i) => String(start + i));
+    ids.forEach((id, i) => add(id, depth, steps(i), [[prev[0]!, prev[1]!]]));
+    return ids;
+  };
+  const t3 = chain(easy, 3000, 3, 4, () => 3);
+  const hard = chain(t3, 40_000, 4, n, hardSteps);
+  add("49001", 4, 4, [[t3[0]!, t3[1]!]], { name: "Rifle" });
+  add("49002", 4, 4, [[t3[0]!, t3[1]!]], { imageStatus: "blocked" });
+  const t5 = chain(hard, 5000, 5, 4, () => 6);
+  const expert = chain(t5, 60_000, 6, n, (i) => spread(6, i));
+  add("69001", 6, 8, [[t5[0]!, t5[1]!]], { name: "Cutlass" });
+  add("69002", 6, 8, [[t5[0]!, t5[1]!]], { imageStatus: "blocked" });
+  return { elements, recipes, easy, hard, expert, stepsOf: new Map(elements.map((e) => [e.id, e.steps])) };
+}
+
+describe("generator -> checker round trip (no endless --fix re-picks)", () => {
+  const generated = (w: ReturnType<typeof fullWorld>, days: string[]) => {
+    const { pools: p, stats } = buildPools(w.elements, w.recipes);
+    const out = pickChallenges(days, p, new Map(), [], { steps: w.stepsOf });
+    const rows = days.map((day) => ({ day, source: "generated", targets: out.get(day)! }));
+    return { stats, rows, issues: checkDays(rows, analyzeWorld(w.elements, w.recipes)) };
+  };
+
+  it("checkDays finds nothing broken in what buildPools + pickChallenges produce", () => {
+    const w = fullWorld(500);
+    const { stats, rows, issues } = generated(w, dayRange("2026-11-25", 400));
+    expect(stats.easy).toMatchObject({ mode: "recognizable", pathRule: "required", discoverable: 40 });
+    expect(stats.hard).toMatchObject({ mode: "recognizable", bandRule: "required", inBand: 150, unsafe: 1, artBlocked: 1 });
+    expect(stats.expert).toMatchObject({ mode: "recognizable", bandRule: "required", inBand: 150, unsafe: 1, artBlocked: 1 });
+    expect(issues.filter((i) => BROKEN_PROBLEMS.has(i.problem))).toEqual([]);
+    expect(issues).toEqual([]); // no drift or recognizability warnings either
+    // The rules are actually exercised: 3-step easy days exist (their hard is lifted to 4-5).
+    expect(rows.some((r) => w.stepsOf.get(r.targets.easy) === 3)).toBe(true);
+  });
+
+  it("a band that degrades to a preference never hides an out-of-band day from the checker", () => {
+    // Only 10 hards inside 3-5 (< MIN_BANDED_POOL): the rest are 7 steps.
+    const w = fullWorld(500, (i) => (i < 10 ? 4 : 7));
+    const { stats, rows, issues } = generated(w, dayRange("2026-11-25", 60));
+    expect(stats.hard).toMatchObject({ bandRule: "preferred", inBand: 10 }); // the unsafe / blocked stand-ins are not counted
+    const outOfBand = rows.filter((r) => !inBand(w.stepsOf.get(r.targets.hard), STEP_BANDS.hard)).map((r) => r.day);
+    expect(outOfBand.length).toBeGreaterThan(0);
+    const flagged = issues.filter((i) => i.tier === "hard" && i.problem === "step-band").map((i) => i.day);
+    expect(flagged).toEqual(outOfBand);
+    // Unsafe names and blocked art stay out even of a degraded pool.
+    expect(issues.filter((i) => i.problem === "unsafe" || i.problem === "art-blocked")).toEqual([]);
+  });
+});
+
 describe("checkDays", () => {
   const { elements, recipes, good, thin } = easyWorld();
   // Hard/expert stand-ins at other tiers: checkDays reports drift for them, which is a warning.
   const extra: PoolElement[] = [
-    { id: "h1", name: "Glacier", isStarter: false, recognizable: true, steps: 6 },
-    { id: "h2", name: "Rifle", isStarter: false, recognizable: true, steps: 7 },
-    { id: "x1", name: "Raichu", isStarter: false, recognizable: true, steps: 12, imageStatus: "blocked" },
+    { id: "h1", name: "Glacier", isStarter: false, recognizable: true, steps: 5 },
+    { id: "h2", name: "Rifle", isStarter: false, recognizable: true, steps: 4 },
+    { id: "h3", name: "Lighthouse", isStarter: false, recognizable: true, steps: 3 },
+    { id: "h4", name: "Igloo", isStarter: false, recognizable: true, steps: 6 },
+    { id: "x1", name: "Raichu", isStarter: false, recognizable: true, steps: 9, imageStatus: "blocked" },
     { id: "x2", name: "Fire Elemental", isStarter: false, recognizable: true, steps: 4 },
+    { id: "x3", name: "Castle", isStarter: false, recognizable: true, steps: 8 },
+    { id: "x4", name: "Mahjong", isStarter: false, recognizable: true, steps: 17 },
+    { id: "x5", name: "Pottery", isStarter: false, recognizable: true, steps: null },
   ];
-  const all = [...elements.map((e) => ({ ...e, steps: e.depth === 2 ? 2 : 1 })), ...extra];
+  // Easy candidates have 2 steps, except good[2] (3).
+  const all = [...elements.map((e) => ({ ...e, steps: e.id === good[2] ? 3 : e.depth === 2 ? 2 : 1 })), ...extra];
   // Reachable (BFS tier 1, so "tier-drift" warnings only) via starter self-pairs.
-  const reach: GraphRecipe[] = extra.map((e, i) => ({ ingredients: [String(i + 1), String(i + 1)], result: e.id }));
+  const reach: GraphRecipe[] = extra.map((e, i) => ({ ingredients: [String((i % 5) + 1), String((i % 5) + 1)], result: e.id }));
   const w = analyzeWorld(all, [...recipes, ...reach]);
   const day = (d: string, easy: string, hard: string, expert: string) => ({ day: d, source: "generated", targets: { easy, hard, expert } });
-  const issues = checkDays(
-    [
-      day("2026-12-01", good[0]!, "h1", "x2"), // expert 4 <= hard 6
-      day("2026-12-02", thin[0]!, "h2", "x1"), // 1 path; unsafe hard; blocked expert
-      day("2026-12-03", good[1]!, "gone", "x2"), // inactive hard (no tier-order: steps unknown)
-    ],
-    w,
-  );
+  const rows = [
+    day("2026-12-01", good[0]!, "h1", "x2"), // expert 4: below its band, and <= hard 5
+    day("2026-12-02", thin[0]!, "h2", "x1"), // 1 path; unsafe hard; blocked expert
+    day("2026-12-03", good[1]!, "gone", "x3"), // inactive hard (no tier-order: steps unknown)
+    day("2026-12-04", good[2]!, "h3", "x3"), // hard 3 <= easy 3, both inside their bands
+    day("2026-12-05", good[3]!, "h4", "x4"), // hard 6 and expert 17: outside their bands
+    day("2026-12-06", good[4]!, "h1", "x5"), // expert steps unknown
+    day("2026-12-07", good[5]!, "h3", "x3"), // clean: 2 < 3 < 8
+  ];
+  const issues = checkDays(rows, w);
   const of = (d: string) => issues.filter((i) => i.day === d && BROKEN_PROBLEMS.has(i.problem)).map((i) => `${i.tier}:${i.problem}`);
 
-  it("flags the v4 rules as broken", () => {
-    expect(of("2026-12-01")).toEqual(["expert:tier-order"]);
+  it("flags the v4 and v5 rules as broken", () => {
+    expect(of("2026-12-01")).toEqual(["expert:step-band", "expert:tier-order"]);
     expect(of("2026-12-02")).toEqual(["easy:undiscoverable", "hard:unsafe", "expert:art-blocked"]);
     expect(of("2026-12-03")).toEqual(["hard:inactive"]);
+    expect(of("2026-12-04")).toEqual(["hard:tier-order"]);
+    expect(of("2026-12-05")).toEqual(["hard:step-band", "expert:step-band"]);
+    expect(of("2026-12-06")).toEqual(["expert:step-band"]);
+    expect(of("2026-12-07")).toEqual([]);
+  });
+
+  it("counts step-band as broken, so --fix re-picks those days", () => {
+    expect(BROKEN_PROBLEMS.has("step-band")).toBe(true);
+    // Band edges are inclusive: hard 3 and 5, expert 6 and 11 pass.
+    const edges = analyzeWorld(
+      [...all, { id: "x6", name: "Castle Six", isStarter: false, steps: 6 }, { id: "x11", name: "Castle Eleven", isStarter: false, steps: 11 }],
+      [...recipes, ...reach, { ingredients: ["1", "1"], result: "x6" }, { ingredients: ["2", "2"], result: "x11" }],
+    );
+    const edgeIssues = checkDays([day("2026-12-08", good[0]!, "h3", "x6"), day("2026-12-09", good[0]!, "h1", "x11")], edges);
+    expect(edgeIssues.filter((i) => i.problem === "step-band")).toEqual([]);
+  });
+
+  it("skips the band check when steps are not loaded", () => {
+    const bare = analyzeWorld(
+      all.map(({ steps: _s, ...e }) => e),
+      [...recipes, ...reach],
+    );
+    expect(bare.hasSteps).toBe(false);
+    expect(checkDays(rows, bare).filter((i) => i.problem === "step-band" || i.problem === "tier-order")).toEqual([]);
   });
 
   it("keeps drift and recognizability as warnings", () => {
@@ -378,7 +603,14 @@ describe("checkDays", () => {
   it("explains the problem", () => {
     expect(issues.find((i) => i.problem === "undiscoverable")!.detail).toBe("1 shallow path(s), need 3");
     expect(issues.find((i) => i.problem === "unsafe")!.detail).toBe('violence: "Rifle"');
-    expect(issues.find((i) => i.problem === "tier-order")!.detail).toBe("expert 4 step(s) <= hard 6");
+    expect(issues.find((i) => i.problem === "tier-order")!.detail).toBe("expert 4 step(s) <= hard 5");
+    const band = issues.filter((i) => i.problem === "step-band").map((i) => `${i.day} ${i.tier}: ${i.detail}`);
+    expect(band).toEqual([
+      "2026-12-01 expert: 4 step(s), band 6-11",
+      "2026-12-05 hard: 6 step(s), band 3-5",
+      "2026-12-05 expert: 17 step(s), band 6-11",
+      "2026-12-06 expert: steps unknown, band 6-11",
+    ]);
   });
 });
 

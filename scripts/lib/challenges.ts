@@ -34,11 +34,34 @@ export const MIN_EASY_PATHS = 3;
  */
 export const MIN_DISCOVERABLE_POOL = 12;
 /**
+ * Inclusive range of current elements.steps a hard / expert target must have (easy has no band:
+ * its rule is MIN_EASY_PATHS). Weekday completion among combining players, 2026-11-09..20 (one
+ * target a day, so per-target noise is as large as the step effect): hard 7.5% at <= 4 steps
+ * against 3.7% at 5-8, but 7.5% leans on Glacier (2 steps, 25/230): 3-4 alone is 5.4% (19/354),
+ * 5 is 3.9% (14/362), 6-8 3.6%. Expert 3.1% at <= 8 leans on Fire Elemental (4 steps, below
+ * this band); in-band 7-8 was 1.3% (4/314) against 1.1% at 12+ (Shake 12: 0/185). So hard gets
+ * easier (the 1-2-step hards go too: hard must stay above easy) and the expert cap is a bet
+ * with no measured lift yet. Steps mostly drift down as players add shortcuts (Cattle 14 -> 10),
+ * so a day near a band's lower edge can fall out of it later (check-challenges re-flags it).
+ * Bands don't overlap, so in-band expert > hard always; hard > easy is still the picker's
+ * job (easy is 1-3 steps, so a 3-step easy day draws a 4-5-step hard).
+ */
+export const STEP_BANDS = { hard: [3, 5], expert: [6, 11] } as const satisfies Record<"hard" | "expert", readonly [number, number]>;
+/**
+ * A step band is a hard filter while at least this many candidates (of the set chosen by the
+ * recognizable rule) pass it; below that it degrades to a preference, like the easy path rule.
+ * Same spacing argument as MIN_RECOGNIZABLE_POOL: a pool of P < NO_REPEAT_DAYS repeats about
+ * 0.75·P days apart, so 40 keeps repeats ~30 days apart. Nov 2026: hard 547 and expert 755 of
+ * 873 / 1,300 recognizable pass, so both bands are required and repeats stay avoided.
+ */
+export const MIN_BANDED_POOL = 40;
+/**
  * Recorded in challenges.generator and part of the PRNG seed. v3: recognizable targets.
  * v4: easy needs ≥ MIN_EASY_PATHS shallow paths; no blocked art or school-unsafe names on any
  * tier; steps strictly increase easy < hard < expert; repeats also avoid stored FUTURE days.
+ * v5: hard and expert steps stay inside STEP_BANDS.
  */
-export const GENERATOR = "bfs-v4";
+export const GENERATOR = "bfs-v5";
 
 export type DayTargets = Record<Tier, string>;
 
@@ -66,7 +89,11 @@ export interface PoolElement {
   depth?: number | null;
   /** elements.image_status; a "blocked" (moderated) target would show a placeholder forever. */
   imageStatus?: string | null;
-  /** elements.steps (min number of combinations), for tier ordering. */
+  /**
+   * elements.steps (min number of combinations), for tier ordering and STEP_BANDS. undefined =
+   * not loaded: the bands are then skipped (scripts/purge-elements.ts builds its pools without
+   * steps). null = unknown, which is outside every band.
+   */
   steps?: number | null;
 }
 
@@ -87,7 +114,22 @@ export interface PoolStats {
   discoverable: number | null;
   /** "required" = hard filter; "preferred" = too few passed, soft first layer; "off" = not easy, or no depth loaded. */
   pathRule: "required" | "preferred" | "off";
+  /** Hard/expert: the inclusive steps range applied; null when the band is off. */
+  band: readonly [number, number] | null;
+  /** Hard/expert: members of the mode's set whose current steps are inside `band`; null when the band is off. */
+  inBand: number | null;
+  /** Like pathRule, against MIN_BANDED_POOL; "off" = easy, or no steps loaded. */
+  bandRule: "required" | "preferred" | "off";
 }
+
+export type StepBands = Partial<Record<"hard" | "expert", readonly [number, number]>>;
+
+/** The band `tier` must satisfy, if any (easy never has one). */
+export function bandFor(tier: Tier, bands: StepBands = STEP_BANDS): readonly [number, number] | null {
+  return tier === "easy" ? null : (bands[tier] ?? null);
+}
+
+export const inBand = (steps: number | null | undefined, [lo, hi]: readonly [number, number]) => steps != null && steps >= lo && steps <= hi;
 
 /**
  * BFS tiers over the ACTIVE world: 2-ingredient recipes (self-pairs included) whose result and
@@ -113,6 +155,7 @@ export function analyzeWorld(elements: readonly PoolElement[], recipes: readonly
     if (t !== undefined && r.ingredients.every((i) => (tiers.get(i) ?? Infinity) < t)) witnesses.set(r.result, (witnesses.get(r.result) ?? 0) + 1);
   }
   const hasDepth = elements.some((e) => e.depth !== undefined);
+  const hasSteps = elements.some((e) => e.steps !== undefined);
   const paths = new Map<string, number>();
   if (hasDepth) {
     const shallow = (id: string) => {
@@ -135,13 +178,15 @@ export function analyzeWorld(elements: readonly PoolElement[], recipes: readonly
         })
         .map(([id]) => id),
     );
-  return { active, tiers, witnesses, paths, hasDepth, tierSizes: new Map([...tierSizes].sort((a, b) => a[0] - b[0])), eligibleAt };
+  return { active, tiers, witnesses, paths, hasDepth, hasSteps, tierSizes: new Map([...tierSizes].sort((a, b) => a[0] - b[0])), eligibleAt };
 }
 
 export interface PoolOptions {
   minRecognizable?: number;
   minEasyPaths?: number;
   minDiscoverable?: number;
+  stepBands?: StepBands;
+  minBanded?: number;
 }
 
 /**
@@ -150,16 +195,24 @@ export interface PoolOptions {
  * eligible elements are classified recognizable, the pool is exactly those; otherwise it falls
  * back to every eligible element with the recognizable ones as the first preference layer
  * (unclassified counts as not recognizable).
- * Easy then keeps only targets with ≥ `minEasyPaths` shallow paths, inside the set chosen above
- * (see MIN_RECOGNIZABLE_POOL), as long as at least `minDiscoverable` pass; otherwise those
+ * Then each tier applies its one content rule inside the set chosen above (see
+ * MIN_RECOGNIZABLE_POOL): easy keeps only targets with ≥ `minEasyPaths` shallow paths (while at
+ * least `minDiscoverable` pass), hard and expert keep only targets whose current steps are in
+ * `stepBands` (while at least `minBanded` pass). Below its minimum a rule's passing targets
  * become the first preference layer instead.
  */
 export function buildPools(
   elements: readonly PoolElement[],
   recipes: readonly GraphRecipe[],
-  { minRecognizable = MIN_RECOGNIZABLE_POOL, minEasyPaths = MIN_EASY_PATHS, minDiscoverable = MIN_DISCOVERABLE_POOL }: PoolOptions = {},
+  {
+    minRecognizable = MIN_RECOGNIZABLE_POOL,
+    minEasyPaths = MIN_EASY_PATHS,
+    minDiscoverable = MIN_DISCOVERABLE_POOL,
+    stepBands = STEP_BANDS,
+    minBanded = MIN_BANDED_POOL,
+  }: PoolOptions = {},
 ) {
-  const { active, witnesses, paths, hasDepth, tierSizes, eligibleAt } = analyzeWorld(elements, recipes);
+  const { active, witnesses, paths, hasDepth, hasSteps, tierSizes, eligibleAt } = analyzeWorld(elements, recipes);
   const pools = {} as Record<Tier, TierPool>;
   const stats = {} as Record<Tier, PoolStats>;
   const nonEmpty = (layers: string[][]) => layers.filter((l) => l.length > 0).map((l) => new Set(l));
@@ -174,12 +227,17 @@ export function buildPools(
     const strict = yes.length >= minRecognizable;
     const base = strict ? yes : eligible;
 
+    // The tier's content rule: easy = shallow paths, hard/expert = step band (never both).
     const pathRuleOn = tier === "easy" && hasDepth;
-    const discoverable = (id: string) => !pathRuleOn || (paths.get(id) ?? 0) >= minEasyPaths;
-    const found = base.filter(discoverable);
-    const pathRule: PoolStats["pathRule"] = !pathRuleOn ? "off" : found.length >= minDiscoverable ? "required" : "preferred";
-    const soft = pathRule === "preferred";
-    const yesFound = yes.filter(discoverable);
+    const band = hasSteps ? bandFor(tier, stepBands) : null;
+    if (band && !(band[0] <= band[1])) throw new Error(`bad ${tier} step band ${band.join("-")}`);
+    const passes = (id: string) =>
+      pathRuleOn ? (paths.get(id) ?? 0) >= minEasyPaths : band ? inBand(active.get(id)!.steps, band) : true;
+    const found = base.filter(passes);
+    const ruleOn = pathRuleOn || band !== null;
+    const rule: PoolStats["pathRule"] = !ruleOn ? "off" : found.length >= (pathRuleOn ? minDiscoverable : minBanded) ? "required" : "preferred";
+    const soft = rule === "preferred";
+    const yesFound = yes.filter(passes);
     // With the rule off, found = base and yesFound = yes: the v3 shapes (strict: no layers;
     // fallback: candidates = all eligible, recognizable first).
     pools[tier] = strict
@@ -195,7 +253,10 @@ export function buildPools(
       artBlocked: safe.length - eligible.length,
       mode: strict ? "recognizable" : "fallback",
       discoverable: pathRuleOn ? found.length : null,
-      pathRule,
+      pathRule: pathRuleOn ? rule : "off",
+      band,
+      inBand: band ? found.length : null,
+      bandRule: band ? rule : "off",
     };
   }
   return { pools, stats, tierSizes, witnesses, paths };
@@ -234,7 +295,7 @@ export interface PickOptions {
    * Current elements.steps per id. When given, each day's tiers are strictly ordered by steps
    * (hard > easy, expert > hard): a tier draws only from candidates above the previous tier's
    * pick while any exist (otherwise unconstrained; check-challenges then reports "tier-order").
-   * Lower bounds only: there is deliberately no upper cap on expert steps.
+   * Lower bounds only: the upper caps are STEP_BANDS, applied to the pools by buildPools.
    */
   steps?: ReadonlyMap<string, number | null | undefined>;
 }
@@ -362,10 +423,19 @@ export type Problem =
   | "undiscoverable"
   | "art-blocked"
   | "unsafe"
+  | "step-band"
   | "tier-order";
 
 /** Problems that make a day worth re-picking (check-challenges --fix); the others are warnings. */
-export const BROKEN_PROBLEMS: ReadonlySet<Problem> = new Set<Problem>(["inactive", "unreachable", "undiscoverable", "art-blocked", "unsafe", "tier-order"]);
+export const BROKEN_PROBLEMS: ReadonlySet<Problem> = new Set<Problem>([
+  "inactive",
+  "unreachable",
+  "undiscoverable",
+  "art-blocked",
+  "unsafe",
+  "step-band",
+  "tier-order",
+]);
 
 export interface StoredDay {
   day: string;
@@ -384,15 +454,15 @@ export interface Issue {
 /**
  * Everything wrong with stored days in the current world (analyzeWorld over elements loaded
  * with depth, steps and imageStatus): unsolvable targets, the v4 pool rules (easy shallow paths,
- * blocked art, school safety) and tier ordering on current steps. An inactive target gets no
- * further checks.
+ * blocked art, school safety), the v5 step bands and tier ordering, both on current steps. An
+ * inactive target gets no further checks. Without steps loaded the band check is skipped.
  */
 export function checkDays(
   rows: readonly StoredDay[],
-  world: Pick<ReturnType<typeof analyzeWorld>, "active" | "tiers" | "paths" | "hasDepth">,
-  { minEasyPaths = MIN_EASY_PATHS }: { minEasyPaths?: number } = {},
+  world: Pick<ReturnType<typeof analyzeWorld>, "active" | "tiers" | "paths" | "hasDepth" | "hasSteps">,
+  { minEasyPaths = MIN_EASY_PATHS, stepBands = STEP_BANDS }: { minEasyPaths?: number; stepBands?: StepBands } = {},
 ): Issue[] {
-  const { active, tiers, paths, hasDepth } = world;
+  const { active, tiers, paths, hasDepth, hasSteps } = world;
   const issues: Issue[] = [];
   for (const r of rows) {
     for (const tier of TIERS) {
@@ -412,6 +482,8 @@ export function checkDays(
       if (e.imageStatus === "blocked") add("art-blocked", "image_status blocked");
       const safety = schoolSafety(e.name);
       if (!safety.ok) add("unsafe", `${safety.category}: "${safety.match}"`);
+      const band = hasSteps ? bandFor(tier, stepBands) : null;
+      if (band && !inBand(e.steps, band)) add("step-band", `${e.steps == null ? "steps unknown" : `${e.steps} step(s)`}, band ${band[0]}-${band[1]}`);
     }
     for (const [lower, upper] of [["easy", "hard"], ["hard", "expert"]] as const) {
       const lo = active.get(r.targets[lower])?.steps;

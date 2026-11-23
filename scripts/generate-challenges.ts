@@ -14,9 +14,9 @@
 // run it first) whenever a tier has at least MIN_RECOGNIZABLE_POOL of them; otherwise that tier
 // falls back to every eligible candidate with the recognizable ones preferred (logged below).
 // No tier uses blocked art or a school-unsafe name (scripts/lib/schoolSafety.ts); easy targets
-// need ≥ MIN_EASY_PATHS shallow paths (applied inside the recognizable set); each day's steps
-// increase easy < hard < expert (see buildPools / pickChallenges). Check stored days against
-// these rules with `npm run db:check-challenges`.
+// need ≥ MIN_EASY_PATHS shallow paths and hard/expert steps stay inside STEP_BANDS (both applied
+// inside the recognizable set); each day's steps increase easy < hard < expert (see buildPools /
+// pickChallenges). Check stored days against these rules with `npm run db:check-challenges`.
 //
 // --replace-generated: in ONE transaction, refuse if any challenge completion exists on/after
 // --from, delete the source='generated' rows in the range (--from, --days), and insert fresh picks.
@@ -38,6 +38,7 @@ import {
   dayRange,
   GENERATOR,
   liveWindow,
+  MIN_BANDED_POOL,
   MIN_DISCOVERABLE_POOL,
   MIN_EASY_PATHS,
   MIN_RECOGNIZABLE_POOL,
@@ -66,7 +67,8 @@ export function printPools(pools: Record<Tier, TierPool>, stats: Record<Tier, Po
   printTable([...tierSizes].map(([tier, n]) => ({ tier, elements: fmt(n) })));
   console.log(
     `\nCandidate pools (recognizable-only when >= ${MIN_RECOGNIZABLE_POOL} recognizable; easy needs >= ${MIN_EASY_PATHS} shallow paths ` +
-      `while >= ${MIN_DISCOVERABLE_POOL} pass; school-unsafe names and blocked art left out):`,
+      `while >= ${MIN_DISCOVERABLE_POOL} pass; hard/expert steps inside their band while >= ${MIN_BANDED_POOL} pass; ` +
+      `school-unsafe names and blocked art left out):`,
   );
   printTable(
     TIERS.map((t) => ({
@@ -80,6 +82,7 @@ export function printPools(pools: Record<Tier, TierPool>, stats: Record<Tier, Po
       art_blocked: fmt(stats[t].artBlocked),
       mode: stats[t].mode,
       paths_rule: stats[t].pathRule === "off" ? "-" : `${stats[t].pathRule} (${fmt(stats[t].discoverable ?? 0)} pass)`,
+      step_band: stats[t].band ? `${stats[t].band!.join("-")} ${stats[t].bandRule} (${fmt(stats[t].inBand ?? 0)} pass)` : "-",
       candidates: fmt(pools[t].candidates.length),
       preferred: pools[t].preferred?.length ? pools[t].preferred!.map((l) => fmt(l.size)).join(" > ") : "-",
       repeats_within_window: pools[t].candidates.length < NO_REPEAT_DAYS ? "unavoidable (LRU spacing)" : "avoided",
@@ -97,6 +100,12 @@ export function printPools(pools: Record<Tier, TierPool>, stats: Record<Tier, Po
       console.warn(
         `WARNING: ${t}: only ${s.discoverable} candidate(s) have >= ${MIN_EASY_PATHS} shallow paths (< ${MIN_DISCOVERABLE_POOL}); ` +
           `preferring them instead of requiring them (check-challenges flags the "undiscoverable" days).`,
+      );
+    }
+    if (s.bandRule === "preferred") {
+      console.warn(
+        `WARNING: ${t}: only ${s.inBand} candidate(s) have ${s.band!.join("-")} steps (< ${MIN_BANDED_POOL}); ` +
+          `preferring them instead of requiring them (check-challenges flags the "step-band" days).`,
       );
     }
     if (s.unclassified > 0) console.warn(`WARNING: ${t}: ${fmt(s.unclassified)} candidate(s) not classified yet (run npm run db:classify).`);

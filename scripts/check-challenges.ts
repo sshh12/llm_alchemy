@@ -7,10 +7,11 @@
 //     expert 6; a different tier is reported as drift, still solvable),
 //   - generated targets are classified recognizable,
 //   - easy targets have ≥ 3 shallow paths ("undiscoverable" otherwise), no target has blocked
-//     art ("art-blocked") or a school-unsafe name ("unsafe"), and steps increase
-//     easy < hard < expert ("tier-order", on current elements.steps).
-// Days with inactive, unreachable, undiscoverable, art-blocked, unsafe or tier-order targets
-// count as broken; drift and not-recognizable are warnings.
+//     art ("art-blocked") or a school-unsafe name ("unsafe"), hard and expert steps are inside
+//     STEP_BANDS ("step-band": hard 3-5, expert 6-11), and steps increase easy < hard < expert
+//     ("tier-order"); both on current elements.steps.
+// Days with inactive, unreachable, undiscoverable, art-blocked, unsafe, step-band or tier-order
+// targets count as broken; drift and not-recognizable are warnings.
 //
 //   npm run db:check-challenges                    # read-only report, every stored day
 //   npm run db:check-challenges -- --days=90       # only days before today (UTC) + 90
@@ -31,7 +32,17 @@ import { execFileSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import type pg from "pg";
 import { addDays, isDay, utcDay } from "../src/shared/dates.ts";
-import { BROKEN_PROBLEMS, analyzeWorld, checkDays, liveWindow, repickDeadline, splitRepickable, type Issue, type Problem } from "./lib/challenges.ts";
+import {
+  BROKEN_PROBLEMS,
+  STEP_BANDS,
+  analyzeWorld,
+  checkDays,
+  liveWindow,
+  repickDeadline,
+  splitRepickable,
+  type Issue,
+  type Problem,
+} from "./lib/challenges.ts";
 import { createPool, resolveSchema } from "./lib/db.ts";
 import "./lib/env.ts";
 import { loadWorld } from "./lib/world.ts";
@@ -109,6 +120,11 @@ try {
     `  easy undiscoverable (< 3 shallow paths): ${count("undiscoverable")}, art blocked: ${count("art-blocked")}, ` +
       `school-unsafe: ${count("unsafe")}, tier order (steps): ${count("tier-order")}`,
   );
+  const bandCount = (t: "hard" | "expert") => issues.filter((i) => i.problem === "step-band" && i.tier === t).length;
+  console.log(
+    `  step band (current steps): hard outside ${STEP_BANDS.hard.join("-")}: ${bandCount("hard")}, ` +
+      `expert outside ${STEP_BANDS.expert.join("-")}: ${bandCount("expert")}`,
+  );
   console.log(`  -> ${brokenDays.length} broken day(s): ${fixable.length} re-pickable (after ${frozenThrough}), ${frozen.length} frozen`);
   console.log(`  warnings: tier drift (still solvable): ${count("tier-drift")}, generated targets not recognizable: ${count("not-recognizable")}`);
   if (brokenDays.length) console.log(`\n  broken days (re-pick deadline = D-2 10:00 UTC):`);
@@ -127,6 +143,17 @@ try {
       hist.set(bucket, (hist.get(bucket) ?? 0) + 1);
     }
     console.log(`\n  easy shallow paths per day: ${[...hist].sort().map(([k, v]) => `${k}: ${v}`).join(", ")} (of ${rows.length} days)`);
+    for (const tier of ["hard", "expert"] as const) {
+      const steps = new Map<string, number>();
+      for (const r of rows) {
+        const s = world.active.get(tier === "hard" ? r.hard_id : r.expert_id)?.steps;
+        const key = s == null ? "?" : String(s);
+        steps.set(key, (steps.get(key) ?? 0) + 1);
+      }
+      const order = (k: string) => (k === "?" ? Infinity : Number(k));
+      const line = [...steps].sort((a, b) => order(a[0]) - order(b[0])).map(([k, v]) => `${k}: ${v}`).join(", ");
+      console.log(`  ${tier} steps per day (band ${STEP_BANDS[tier].join("-")}): ${line}`);
+    }
   }
 
   if (values.fix) {
