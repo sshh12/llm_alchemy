@@ -20,10 +20,12 @@
 //   are not after are quarantined with reason 'orphaned' (until stable). Elements that were
 //   already unreachable are left alone. depth/steps are recomputed for everything still reachable.
 //   Never-purge elements are never orphaned; if one becomes unreachable it is reported.
-// - Generated challenge days after tomorrow's teaser day (repickCutoff) whose targets are no longer
-//   active or no longer in their BFS-tier pools BECAUSE of the purge are re-picked (same pools and
-//   picker as db:challenges --replace-generated, zero-completions check, one transaction). Today,
-//   the teaser day and the past are never touched.
+// - Generated challenge days after tomorrow's teaser day (repickCutoff) that the purge BREAKS
+//   (check-challenges' broken definition, pred-v6: inactive, unreachable, tier-order, twin-trap,
+//   p-order, ...; never because pool membership moved) are re-picked with the same pools and
+//   picker as db:challenges (zero-completions check, one transaction, meta.replaced). Today, the
+//   teaser day and the past are never touched. After an apply: npm run db:depth -- --run, then
+//   npm run db:check-challenges -- --days=9 --fix (a purge raises steps).
 // - Each apply run gets an id (purge-YYYYMMDD-HHMMSS) in elements/recipes.purge_run and a summary
 //   in meta 'purge:<id>'. `restore --run <id>` reverses it (re-picked challenge days stay).
 //   If apply fails midway, `restore --run <id>` and then plan/apply again.
@@ -34,14 +36,29 @@ import path from "node:path";
 import { parseArgs, type ParseArgsConfig } from "node:util";
 import type pg from "pg";
 import type { Tier } from "../src/shared/api.ts";
-import { addDays, CHALLENGE_CUTOVER_DAY } from "../src/shared/dates.ts";
-import { completionsFrom, daysBetween, insertDays } from "./generate-challenges.ts";
-import { buildPools, dayRange, liveWindow, NO_REPEAT_DAYS, pickChallenges, TIERS, type DayTargets, type TierPool } from "./lib/challenges.ts";
+import { utcDay } from "../src/shared/dates.ts";
+import { completionsOn, configHash, gitSha, insertRows, nextReplaced, planHashOf, refuseWithoutMeta } from "./generate-challenges.ts";
+import {
+  buildCandidates,
+  buildPools,
+  checkDays,
+  liveWindow,
+  makeContext,
+  planDays,
+  TIERS,
+  type ChallengeTags,
+  type DayMeta,
+  type DayTargets,
+  type PlannedRow,
+  type PoolElement,
+  type StoredRow,
+} from "./lib/challenges.ts";
 import { isMain, printTable } from "./lib/cli.ts";
 import { chunk, createPool, fmt, resolveSchema, retrying, withTx } from "./lib/db.ts";
 import { depthOf, knuthFixpoint, stepsOf, type Metric } from "./lib/graph.ts";
+import { computeReach, loadReachInputs, type Reach } from "./lib/reach.ts";
+import { columnExists, worldAsOf } from "./lib/world.ts";
 import {
-  brokenFutureDays,
   challengeWindow,
   checkVerdicts,
   computePurge,
@@ -49,14 +66,12 @@ import {
   liveRecipes,
   madeFromIndex,
   makeRunId,
-  newlyBroken,
   neverPurge,
   parseVerdictFile,
   PASSES,
   REASON,
   recipeLabel,
   RUN_ID_RE,
-  type BrokenDay,
   type ChallengeDay,
   type NeverPurgeKind,
   type Pass,
@@ -115,12 +130,14 @@ collisions, challenge days to re-pick, player libraries affected), writes a JSON
 --review-only previews using review verdicts alone (apply refuses such a plan).
 --no-cascade keeps elements that only junk made reachable active (players keep them); they
 become unreachable (depth/steps NULL) instead of being quarantined as orphans.`,
-  apply: `Usage: npm run db:purge -- apply --plan <file> [--dry-run] [--max-fraction 0.75] [--schema <name>]
+  apply: `Usage: npm run db:purge -- apply --plan <file> [--dry-run] [--max-fraction 0.75] [--allow-no-meta] [--schema <name>]
 
 Re-validates the plan against the current database (verdicts, never-purge set, cascade), then
 quarantines in batched transactions, re-picks affected future challenge days, records meta
 'purge:<run id>' and prints verification queries. --dry-run stops after the re-validation.
-Refuses to purge more than --max-fraction of the active non-starter elements.`,
+Refuses to purge more than --max-fraction of the active non-starter elements. Refuses, before
+any write, when days need a re-pick and challenges.meta is missing (migration 0010), unless
+--allow-no-meta; never when one of them is assigned to the challenge holdout.`,
   restore: `Usage: npm run db:purge -- restore --run <purge-YYYYMMDD-HHMMSS> [--dry-run] [--schema <name>]
 
 Reverses an apply run: its elements back to active, its recipes back to active where the result
@@ -175,6 +192,9 @@ interface DbElement {
   steps: number | null;
   recognizable: boolean | null;
   image_status: string | null;
+  emoji: string | null;
+  notable: boolean;
+  challenge_tags?: ChallengeTags | null;
 }
 
 /**
@@ -198,24 +218,42 @@ interface State {
   graph: PurgeRecipe[];
   before: { depth: Metric; steps: Metric };
   challenges: ChallengeDay[];
+  /** The same days with generator and meta (pred-v6 checks and re-picks). */
+  stored: StoredRow[];
+  hasMeta: boolean;
+  /** Reach as of loading (scripts/lib/reach.ts); null unless loadState was asked for it (plan, apply). */
+  reach: Reach | null;
+  /** Max recipe created_at (meta.worldAsOf of re-picked days); "" unless loaded with reach. */
+  worldAsOf: string;
   window: { first: string; last: string };
   protect: Map<string, NeverPurgeKind[]>;
   /** Database clock when loading started. */
   loadedAt: Date;
 }
 
-async function loadState(pool: pg.Pool, schema: string, { follower }: { follower: boolean }): Promise<State> {
+/**
+ * Load the purge state. `reach` (plan and apply only: the commands that call analyze) also reads
+ * the reach counts as of loadedAt and the world's max recipe created_at, in ONE read-only
+ * transaction on its own connection; the reach queries filter everything by `< loadedAt`, so they
+ * describe the same instant as the other reads.
+ */
+async function loadState(pool: pg.Pool, schema: string, { follower, reach: withReach = false }: { follower: boolean; reach?: boolean }): Promise<State> {
   const aost = follower ? "AS OF SYSTEM TIME follower_read_timestamp()" : "";
   const t0 = performance.now();
   const loadedAt = (await pool.query<{ now: Date }>("SELECT now() AS now")).rows[0]!.now;
-  const [els, recs, chs] = await Promise.all([
-    pool.query<DbElement>(`SELECT id, name, status, is_starter, depth, steps, recognizable, image_status FROM ${schema}.elements ${aost}`),
+  const [hasTags, hasMeta] = await Promise.all([columnExists(pool, schema, "elements", "challenge_tags"), columnExists(pool, schema, "challenges", "meta")]);
+  const [els, recs, chs, reachInputs] = await Promise.all([
+    pool.query<DbElement>(
+      `SELECT id, name, status, is_starter, depth, steps, recognizable, image_status, emoji, notable${hasTags ? ", challenge_tags" : ""} FROM ${schema}.elements ${aost}`,
+    ),
     pool.query<{ id: string; ingredient_ids: string[]; result_id: string; protected: boolean }>(
       `SELECT id, ingredient_ids, result_id, protected FROM ${schema}.recipes ${aost} WHERE status = 'active'`,
     ),
-    pool.query<{ day: string; easy_id: string; hard_id: string; expert_id: string; source: string }>(
-      `SELECT day, easy_id, hard_id, expert_id, source FROM ${schema}.challenges ${aost} ORDER BY day`,
+    pool.query<{ day: string; easy_id: string; hard_id: string; expert_id: string; source: string; generator: string | null; meta?: DayMeta | null }>(
+      `SELECT day::STRING AS day, easy_id::STRING AS easy_id, hard_id::STRING AS hard_id, expert_id::STRING AS expert_id, source, generator${hasMeta ? ", meta" : ""}
+         FROM ${schema}.challenges ${aost} ORDER BY day`,
     ),
+    withReach ? loadReachSnapshot(pool, schema, loadedAt) : Promise.resolve(null),
   ]);
   const all = new Map(els.rows.map((e) => [e.id, e]));
   const active: PurgeElement[] = els.rows
@@ -227,6 +265,8 @@ async function loadState(pool: pg.Pool, schema: string, { follower }: { follower
   const starters = active.filter((e) => e.isStarter).map((e) => e.id);
   const before = { depth: knuthFixpoint(starters, graph, depthOf), steps: knuthFixpoint(starters, graph, stepsOf) };
   const challenges: ChallengeDay[] = chs.rows.map((c) => ({ day: c.day, source: c.source, targets: { easy: c.easy_id, hard: c.hard_id, expert: c.expert_id } }));
+  const stored: StoredRow[] = chs.rows.map((c) => ({ day: c.day, source: c.source, generator: c.generator, targets: { easy: c.easy_id, hard: c.hard_id, expert: c.expert_id }, meta: c.meta ?? null }));
+  const reach = reachInputs ? computeReach(reachInputs.inputs) : null;
   const window = { first: challengeWindow().first, last: repickCutoff() };
   const protect = neverPurge({ elements: active, recipes, challenges, window, graph, metrics: before });
   console.log(
@@ -234,7 +274,23 @@ async function loadState(pool: pg.Pool, schema: string, { follower }: { follower
       `${fmt(recipes.length)} active recipes (${fmt(graph.length)} live), ${fmt(challenges.length)} challenge days ` +
       `in ${((performance.now() - t0) / 1000).toFixed(1)}s${follower ? " (follower read)" : ""}`,
   );
-  return { all, active, activeIds, recipes, graph, before, challenges, window, protect, loadedAt };
+  return { all, active, activeIds, recipes, graph, before, challenges, stored, hasMeta, reach, worldAsOf: reachInputs?.worldAsOf ?? "", window, protect, loadedAt };
+}
+
+async function loadReachSnapshot(pool: pg.Pool, schema: string, asOf: Date): Promise<{ inputs: Awaited<ReturnType<typeof loadReachInputs>>; worldAsOf: string }> {
+  const db = await pool.connect();
+  try {
+    await db.query("BEGIN TRANSACTION READ ONLY");
+    const inputs = await loadReachInputs(db, schema, asOf);
+    const asOfWorld = await worldAsOf(db, schema);
+    await db.query("COMMIT");
+    return { inputs, worldAsOf: asOfWorld };
+  } catch (e) {
+    await db.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    db.release();
+  }
 }
 
 async function requirePurgeSchema(pool: pg.Pool, schema: string): Promise<void> {
@@ -493,7 +549,8 @@ async function cmdStatus(args: string[]) {
 
 interface RegenDay {
   day: string;
-  tiers: BrokenDay["tiers"];
+  /** The tiers this purge breaks (check-challenges broken problems that were not broken before). */
+  tiers: { tier: Tier; id: string; why: string }[];
   old: DayTargets;
   new: DayTargets | null;
 }
@@ -502,58 +559,95 @@ interface Analysis {
   effect: PurgeEffect;
   cutoff: string;
   regen: RegenDay[];
-  /** Broken future days whose targets were already out of their pools before this purge. */
+  /** The re-picked rows (with meta) behind `regen` (not written to the plan file). */
+  planned: PlannedRow[];
+  /** Future generated days that were already broken before this purge (left alone). */
   preexistingBroken: number;
   regenError: string | null;
   stepsAfter: Map<string, number | null>;
 }
 
+/**
+ * The generator's world on one side of the purge: active elements with depth/steps from that
+ * side's metrics (purges raise steps), live 2-ingredient recipes, the live recipes of every arity
+ * (C5b safe routes), and reach as loaded.
+ */
+function v6Context(s: State, elements: readonly PurgeElement[], metrics: { depth: Metric; steps: Metric }, pairs: readonly PurgeRecipe[], live: readonly PurgeRecipe[]) {
+  if (!s.reach) throw new Error("internal: loadState was called without reach");
+  const pool: PoolElement[] = elements.map((e) => {
+    const db = s.all.get(e.id);
+    return {
+      id: e.id,
+      name: e.name,
+      isStarter: e.isStarter,
+      recognizable: e.recognizable,
+      depth: metrics.depth.value.get(e.id) ?? null,
+      steps: metrics.steps.value.get(e.id) ?? null,
+      imageStatus: db?.image_status ?? null,
+      emoji: db?.emoji ?? null,
+      notable: db?.notable ?? false,
+      tags: db?.challenge_tags ?? null,
+    };
+  });
+  return makeContext({ elements: pool, recipes: pairs, allRecipes: live, reach: s.reach });
+}
+
 /** Cascade + challenge consequences of purging `direct` from the loaded state. */
 function analyze(s: State, direct: Iterable<string>, cascade = true): Analysis {
   const effect = computePurge({ elements: s.active, recipes: s.recipes, direct, protect: s.protect, cascade });
-  const pairs = s.recipes.filter((r) => r.ingredients.length === 2);
-  // The generator's full inputs (depth for the easy paths rule, blocked art), with depth from
-  // the metrics on each side of the purge, so pools match what db:challenges would build.
-  const poolEl = (depth: Metric) => (e: PurgeElement) => ({
-    id: e.id,
-    name: e.name,
-    isStarter: e.isStarter,
-    recognizable: e.recognizable,
-    depth: depth.value.get(e.id) ?? null,
-    imageStatus: s.all.get(e.id)?.image_status ?? null,
-  });
   const afterEls = s.active.filter((e) => !effect.removed.has(e.id));
   const afterIds = new Set(afterEls.map((e) => e.id));
   const cutoff = repickCutoff();
-  const poolsAfter = buildPools(afterEls.map(poolEl(effect.after.depth)), pairs).pools;
-  const poolsBefore = buildPools(s.active.map(poolEl(s.before.depth)), pairs).pools;
-  const brokenBefore = brokenFutureDays(s.challenges, cutoff, s.activeIds, poolsBefore);
-  // Only what this purge breaks is re-picked; earlier drift is reported and left alone.
-  const broken = newlyBroken(brokenBefore, brokenFutureDays(s.challenges, cutoff, afterIds, poolsAfter));
-  const preexistingBroken = brokenBefore.length;
-  const stepsAfter = new Map<string, number | null>([...effect.after.steps.value]);
-  let regen: RegenDay[] = [];
-  let regenError: string | null = null;
-  try {
-    regen = repick(s, broken, poolsAfter, stepsAfter);
-  } catch (e) {
-    regenError = (e as Error).message;
-    regen = broken.map((b) => ({ day: b.day, tiers: b.tiers, old: s.challenges.find((c) => c.day === b.day)!.targets, new: null }));
+  const today = utcDay();
+  const liveAfter = s.graph.filter((r) => afterIds.has(r.result) && r.ingredients.every((i) => afterIds.has(i)));
+  const pairsBefore = s.graph.filter((r) => r.ingredients.length === 2);
+  const pairsAfter = liveAfter.filter((r) => r.ingredients.length === 2);
+  const ctxBefore = v6Context(s, s.active, s.before, pairsBefore, s.graph);
+  const ctxAfter = v6Context(s, afterEls, effect.after, pairsAfter, liveAfter);
+  const future = s.stored.filter((c) => c.source === "generated" && c.day > cutoff);
+  const brokenKeys = (issues: ReturnType<typeof checkDays>) => new Set(issues.filter((i) => i.severity === "broken").map((i) => `${i.day}:${i.tier}`));
+  const before = brokenKeys(checkDays(future, ctxBefore, { today }));
+  const afterIssues = checkDays(future, ctxAfter, { today }).filter((i) => i.severity === "broken" && !before.has(`${i.day}:${i.tier}`));
+  const byDay = new Map<string, RegenDay["tiers"]>();
+  for (const i of afterIssues) {
+    const list = byDay.get(i.day) ?? [];
+    if (!list.some((t) => t.tier === i.tier)) list.push({ tier: i.tier, id: i.id, why: i.problem });
+    byDay.set(i.day, list);
   }
-  return { effect, cutoff, regen, preexistingBroken, regenError, stepsAfter };
-}
-
-/** The generator's deterministic picks for the broken days only (all other stored days fixed). */
-function repick(s: State, broken: BrokenDay[], pools: Record<Tier, TierPool>, steps: ReadonlyMap<string, number | null>): RegenDay[] {
-  if (broken.length === 0) return [];
-  const brokenDays = new Set(broken.map((b) => b.day));
-  const history = s.challenges
-    .filter((c) => c.day < CHALLENGE_CUTOVER_DAY && c.day >= addDays(CHALLENGE_CUTOVER_DAY, -NO_REPEAT_DAYS))
-    .map((c) => ({ day: c.day, targets: c.targets }));
-  const fixed = new Map(s.challenges.filter((c) => c.day >= CHALLENGE_CUTOVER_DAY && !brokenDays.has(c.day)).map((c) => [c.day, c.targets]));
-  const last = broken.at(-1)!.day;
-  const picks = pickChallenges(dayRange(CHALLENGE_CUTOVER_DAY, daysBetween(CHALLENGE_CUTOVER_DAY, last) + 1), pools, fixed, history, { steps });
-  return broken.map((b) => ({ day: b.day, tiers: b.tiers, old: s.challenges.find((c) => c.day === b.day)!.targets, new: picks.get(b.day)! }));
+  const broken = [...byDay].sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  const preexistingBroken = new Set([...before].map((k) => k.slice(0, 10))).size;
+  const stepsAfter = new Map<string, number | null>([...effect.after.steps.value]);
+  const oldOf = (day: string) => s.stored.find((c) => c.day === day)!.targets;
+  let regen: RegenDay[] = broken.map(([day, tiers]) => ({ day, tiers, old: oldOf(day), new: null }));
+  let planned: PlannedRow[] = [];
+  let regenError: string | null = null;
+  if (broken.length) {
+    try {
+      const { cands } = buildCandidates(ctxAfter);
+      const { pools } = buildPools(cands);
+      const versions = new Map<string, number>();
+      for (const e of s.all.values()) if (e.challenge_tags?.v) versions.set(e.challenge_tags.v, (versions.get(e.challenge_tags.v) ?? 0) + 1);
+      const rows = planDays(ctxAfter, cands, pools, {
+        days: broken.map(([d]) => d),
+        stored: s.stored,
+        provenance: {
+          configHash: configHash(),
+          gitSha: gitSha(),
+          classifierVersion: [...versions].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "none",
+          pickedAt: new Date().toISOString(),
+          worldAsOf: s.worldAsOf || s.loadedAt.toISOString(),
+        },
+      }).rows;
+      // The same plan hash generate-challenges makePlan writes (days, targets, school-basis p).
+      const planHash = planHashOf(rows);
+      planned = rows.map((r) => ({ ...r, meta: { ...r.meta, planHash } }));
+      const byPlan = new Map(planned.map((r) => [r.day, r.targets]));
+      regen = regen.map((r) => ({ ...r, new: byPlan.get(r.day) ?? null }));
+    } catch (e) {
+      regenError = (e as Error).message;
+    }
+  }
+  return { effect, cutoff, regen, planned, preexistingBroken, regenError, stepsAfter };
 }
 
 interface Libraries {
@@ -642,7 +736,7 @@ function printReport(s: State, a: Analysis, libs: Libraries, verdictInfo: Record
   if (e.protectedHits.length) console.log(`\n!!!!! WARNING: ${e.protectedHits.length} protected recipe(s) touch a removed element; they are NOT quarantined.`);
   console.log(
     `\nChallenge days after ${a.cutoff} to re-pick: ${a.regen.length}` +
-      (a.preexistingBroken ? ` (${a.preexistingBroken} future day(s) were already out of their pools before this purge: left as they are)` : ""),
+      (a.preexistingBroken ? ` (${a.preexistingBroken} future day(s) were already broken before this purge: left as they are; see db:check-challenges)` : ""),
   );
   if (a.regenError) console.log(`!!!!! WARNING: cannot re-pick: ${a.regenError}`);
   if (a.regen.length) {
@@ -712,7 +806,7 @@ async function cmdPlan(args: string[]) {
   try {
     await requirePurgeSchema(pool, schema);
     // Fresh reads (not follower reads): verdicts staged seconds ago must be in the plan.
-    const s = await loadState(pool, schema, { follower: false });
+    const s = await loadState(pool, schema, { follower: false, reach: true });
     const verdicts = await loadVerdicts(pool, schema, false);
     const agreed = agreedSet(verdicts, reviewOnly);
     const a = analyze(s, agreed, cascade);
@@ -827,7 +921,7 @@ async function writeDepthSteps(pool: pg.Pool, schema: string, updates: { id: str
 }
 
 async function cmdApply(args: string[]) {
-  const v = parse("apply", args, { plan: { type: "string" }, "dry-run": { type: "boolean" }, "max-fraction": { type: "string" } });
+  const v = parse("apply", args, { plan: { type: "string" }, "dry-run": { type: "boolean" }, "max-fraction": { type: "string" }, "allow-no-meta": { type: "boolean" } });
   if (!v.plan) throw new UsageError(`missing --plan <file>\n\n${USAGE.apply}`);
   const maxFraction = v["max-fraction"] === undefined ? 0.75 : Number(v["max-fraction"]);
   if (!(maxFraction > 0 && maxFraction <= 1)) throw new UsageError("--max-fraction must be in (0, 1]");
@@ -847,7 +941,7 @@ async function cmdApply(args: string[]) {
   try {
     await requirePurgeSchema(pool, schema);
     // ---- re-validate against the current database
-    const s = await loadState(pool, schema, { follower: false });
+    const s = await loadState(pool, schema, { follower: false, reach: true });
     const verdicts = await loadVerdicts(pool, schema, false);
     const agreed = agreedSet(verdicts, false);
     const planned = new Set(plan.direct.map((d) => d.id));
@@ -876,6 +970,19 @@ async function cmdApply(args: string[]) {
     if (e.removed.size === 0) {
       console.log("\nNothing to purge.");
       return;
+    }
+    // Before any write: a re-pick without challenges.meta would lose meta.replaced (and a holdout
+    // day's pre-v6 targets); refuse the whole apply rather than purge and leave broken days.
+    try {
+      refuseWithoutMeta(
+        a.regen.filter((r) => r.new).map((r) => r.day),
+        s.hasMeta,
+        v["allow-no-meta"] ?? false,
+        "purge's challenge re-pick",
+      );
+    } catch (err) {
+      if (!dryRun) throw err;
+      console.warn(`  the apply would refuse: ${(err as Error).message}`);
     }
     if (dryRun) {
       console.log(`\nDry run: nothing written. Would quarantine ${fmt(e.direct.length)} + ${fmt(e.orphans.length)} orphan(s), ${fmt(e.recipesByResult.length + e.recipesByIngredient.length)} recipe(s), re-pick ${a.regen.length} day(s).`);
@@ -924,13 +1031,17 @@ async function cmdApply(args: string[]) {
     let regenerated = 0;
     if (regen.length) {
       const days = regen.map((r) => r.day);
+      const rows = a.planned.filter((r) => days.includes(r.day));
+      const at = new Date().toISOString();
       regenerated = await withTx(pool, "re-pick challenge days", async (c) => {
-        // The generator's --replace-generated safety check, from the first affected day on.
-        const done = await completionsFrom(c, schema, days[0]!);
-        if (done > 0) throw new Error(`refusing to re-pick: ${fmt(done)} challenge completion(s) on/after ${days[0]}`);
+        // The generator's safety checks: no completions on these days, generated rows only.
+        const done = await completionsOn(c, schema, days);
+        if (done.size) throw new Error(`refusing to re-pick: challenge completion(s) on ${[...done.keys()].join(", ")}`);
         const del = await c.query(`DELETE FROM ${schema}.challenges WHERE source = 'generated' AND day = ANY($1::DATE[]) AND day > $2::DATE`, [days, cutoff]);
         if ((del.rowCount ?? 0) !== days.length) throw new Error(`expected to delete ${days.length} generated day(s), deleted ${del.rowCount}; rolled back`);
-        const ins = await insertDays(c, schema, regen.map((r) => ({ day: r.day, t: r.new! })), a.stepsAfter);
+        const old = new Map(s.stored.map((x) => [x.day, x]));
+        const toWrite = rows.map((r) => ({ ...r, meta: { ...r.meta, replaced: nextReplaced(old.get(r.day) ?? null, `purge:${run}`, at) } }));
+        const ins = await insertRows(c, schema, toWrite, { hasMeta: s.hasMeta, onConflict: "error" });
         if (ins !== days.length) throw new Error(`expected to insert ${days.length} day(s), inserted ${ins}; rolled back`);
         return ins;
       });
