@@ -37,6 +37,7 @@ import { applyCombine, openTargetIds, useGame } from "../../state/game.ts";
 import { announce, celebrate, dismissToast, showToast, useUi } from "../../state/ui.ts";
 import { chooseCelebration, combineFailedParams, FollowupTracker } from "./celebrate.ts";
 import { noteCombine } from "./firstRun.ts";
+import { rateLimitCopy } from "./limitCopy.ts";
 import { canvasRect, layoutEls, libraryEdge } from "./layout.ts";
 import { nextMove } from "./poses.ts";
 
@@ -228,12 +229,10 @@ const ERROR_COPY: Partial<Record<ApiFailure["code"], string>> = {
   timeout: "That took too long. Give it another try.",
 };
 
-function failureMessage(e: unknown): { text: string; until?: number } {
+function failureMessage(e: unknown): { text: string; until?: number; spoken?: string } {
   const f = e instanceof ApiFailure ? e : new ApiFailure("network", "network");
-  if (f.code === "rate_limited") {
-    const ms = Math.max(3_000, f.retryAfterMs ?? 20_000);
-    return { text: "Easy there, alchemist. Try again in", until: Date.now() + ms };
-  }
+  // Short waits count down; long ones (hour/day rules) name the local time they end (limitCopy.ts).
+  if (f.code === "rate_limited") return rateLimitCopy(f.retryAfterMs, f.limit);
   if (f.code === "network") {
     return {
       text: navigator.onLine === false
@@ -314,17 +313,18 @@ function failMerge(pendingUid: string, saved: SavedTile[], at: Pt, e: unknown, u
   }
   // code, plus the rule that refused (limit) and the server's retry hint, bucketed (retry_s).
   track("combine_failed", combineFailedParams(e));
-  const { text, until } = failureMessage(e);
+  const { text, until, spoken } = failureMessage(e);
   showToast({
     kind: "error",
     text,
     until,
-    duration: until ? Math.min(60_000, until - Date.now()) : 4_500,
+    // A long-wait message is a sentence to read, not a countdown: give it a little longer.
+    duration: until ? Math.min(60_000, until - Date.now()) : spoken ? 8_000 : 4_500,
     action: e instanceof ApiFailure && e.code === "unauthorized" ? { label: "Reload", run: () => location.reload() } : undefined,
   });
   haptic("error");
   playSound("error");
-  announce(until ? `${text} a few seconds.` : text, true);
+  announce(spoken ?? text, true);
 }
 
 function succeedMerge(pendingUid: string, ids: ElementId[], inputs: string[], res: CombineResponse, local: boolean): void {
